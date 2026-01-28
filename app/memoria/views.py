@@ -3,4 +3,4 @@ from django.shortcuts import render
 
 # Create your views here.
 def home(request):
-   return HttpResponse("Hello from the Memoria app!")
+   return HttpResponse("Hello from the memoria app!")
