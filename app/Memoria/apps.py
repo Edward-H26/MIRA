@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class MiraConfig(AppConfig):
-    name = "app.Mira"
+    name = "app.Memoria"
