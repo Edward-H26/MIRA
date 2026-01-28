@@ -25,12 +25,22 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Run migrations:
+4. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and replace `YOUR_KEY` with a freshly generated Django secret key:
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+5. Run migrations:
 ```bash
 python manage.py migrate
 ```
 
-5. Start the development server:
+6. Start the development server:
 ```bash
 python manage.py runserver
 ```
