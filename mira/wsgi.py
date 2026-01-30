@@ -1,5 +1,5 @@
 """
-WSGI config for mira project.
+WSGI config for memoria project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

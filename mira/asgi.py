@@ -1,5 +1,5 @@
 """
-ASGI config for mira project.
+ASGI config for memoria project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
