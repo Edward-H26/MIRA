@@ -15,5 +15,8 @@ class User(models.Model):
     # Profile avatar image for the user
     profile_img = models.ImageField(null=True, blank=True, upload_to=avatar_upload_to)
 
+    class Meta:
+        ordering = ["user_id"]
+
     def __str__(self):
         return self.user.username

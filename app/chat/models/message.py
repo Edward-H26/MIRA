@@ -24,6 +24,7 @@ class Message(models.Model):
         indexes = [
             models.Index(fields=["session", "created_at"])
         ]
+        ordering = ["session","-created_at"]
 
     def __str__(self):
         return f"{self.session} - {self.role} @ {self.created_at:%Y-%m-%d %H:%M}"
