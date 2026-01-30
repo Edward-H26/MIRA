@@ -12,9 +12,9 @@ class Payment(models.Model):
     Why it exists: Record payment attempts and outcomes for billing
     """
     # The user who made the payment
-    user = models.OneToOneField("users.User", on_delete=models.CASCADE)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     # Related subscription for this payment
-    subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True, related_name="payment")
+    subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     # Plan being paid for
     plan = models.ForeignKey("Plan", on_delete=models.PROTECT)
 
