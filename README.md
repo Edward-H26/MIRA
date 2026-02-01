@@ -73,7 +73,7 @@ python manage.py runserver
 
 ## Data Model
 
-![ER Diagram](docs/er_diagram.png)
+![ER Diagram](docs/03_data_model/er_diagram.png)
 
 
 ## Development
