@@ -90,26 +90,35 @@ python manage.py runserver
 
 ```
 .
-|-- manage.py              # Django management script
-|-- app/                   # Application modules
-|   |-- billing/           # Billing and subscription domain
+|-- manage.py                 # Django management script
+|-- app/                      # Application modules
+|   |-- billing/              # Billing and subscription domain
 |   |   `-- models: Plan, Subscription, Payment
-|   |-- chat/              # Chat sessions, messages, memory
+|   |-- chat/                 # Chat sessions, messages, memory
 |   |   `-- models: Memory, MemoryBullet, Session, Message
-|   |-- memoria/           # App wiring (urls, views)
+|   |-- memoria/              # App wiring (urls, views)
 |   |   `-- models: (none)
-|   `-- users/             # User profile models
+|   `-- users/                # User profile models
 |       `-- models: User
-|-- mira/                  # Project configuration
-|   |-- settings/
+|-- mira/                     # Project configuration
+|   |-- settings/             # Environment-specific settings
+|   |   |-- base.py           # Shared settings
+|   |   |-- development.py    # Dev settings
+|   |   `-- production.py     # Production settings
 |   |-- asgi.py
 |   |-- urls.py
 |   `-- wsgi.py
-|-- data/                  # Local data storage
-|-- media/                 # User-uploaded files
-|-- requirements.txt       # Python dependencies
-|-- .env                   # Local environment variables
-`-- .env.example           # Environment template
+|-- docs/                     # Project documentation
+|   |-- 01_project_documents/ # Requirements, proposals
+|   |-- 02_wireframes/        # UI wireframes
+|   |-- 03_data_model/        # ER diagrams
+|   `-- design_choice/        # Architecture decisions
+|-- templates/                # Django HTML templates
+|-- data/                     # Local data storage
+|-- test.py                   # Test suite
+|-- requirements.txt          # Python dependencies
+|-- .env                      # Local environment variables
+`-- .env.example              # Environment template
 ```
 
 ---
