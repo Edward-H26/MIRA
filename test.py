@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import django
@@ -53,6 +54,31 @@ def cleanup_test_data():
             print(f"  Deleted {plan_count} existing test plan(s)")
 
         print()
+
+
+def get_test_data():
+    """Fetch existing test data from database."""
+    test_usernames = ["maria_garcia", "james_chen", "sarah_johnson", "alex_kumar", "emma_wilson"]
+
+    profiles = list(User.objects.filter(user__username__in=test_usernames).order_by("user__username"))
+    if len(profiles) < 5:
+        return None
+
+    plans = list(Plan.objects.filter(code__in=["free", "pro"]).order_by("code", "interval"))
+    if len(plans) < 3:
+        return None
+
+    memories = list(Memory.objects.filter(user__in=profiles))
+    subscriptions = list(Subscription.objects.filter(user__in=profiles))
+    payments = list(Payment.objects.filter(user__in=profiles))
+
+    return {
+        "profiles": profiles,
+        "plans": plans,
+        "memories": memories,
+        "subscriptions": subscriptions,
+        "payments": payments,
+    }
 
 
 def create_test_data():
@@ -329,19 +355,50 @@ def print_summary():
     print(f"  Payment records:      {Payment.objects.count()}")
 
 
+def main():
+    parser = argparse.ArgumentParser(description="MIRA Test Data Script")
+    parser.add_argument("--all", action="store_true", help="Run all tests")
+    parser.add_argument("--setup", action="store_true", help="Cleanup and create test data")
+    parser.add_argument("--cleanup", action="store_true", help="Remove test data")
+    parser.add_argument("--test-fk", action="store_true", help="Run FK relationships test")
+    parser.add_argument("--test-unique", action="store_true", help="Run uniqueness constraints test")
+    parser.add_argument("--test-delete", action="store_true", help="Run on_delete behaviors test")
+    parser.add_argument("--summary", action="store_true", help="Print database summary")
+    args = parser.parse_args()
+
+    has_flag = args.all or args.setup or args.cleanup or args.test_fk or args.test_unique or args.test_delete or args.summary
+
+    if args.cleanup:
+        cleanup_test_data()
+
+    elif args.setup:
+        cleanup_test_data()
+        create_test_data()
+
+    elif args.summary:
+        print_summary()
+
+    elif args.test_fk or args.test_unique or args.test_delete:
+        data = get_test_data()
+        if data is None:
+            print("ERROR: Test data not found. Run 'python test.py --setup' first.")
+            sys.exit(1)
+
+        if args.test_fk:
+            test_fk_relationships(data)
+        if args.test_unique:
+            test_uniqueness_constraints(data)
+        if args.test_delete:
+            test_on_delete_behaviors(data)
+
+    else:
+        cleanup_test_data()
+        data = create_test_data()
+        test_fk_relationships(data)
+        test_uniqueness_constraints(data)
+        test_on_delete_behaviors(data)
+        print_summary()
+
+
 if __name__ == "__main__":
-    print("\n" + "#" * 60)
-    print("# MIRA Test Data Insertion Script")
-    print("# INFO 490 - Database Validation")
-    print("#" * 60 + "\n")
-
-    cleanup_test_data()
-    data = create_test_data()
-    test_fk_relationships(data)
-    test_uniqueness_constraints(data)
-    test_on_delete_behaviors(data)
-    print_summary()
-
-    print("\n" + "#" * 60)
-    print("# All tests completed!")
-    print("#" * 60 + "\n")
+    main()
