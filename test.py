@@ -6,7 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mira.settings.development")
 django.setup()
 
 from django.contrib.auth.models import User as AuthUser
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
 from datetime import date, timedelta
@@ -19,6 +19,40 @@ from app.billing.models import Plan, Subscription, Payment
 from app.billing.models.plan import Interval
 from app.billing.models.subscription import Status as SubscriptionStatus
 from app.billing.models.payment import Status as PaymentStatus
+
+
+def cleanup_test_data():
+    """Remove existing test data to allow re-running the script."""
+    test_usernames = [
+        "maria_garcia",
+        "james_chen",
+        "sarah_johnson",
+        "alex_kumar",
+        "emma_wilson",
+    ]
+
+    test_plan_codes = ["free", "pro"]
+
+    existing_users = AuthUser.objects.filter(username__in=test_usernames)
+    user_count = existing_users.count()
+
+    existing_plans = Plan.objects.filter(code__in=test_plan_codes)
+    plan_count = existing_plans.count()
+
+    if user_count > 0 or plan_count > 0:
+        print("=" * 60)
+        print("CLEANUP: Removing existing test data")
+        print("=" * 60)
+
+        if user_count > 0:
+            existing_users.delete()
+            print(f"  Deleted {user_count} existing test user(s) and cascaded records")
+
+        if plan_count > 0:
+            existing_plans.delete()
+            print(f"  Deleted {plan_count} existing test plan(s)")
+
+        print()
 
 
 def create_test_data():
@@ -192,13 +226,14 @@ def test_uniqueness_constraints(data):
 
     print("\n  Test 1: Attempting to create duplicate Plan (code='pro', interval=MONTHLY)...")
     try:
-        duplicate_plan = Plan.objects.create(
-            name="Another Pro Monthly",
-            code="pro",
-            description="Duplicate attempt",
-            interval=Interval.MONTHLY,
-            price_cents=1999
-        )
+        with transaction.atomic():
+            duplicate_plan = Plan.objects.create(
+                name="Another Pro Monthly",
+                code="pro",
+                description="Duplicate attempt",
+                interval=Interval.MONTHLY,
+                price_cents=1999
+            )
         print("  FAILED: Duplicate plan was allowed!")
     except IntegrityError:
         print("  SUCCESS: IntegrityError raised - Plan uniqueness constraint works!")
@@ -208,13 +243,14 @@ def test_uniqueness_constraints(data):
     pro_monthly = data["plans"][1]
 
     try:
-        duplicate_sub = Subscription.objects.create(
-            user=maria,
-            plan=pro_monthly,
-            status=SubscriptionStatus.ACTIVE,
-            current_period_start=date.today(),
-            current_period_end=date.today() + timedelta(days=30)
-        )
+        with transaction.atomic():
+            duplicate_sub = Subscription.objects.create(
+                user=maria,
+                plan=pro_monthly,
+                status=SubscriptionStatus.ACTIVE,
+                current_period_start=date.today(),
+                current_period_end=date.today() + timedelta(days=30)
+            )
         print("  FAILED: Duplicate subscription was allowed!")
     except IntegrityError:
         print("  SUCCESS: IntegrityError raised - Subscription uniqueness constraint works!")
@@ -250,22 +286,27 @@ def test_on_delete_behaviors(data):
     else:
         print("  FAILED: SET_NULL did not work!")
 
-    print("\n  Test 3: on_delete=CASCADE (deleting User, checking related records)...")
+    print("\n  Test 3: on_delete=CASCADE (deleting auth.User, checking full cascade)...")
     emma = data["profiles"][4]
-    emma_id = emma.id
+    emma_auth_user = emma.user
+    emma_auth_id = emma_auth_user.id
+    emma_profile_id = emma.id
+
     emma_memory_count = Memory.objects.filter(user=emma).count()
     emma_bullet_count = MemoryBullet.objects.filter(memory__user=emma).count()
 
-    print(f"    Before: Emma has {emma_memory_count} Memory, {emma_bullet_count} MemoryBullets")
-    emma.delete()
+    print(f"    Before: Emma (auth.User ID {emma_auth_id}) has Profile, {emma_memory_count} Memory, {emma_bullet_count} MemoryBullets")
 
-    remaining_memories = Memory.objects.filter(user_id=emma_id).count()
-    remaining_bullets = MemoryBullet.objects.filter(memory__user_id=emma_id).count()
+    emma_auth_user.delete()
 
-    print(f"    After:  {remaining_memories} Memory, {remaining_bullets} MemoryBullets remaining")
+    remaining_profiles = User.objects.filter(id=emma_profile_id).count()
+    remaining_memories = Memory.objects.filter(user_id=emma_profile_id).count()
+    remaining_bullets = MemoryBullet.objects.filter(memory__user_id=emma_profile_id).count()
 
-    if remaining_memories == 0 and remaining_bullets == 0:
-        print("  SUCCESS: CASCADE worked - All related records deleted!")
+    print(f"    After:  {remaining_profiles} Profile, {remaining_memories} Memory, {remaining_bullets} MemoryBullets remaining")
+
+    if remaining_profiles == 0 and remaining_memories == 0 and remaining_bullets == 0:
+        print("  SUCCESS: CASCADE worked - auth.User deletion cascaded through User -> Memory -> MemoryBullet!")
     else:
         print("  FAILED: CASCADE did not remove all related records!")
 
@@ -294,6 +335,7 @@ if __name__ == "__main__":
     print("# INFO 490 - Database Validation")
     print("#" * 60 + "\n")
 
+    cleanup_test_data()
     data = create_test_data()
     test_fk_relationships(data)
     test_uniqueness_constraints(data)
