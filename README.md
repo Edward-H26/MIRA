@@ -1,10 +1,49 @@
-# MIRA
+# MEMORIA: A Self-Evolving Agentic Framework with Transparent, User-Controlled Memory
 
-**Memory Incremental Reasoning Architecture**: A Self-Evolving Agentic Framework That Adapts Your Style
+**By Team MIRA (Team 4)**
 
-## Overview
+Memory Incremental Reasoning Architecture
 
-MIRA is an intelligent agentic framework built with Django that learns and adapts to your personal style through incremental memory and reasoning capabilities.
+---
+
+## Abstract
+
+Large Language Models demonstrate remarkable capabilities across diverse tasks, yet their stateless architecture creates fundamental inefficiencies when users repeatedly provide contextual information across sessions. This context inefficiency problem results in wasted tokens, degraded user experience, and missed opportunities for personalized assistance. MEMORIA addresses these challenges through a self-evolving agentic framework that maintains persistent, transparent user memory while preserving complete user control. Our system implements a Latent Taxonomized Memory with Bloom-filter enabled Strength-based Extraction and Adaptive Cohort Expansion algorithm that extracts, taxonomizes, and retrieves relevant memories with minimal overhead. Through transparent memory interfaces, users can inspect, modify, and control all stored information. Experimental results demonstrate that MEMORIA achieves 95% reduction in redundant context tokens compared to traditional approaches while maintaining response quality, at approximately 1% of the cost of fine-tuning solutions. The framework's combination of efficiency, transparency, and user control offers a practical path toward truly personalized AI assistants that learn and adapt while respecting user agency.
+
+---
+
+## Key Features
+
+MEMORIA provides four core capabilities that distinguish it from traditional LLM interfaces:
+
+### 1. Transparent Memory Interface
+Users maintain complete visibility and control over all stored memories. The system exposes memory contents, relevance scores, and decay states through an intuitive interface, enabling users to inspect, modify, or delete any stored information.
+
+### 2. Procedural Learning Engine
+Beyond storing facts, MEMORIA captures procedural knowledge including user preferences, interaction patterns, and task-specific instructions. The system learns how users prefer to accomplish tasks, not just what they know.
+
+### 3. Efficient Memory Retrieval
+The LTMBSE-ACE algorithm combines Bloom filter indexing with strength-based scoring to retrieve relevant memories in sublinear time. This enables responsive performance even as memory stores grow large.
+
+### 4. Feedback Integration
+User feedback directly influences memory strength and relevance. Positive reinforcement strengthens useful memories while negative signals accelerate decay of unhelpful content, creating a continuously improving system.
+
+---
+
+## Application Functionality
+
+MEMORIA supports three primary operations that enable adaptive, personalized assistance:
+
+### Memory Extraction
+The system continuously analyzes conversations to identify and extract memorable content. Facts, preferences, procedures, and episodic experiences are taxonomized and stored with appropriate decay rates based on memory type.
+
+### Context Augmentation
+When generating responses, MEMORIA retrieves relevant memories and augments the context without requiring user re-specification. This eliminates redundant information exchange while maintaining natural conversation flow.
+
+### Feedback Integration
+Users can rate the helpfulness of retrieved memories, providing direct feedback that adjusts memory strength scores. This creates a reinforcement loop that continuously improves retrieval relevance.
+
+---
 
 ## Installation
 
@@ -45,6 +84,8 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+---
+
 ## Project Structure
 
 ```
@@ -71,14 +112,37 @@ python manage.py runserver
 `-- .env.example           # Environment template
 ```
 
+---
+
 ## Data Model
 
 ![ER Diagram](docs/03_data_model/er_diagram.png)
 
+---
+
+## Team
+
+**Authors:**
+
+- **Qiran Hu** (First Author, Algorithm Originator)
+- **Amy Bisalputra** (Equal Contribution, Application Development)
+- **Ke Ding** (Equal Contribution, Application Development)
+- **Min Kim** (Equal Contribution, Application Development)
+- **Kewen Xia** (Equal Contribution, Application Development)
+
+---
+
+## Acknowledgements
+
+The LTMBSE-ACE algorithm implemented in MEMORIA derives from foundational work on the NOODEIA project conducted at SALT Lab. We thank the INFO 490 course for providing the framework and guidance that enabled this research contribution.
+
+---
 
 ## Development
 
 This project uses Django 6.0.1. For development setup, ensure you have Python 3.12+ installed.
+
+---
 
 ## License
 
