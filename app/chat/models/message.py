@@ -10,7 +10,7 @@ class Message(models.Model):
     Real-world entity: Single chat message in a session
     Why it exists: Store conversational turns with roles and timestamps
     """
-    # The session this message belongs to
+    # The session this message belongs to; cascade to remove messages with the session
     session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="messages")
     # The role of the sender such as system or user or assistant
     role = models.SmallIntegerField(choices=Role)

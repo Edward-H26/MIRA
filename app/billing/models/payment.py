@@ -11,12 +11,12 @@ class Payment(models.Model):
     Real-world entity: Payment transaction for a plan
     Why it exists: Record payment attempts and outcomes for billing
     """
-    # The user who made the payment
+    # The user who made the payment; cascade to remove payments if the user is deleted
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    # Related subscription for this payment
+    # Related subscription for this payment; keep payment history if subscription is removed
     subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
-    # Plan being paid for
-    plan = models.ForeignKey("Plan", on_delete=models.PROTECT)
+    # Plan being paid for; keep payment history if the plan is removed
+    plan = models.ForeignKey("Plan", on_delete=models.SET_NULL, null=True, blank=True)
 
     # Amount paid in cents
     amount_cents = models.PositiveIntegerField()

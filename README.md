@@ -48,18 +48,33 @@ python manage.py runserver
 ## Project Structure
 
 ```
-miramemoria/
-├── manage.py              # Django management script
-├── miramemoria/           # Project configuration
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── Mira/                  # Main application
-│   ├── models.py
-│   ├── views.py
-│   └── urls.py
-└── templates/             # HTML templates
+.
+|-- manage.py              # Django management script
+|-- app/                   # Application modules
+|   |-- billing/           # Billing and subscription domain
+|   |   `-- models: Plan, Subscription, Payment
+|   |-- chat/              # Chat sessions, messages, memory
+|   |   `-- models: Memory, MemoryBullet, Session, Message
+|   |-- memoria/           # App wiring (urls, views)
+|   |   `-- models: (none)
+|   `-- users/             # User profile models
+|       `-- models: User
+|-- mira/                  # Project configuration
+|   |-- settings/
+|   |-- asgi.py
+|   |-- urls.py
+|   `-- wsgi.py
+|-- data/                  # Local data storage
+|-- media/                 # User-uploaded files
+|-- requirements.txt       # Python dependencies
+|-- .env                   # Local environment variables
+`-- .env.example           # Environment template
 ```
+
+## Data Model
+
+![ER Diagram](docs/er_diagram.png)
+
 
 ## Development
 

@@ -5,9 +5,9 @@ class Memory(models.Model):
     Real-world entity: Memory record attached to a user
     Why it exists: Persist long-term memory items for personalization
     """
-    # The user this memory belongs to
+    # The user this memory belongs to; cascade to avoid orphaned memories
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    # TODO: Clarify the meaning and units of access_clock
+    # Number of access events processed since the component was last retrieved
     access_clock = models.IntegerField()
     # Timestamp when the memory record was created
     created_at = models.DateTimeField(auto_now_add=True)

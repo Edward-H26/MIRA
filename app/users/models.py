@@ -10,7 +10,7 @@ class User(models.Model):
     Real-world entity: Application user profile linked to Django auth user
     Why it exists: Store profile-specific fields not in auth.User
     """
-    # Link to the Django auth user record this profile extends
+    # Link to the Django auth user record this profile extends; cascade to remove profile if auth user is deleted
     user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name='profile')
     # Profile avatar image for the user
     profile_img = models.ImageField(null=True, blank=True, upload_to=avatar_upload_to)

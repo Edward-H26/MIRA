@@ -1,0 +1,103 @@
+erDiagram
+    AUTH_USER ||--|| USERS_USER : "user profile"
+    USERS_USER ||--o{ BILLING_SUBSCRIPTION : "subscriptions"
+    USERS_USER ||--o{ BILLING_PAYMENT : "payments"
+    USERS_USER ||--o{ CHAT_SESSION : "chat sessions"
+    USERS_USER ||--o{ CHAT_MEMORY : "memories"
+
+    BILLING_PLAN ||--o{ BILLING_SUBSCRIPTION : "plan for"
+    BILLING_PLAN ||--o{ BILLING_PAYMENT : "plan for"
+    BILLING_SUBSCRIPTION ||--o{ BILLING_PAYMENT : "payments"
+
+    CHAT_SESSION ||--o{ CHAT_MESSAGE : "messages"
+    CHAT_MEMORY ||--o{ CHAT_MEMORY_BULLET : "memory bullets"
+
+    AUTH_USER {
+        int id PK
+        VARCHAR(150) username
+        VARCHAR(128) password
+        VARCHAR(254) email
+        VARCHAR(150) first_name
+        VARCHAR(150) last_name
+        bool is_active
+        bool is_staff
+        bool is_superuser
+        datetime last_login
+        datetime date_joined
+    }
+
+    USERS_USER {
+        int id PK
+        int user_id FK
+        FILEPATH profile_img
+    }
+
+    BILLING_PLAN {
+        int id PK
+        VARCHAR(100) name
+        VARCHAR(32) code
+        int interval
+        int price_cents
+        VARCHAR(10) currency
+        bool is_active
+    }
+
+    BILLING_SUBSCRIPTION {
+        int id PK
+        int user_id FK
+        int plan_id FK
+        int status
+        bool auto_renew
+        date current_period_start
+        date current_period_end
+    }
+
+    BILLING_PAYMENT {
+        int id PK
+        int user_id FK
+        int subscription_id FK
+        int plan_id FK
+        int amount_cents
+        VARCHAR(10) currency
+        int status
+        datetime paid_at
+    }
+
+    CHAT_SESSION {
+        int id PK
+        int user_id FK
+        VARCHAR(200) title
+        datetime created_at
+        datetime updated_at
+    }
+
+    CHAT_MESSAGE {
+        int id PK
+        int session_id FK
+        int role
+        TEXT content
+        datetime created_at
+    }
+
+    CHAT_MEMORY {
+        int id PK
+        int user_id FK
+        int access_clock
+        datetime created_at
+        datetime updated_at
+    }
+
+    CHAT_MEMORY_BULLET {
+        int id PK
+        int memory_id FK
+        TEXT content
+        int helpful_count
+        int harmful_count
+        int memory_type
+        VARCHAR(200) topic
+        datetime created_at
+        int strength
+        datetime last_accessed
+        TEXT concept
+        int ttl_days
+    }

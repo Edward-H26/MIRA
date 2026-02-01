@@ -10,11 +10,11 @@ class MemoryBullet(models.Model):
     Real-world entity: Granular memory item for a memory
     Why it exists: Store individual memory facts with metadata and scoring
     """
-    # Parent memory record this bullet belongs to
+    # Parent memory record this bullet belongs to; cascade to keep bullets in sync with the parent
     memory = models.ForeignKey("Memory", on_delete=models.CASCADE)
     # The memory content text
     content = models.TextField()
-    # TODO: Confirm the expected tag schema
+    # The tag of memory summarized
     tags = models.JSONField(default=list)
     # Count of helpful votes
     helpful_count = models.IntegerField(default=0)
@@ -26,13 +26,13 @@ class MemoryBullet(models.Model):
     topic = models.CharField(max_length=200)
     # Timestamp when the memory bullet was created
     created_at = models.DateTimeField(auto_now_add=True)
-    # TODO: Clarify how strength is used
+    # Strength of memory decay rate
     strength = models.IntegerField(default=0)
     # Timestamp of last access or update
     last_accessed = models.DateTimeField(auto_now=True)
-    # TODO: Clarify the meaning of concept
+    # Concept of the memory
     concept = models.TextField(null=True)
-    # TODO: Clarify TTL semantics
+    # Days of time before deletion
     ttl_days = models.IntegerField()
 
     class Meta:
