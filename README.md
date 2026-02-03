@@ -1,5 +1,7 @@
 # MEMORIA: A Self-Evolving Agentic Framework with Transparent, User-Controlled Memory
 
+**Memory Enhanced Multi-modal Orchestration Reasoning Intelligence Architecture**
+
 **By Team MIRA (Team 4)**
 
 Memory Incremental Reasoning Architecture
@@ -8,7 +10,13 @@ Memory Incremental Reasoning Architecture
 
 ## Abstract
 
-Large Language Models demonstrate remarkable capabilities across diverse tasks, yet their stateless architecture creates fundamental inefficiencies when users repeatedly provide contextual information across sessions. This context inefficiency problem results in wasted tokens, degraded user experience, and missed opportunities for personalized assistance. MEMORIA addresses these challenges through a self-evolving agentic framework that maintains persistent, transparent user memory while preserving complete user control. Our system implements a Latent Taxonomized Memory with Bloom-filter enabled Strength-based Extraction and Adaptive Cohort Expansion algorithm that extracts, taxonomizes, and retrieves relevant memories with minimal overhead. Through transparent memory interfaces, users can inspect, modify, and control all stored information. Experimental results demonstrate that MEMORIA achieves 95% reduction in redundant context tokens compared to traditional approaches while maintaining response quality, at approximately 1% of the cost of fine-tuning solutions. The framework's combination of efficiency, transparency, and user control offers a practical path toward truly personalized AI assistants that learn and adapt while respecting user agency.
+We present Memory Enhanced Multi-modal Orchestration Reasoning Intelligence Architecture (MEMORIA), a web application that enables self-evolving AI assistants with transparent, user-controlled memory. Our system addresses fundamental inefficiencies in current AI interactions, where users constantly have to re-establish context across sessions, resulting in significant token waste and degraded performance. MEMORIA learns user work patterns through procedural learning rather than extensive conversation history, achieving personalization comparable to fine-tuning at approximately 1% of the token cost. Users can visualize, rate, and modify the AI's learned memory, creating unprecedented transparency in personalized AI systems.
+
+---
+
+## Introduction
+
+Large language models have demonstrated remarkable capabilities across diverse tasks, yet they face a fundamental architectural limitation: the absence of persistent, adaptive memory that accumulates knowledge from user interactions over time. Each new conversation session requires users to re-explain their preferences, context, and working style, creating substantial friction in human-AI collaboration. Research demonstrates that LLMs suffer a 39% performance drop in multi-turn conversations as they fail to maintain coherent context over extended interactions.
 
 ---
 
@@ -100,7 +108,7 @@ python manage.py runserver
 |   |   `-- models: (none)
 |   `-- users/                # User profile models
 |       `-- models: User
-|-- mira/                     # Project configuration
+|-- memoria/                  # Project configuration
 |   |-- settings/             # Environment-specific settings
 |   |   |-- base.py           # Shared settings
 |   |   |-- development.py    # Dev settings
@@ -115,7 +123,8 @@ python manage.py runserver
 |   `-- design_choice/        # Architecture decisions
 |-- templates/                # Django HTML templates
 |-- data/                     # Local data storage
-|-- test.py                   # Test suite
+|-- unit_test/                # Test suite
+|   `-- database_unit_test.py # Database unit tests
 |-- requirements.txt          # Python dependencies
 |-- .env                      # Local environment variables
 `-- .env.example              # Environment template

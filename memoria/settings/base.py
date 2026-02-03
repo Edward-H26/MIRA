@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    'app.memoria.apps.MiraConfig',
+    "app.memoria.apps.MemoriaConfig",
     "app.users.apps.UsersConfig",
     "app.billing.apps.BillingConfig",
     "app.chat.apps.ChatConfig",
@@ -55,7 +55,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "mira.urls"
+ROOT_URLCONF = "memoria.urls"
 
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -75,7 +75,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "mira.wsgi.application"
+WSGI_APPLICATION = "memoria.wsgi.application"
 
 
 # Database

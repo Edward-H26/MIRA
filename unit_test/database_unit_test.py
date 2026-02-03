@@ -3,7 +3,7 @@ import os
 import sys
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mira.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.development")
 django.setup()
 
 from django.contrib.auth.models import User as AuthUser
@@ -356,7 +356,7 @@ def print_summary():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MIRA Test Data Script")
+    parser = argparse.ArgumentParser(description="MEMORIA Test Data Script")
     parser.add_argument("--all", action="store_true", help="Run all tests")
     parser.add_argument("--setup", action="store_true", help="Cleanup and create test data")
     parser.add_argument("--cleanup", action="store_true", help="Remove test data")

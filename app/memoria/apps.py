@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class MiraConfig(AppConfig):
+class MemoriaConfig(AppConfig):
     name = "app.memoria"

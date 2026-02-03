@@ -11,7 +11,7 @@ This document provides comprehensive documentation of all database design decisi
 | Name | Full Meaning | Usage |
 |------|--------------|-------|
 | **MEMORIA** | Memory Enhanced Multi-modal Orchestration Reasoning Intelligence Architecture | Product name, full system |
-| **MIRA** | Memory Incremental Reasoning Architecture | Team name (Team 4), Django project configuration folder |
+| **MIRA** | Memory Incremental Reasoning Architecture | Team name (Team 4) |
 | **miramemoria** | Combined MIRA + MEMORIA | Repository/folder name |
 
 ### 1.2 Why These Names Were Chosen
@@ -37,7 +37,7 @@ This document provides comprehensive documentation of all database design decisi
 
 | Name | Type | Purpose | Naming Rationale |
 |------|------|---------|------------------|
-| `mira/` | Project config | Settings, URLs, WSGI/ASGI | Named after team; represents the project-level configuration |
+| `memoria/` | Project config | Settings, URLs, WSGI/ASGI | Named after product; contains Django project-level configuration |
 | `memoria` | App | Main app wiring, URL routing | Named after product; serves as entry point that routes to domain apps |
 | `chat` | App | Chat sessions, messages, memory | Descriptive; handles conversation and memory persistence |
 | `billing` | App | Plans, subscriptions, payments | Descriptive; handles commerce and subscription logic |
@@ -47,7 +47,7 @@ This document provides comprehensive documentation of all database design decisi
 
 | Config Class | App | Rationale |
 |--------------|-----|-----------|
-| `MiraConfig` | memoria | Bridges the memoria app to the MIRA project identity; the main app carries the team name |
+| `MemoriaConfig` | memoria | Named after product; standard Django convention matching app name |
 | `ChatConfig` | chat | Standard Django convention; clear domain identification |
 | `BillingConfig` | billing | Standard Django convention; clear domain identification |
 | `UsersConfig` | users | Standard Django convention; clear domain identification |
