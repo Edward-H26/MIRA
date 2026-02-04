@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 class Memory(models.Model):
     """
@@ -20,3 +21,6 @@ class Memory(models.Model):
 
     def __str__(self):
         return f"{self.user_id} - {self.id}"
+
+    def get_absolute_url(self):
+        return reverse("chat:memory_detail", kwargs={"memory_id": self.pk})

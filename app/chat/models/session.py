@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 # Create your models here.
 class Session(models.Model):
@@ -21,3 +22,6 @@ class Session(models.Model):
 
     def __str__(self):
         return f"{self.user_id} - {self.title or 'Untitled'}"
+
+    def get_absolute_url(self):
+        return reverse("chat:conversation_detail", kwargs={"session_id": self.pk})
