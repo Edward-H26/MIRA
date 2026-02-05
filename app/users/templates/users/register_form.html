@@ -1,0 +1,24 @@
+<form method="post" action="{% url 'users:register' %}">
+  {% csrf_token %}
+  <h2>Register</h2>
+  {% if error %}
+    <p>{{ error }}</p>
+  {% endif %}
+  <label>
+    Username
+    <input type="text" name="username" required>
+  </label>
+  <label>
+    Password
+    <input type="password" name="password1" required>
+  </label>
+  <label>
+    Confirm Password
+    <input type="password" name="password2" required>
+  </label>
+  <input type="hidden" name="next" value="/home/">
+  <div>
+    <button type="submit">Create account</button>
+    <button type="button" id="close-register">Cancel</button>
+  </div>
+</form>

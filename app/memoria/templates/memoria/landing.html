@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memoria | Landing</title>
+  </head>
+  <body>
+    <main>
+      <h1>Memoria</h1>
+      {% if user.is_authenticated %}
+        <p>You are logged in.</p>
+        <a href="{% url 'memoria:home' %}">Go to home</a>
+      {% else %}
+        <p>Welcome. Please log in or register to continue.</p>
+        <button type="button" id="open-login">Log in</button>
+        <button type="button" id="open-register">Register</button>
+      {% endif %}
+    </main>
+    {% if not user.is_authenticated %}
+      <dialog id="login-modal">
+        <div id="login-modal-content"></div>
+      </dialog>
+      <dialog id="register-modal">
+        <div id="register-modal-content"></div>
+      </dialog>
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+      <script>
+        const bindModalForm = (modal, content, closeId) => {
+          const closeBtn = document.getElementById(closeId);
+          if (closeBtn) {
+            closeBtn.addEventListener("click", () => modal.close());
+          }
+          const form = content.querySelector("form");
+          if (form) {
+            form.addEventListener("submit", async (event) => {
+              event.preventDefault();
+              const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+              });
+              if (response.ok) {
+                const payload = await response.json();
+                window.location.href = payload.redirect_url || "/home/";
+                return;
+              }
+              content.innerHTML = await response.text();
+              bindModalForm(modal, content, closeId);
+              modal.showModal();
+            });
+          }
+        };
+        const setupModal = (openId, modalId, contentId, url, closeId) => {
+          const openBtn = document.getElementById(openId);
+          const modal = document.getElementById(modalId);
+          const content = document.getElementById(contentId);
+          if (!openBtn || !modal || !content) {
+            return;
+          }
+          openBtn.addEventListener("click", async () => {
+            if (!content.dataset.loaded) {
+              const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+              });
+              content.innerHTML = await response.text();
+              bindModalForm(modal, content, closeId);
+              content.dataset.loaded = "true";
+            }
+            modal.showModal();
+          });
+        };
+
+        setupModal(
+          "open-login",
+          "login-modal",
+          "login-modal-content",
+          "{% url 'users:login' %}",
+          "close-login"
+        );
+        setupModal(
+          "open-register",
+          "register-modal",
+          "register-modal-content",
+          "{% url 'users:register' %}",
+          "close-register"
+        );
+      </script>
+    {% endif %}
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit Profile</title>
+  </head>
+  <body>
+    <main>
+      <h1>Edit Profile</h1>
+      <p><a href="{% url 'memoria:home' %}">Back to home</a></p>
+      {% if success %}
+        <p>Your profile has been updated.</p>
+      {% endif %}
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" value="{{ username }}" readonly>
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" value="{{ email }}">
+        </div>
+        <div>
+          <label for="profile_img">Profile image</label>
+          <input id="profile_img" name="profile_img" type="file" accept="image/*">
+        </div>
+        {% if profile.profile_img %}
+          <div>
+            <p>Current image:</p>
+            <img src="{{ profile.profile_img.url }}" alt="Current profile image" width="160">
+          </div>
+        {% endif %}
+        <button type="submit">Save changes</button>
+      </form>
+    </main>
+  </body>
+</html>

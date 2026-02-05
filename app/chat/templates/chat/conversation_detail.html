@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Conversation</title>
+  </head>
+  <body>
+    <main>
+      <h1>{{ session.title|default:"Untitled" }}</h1>
+      <p>Started: {{ session.created_at }}</p>
+      {% if session.messages.all %}
+        <ul>
+          {% for message in session.messages.all %}
+            <li>
+              <strong>{{ message.get_role_display }}</strong>
+              <span>{{ message.created_at }}</span>
+              <div>{{ message.content }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No messages yet.</p>
+      {% endif %}
+    </main>
+  </body>
+</html>

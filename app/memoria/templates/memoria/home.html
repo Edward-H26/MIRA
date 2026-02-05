@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memoria | Landing</title>
+  </head>
+  <body>
+    <main>
+      <h1>Memoria</h1>
+      <p>Welcome, {{ username }}.</p>
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'users:logout' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="/">
+          <button type="submit">Log out</button>
+        </form>
+        <a href="{% url 'users:profile' %}">Edit profile</a>
+        <h2>Your sessions</h2>
+        {% if sessions %}
+          <ul>
+            {% for session in sessions %}
+              <li>
+                <a href="{{ session.get_absolute_url }}">
+                  {{ session.title|default:"Untitled" }}
+                </a>
+                <span>{{ session.created_at }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No sessions yet.</p>
+        {% endif %}
+        <h2>Your memories</h2>
+        {% if memories %}
+          <ul>
+            {% for memory in memories %}
+              <li>
+                <a href="{{ memory.get_absolute_url }}">
+                  Memory {{ memory.id }}
+                </a>
+                <span>{{ memory.updated_at }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No memories yet.</p>
+        {% endif %}
+      {% endif %}
+    </main>
+  </body>
+</html>
