@@ -8,3 +8,6 @@ def chat(request):
 
 def memory(request):
     return render(request, "memory.html")
+
+def profile(request):
+    return render(request, "profile.html")
