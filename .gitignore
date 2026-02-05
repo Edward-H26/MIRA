@@ -47,3 +47,6 @@ htmlcov/
 
 # mypy
 .mypy_cache/
+
+# Node.js
+templates/node_modules/

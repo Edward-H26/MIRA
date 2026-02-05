@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Memory Management{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col p-6">
+    <!-- Search bar -->
+    <div class="mb-6">
+        <input type="text" placeholder="Search your AI LTM..."
+               class="glass-input w-full px-4 py-3 rounded-xl">
+    </div>
+
+    <!-- Filter controls -->
+    <div class="flex gap-4 mb-6">
+        <select class="glass-button px-4 py-2 rounded-xl">
+            <option>All Categories</option>
+            <option>Semantic</option>
+            <option>Episodic</option>
+            <option>Procedural</option>
+        </select>
+        <select class="glass-button px-4 py-2 rounded-xl">
+            <option>Sort by Frequency</option>
+            <option>Sort by Date</option>
+            <option>Sort by Strength</option>
+        </select>
+    </div>
+
+    <!-- Memory cards grid -->
+    <div class="flex-1 overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% block memory_cards %}
+            <!-- Memory cards will be rendered here -->
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

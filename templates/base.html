@@ -1,0 +1,157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'dist/main.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="flex items-center justify-center p-4">
+    {% block body %}
+    <div class="w-[calc(100vw-32px)] max-w-[1200px] min-h-[400px] max-h-[780px] bg-bg-surface rounded-dashboard overflow-hidden relative shadow-lg" style="box-sizing: content-box; height: clamp(400px, calc(100vh - 80px), 780px);">
+        <div class="absolute inset-0 w-full h-full opacity-70 pointer-events-none gradient-background"></div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div
+            id="sidebar-overlay"
+            class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm hidden lg:hidden"
+            onclick="closeSidebar()"
+        ></div>
+
+        <!-- Sidebar -->
+        <div
+            id="sidebar"
+            class="absolute z-50 overflow-hidden"
+            data-collapsed="false"
+        >
+            <div
+                class="absolute inset-0 frosted-glass"
+                style="background-image: url('{% static 'assets/sidebar-bg.svg' %}'); background-size: cover; background-position: center;"
+            ></div>
+
+            <div class="relative z-10 flex flex-col h-full">
+                <!-- Sidebar Header -->
+                <div class="sidebar-header flex items-center justify-between py-3 px-3">
+                    <div id="sidebar-logo" class="w-10 h-10 rounded-full bg-bg-dark flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img src="{% static 'assets/logo.svg' %}" alt="Logo" class="h-5 w-auto" />
+                    </div>
+                    <div class="header-buttons flex items-center gap-1">
+                        <button
+                            id="collapse-btn"
+                            onclick="toggleSidebarCollapse()"
+                            class="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-black/5 transition-colors flex-shrink-0"
+                            title="Collapse sidebar"
+                        >
+                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
+                                <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
+                                <path id="collapse-arrow" d="M10 8L13 5.5V10.5L10 8Z" fill="#727272"/>
+                                <path id="expand-arrow" d="M13 8L10 5.5V10.5L13 8Z" fill="#727272" class="hidden"/>
+                            </svg>
+                        </button>
+                        <button
+                            id="close-sidebar-btn"
+                            onclick="closeSidebar()"
+                            class="flex lg:hidden w-8 h-8 items-center justify-center rounded-lg hover:bg-black/5 transition-colors flex-shrink-0"
+                        >
+                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
+                                <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
+                                <path d="M10 8L13 5.5V10.5L10 8Z" fill="#727272"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Menu Items -->
+                <div class="sidebar-menu flex flex-col gap-3 px-4 pt-2">
+                    <button
+                        id="expand-btn-collapsed"
+                        onclick="toggleSidebarCollapse()"
+                        class="hidden items-center justify-center rounded-lg hover:bg-black/5 transition-colors"
+                        title="Expand sidebar"
+                    >
+                        <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
+                            <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
+                            <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
+                        </svg>
+                    </button>
+                    <a href="{% url 'memoria:memory' %}" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
+                        <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <img src="{% static 'assets/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />
+                        </div>
+                        <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Memory manage</span>
+                    </a>
+                    <div onclick="createNewChat()" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
+                        <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <img src="{% static 'assets/icon-edit.svg' %}" alt="" class="w-4 h-4 object-contain" />
+                        </div>
+                        <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">New chat</span>
+                    </div>
+                </div>
+
+                <!-- Conversation List -->
+                <div class="sidebar-content flex-1 overflow-y-auto px-4 py-3">
+                    <span class="sidebar-section-label font-inter font-medium text-sm leading-5 text-text-secondary block mb-4">
+                        Your projects
+                    </span>
+                    <div id="conversations-list" class="flex flex-col gap-1">
+                        {% block conversations %}
+                        {% endblock %}
+                    </div>
+
+                    {% block sidebar_content %}{% endblock %}
+                </div>
+
+            </div>
+        </div>
+
+        <!-- NavBar -->
+        <nav class="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-3 z-20">
+            <div class="flex items-center">
+                <button
+                    id="mobile-menu-btn"
+                    onclick="openSidebar()"
+                    class="flex lg:hidden w-10 h-10 items-center justify-center rounded-lg hover:bg-black/5 transition-colors"
+                >
+                    <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
+                        <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
+                        <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button class="bg-bg-dark text-text-light font-inter font-medium text-xs leading-5 tracking-[-0.14px] px-5 py-2.5 rounded-button">
+                    Account Setting
+                </button>
+
+                <div class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden">
+                    <img src="{% static 'assets/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div id="main-content" class="absolute top-16 right-0 bottom-0 flex flex-col" style="left: 244px;">
+            {% block content %}
+            <div id="chat-root" class="flex-1 min-h-0"></div>
+            {% endblock %}
+        </div>
+    </div>
+    {% endblock %}
+
+    <script type="module" src="{% static 'dist/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

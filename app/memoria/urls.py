@@ -3,5 +3,7 @@ from . import views
 
 app_name = "memoria"
 urlpatterns = [
-    path('', views.home, name='home'),
+    path("", views.home, name="home"),
+    path("chat/", views.chat, name="chat"),
+    path("memory/", views.memory, name="memory"),
 ]

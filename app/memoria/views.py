@@ -1,6 +1,10 @@
-from django.http import HttpResponse
 from django.shortcuts import render
 
-# Create your views here.
 def home(request):
-   return HttpResponse("Hello from the memoria app!")
+    return render(request, "chat.html")
+
+def chat(request):
+    return render(request, "chat.html")
+
+def memory(request):
+    return render(request, "memory.html")
