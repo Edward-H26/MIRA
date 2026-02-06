@@ -1,6 +1,11 @@
 /** @type {import("tailwindcss").Config} */
 export default {
-  content: ["./*.html", "./src/**/*.{js,jsx}"],
+  // scan all HTML inside this templates package plus any JS used for UI
+  content: [
+    "./*.html",
+    "./**/*.html",          // covers ./frontend/**/*.html and ./memoria/**/*.html
+    "./src/**/*.{js,jsx}",
+  ],
   theme: {
     extend: {
       colors: {

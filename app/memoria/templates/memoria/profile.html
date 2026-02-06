@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Account Settings{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  .font-instrument { font-family: "Instrument Sans", "Inter", sans-serif; }
+  .profile-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 42px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: transparent;
+  }
+  .profile-shell::before,
+  .profile-shell::after {
+    z-index: 0;
+  }
+  .profile-content {
+    position: relative;
+    padding: 28px 32px 64px;
+    max-width: 960px;
+    z-index: 1;
+  }
+  .section-card {
+    background: rgba(253, 253, 253, 0.6);
+    border-radius: 16px;
+    box-shadow: 0 4px 4px rgba(199, 199, 199, 0.25);
+    padding: 24px;
+  }
+  .section-card + .section-card { margin-top: 24px; }
+  .two-col { display: flex; flex-wrap: wrap; gap: 24px; }
+  .two-col .field { flex: 1 1 320px; max-width: 420px; }
+  .label {
+    font: 500 14px/20px "Inter", sans-serif;
+    color: #282828;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .input-ghost {
+    height: 48px; border-radius: 16px;
+    border: 1px solid #a8a8a8; background: rgba(226, 226, 226, 0.5);
+  }
+  .input-ghost.light { background: #f1f1f1; }
+  .input-outline {
+    height: 48px; border-radius: 16px; border: 1px solid #727272;
+    padding: 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .btn-pill {
+    background: #282828; color: #fdfdfd; border-radius: 90px;
+    padding: 12px 28px; font: 500 14px/20px "Inter", sans-serif; width: max-content; white-space: nowrap;
+  }
+  .hero {
+    position: relative; overflow: hidden; border-radius: 16px; padding: 28px; min-height: 160px;
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0;
+    background: url("{% static 'assets/herobackground.png' %}") center/cover no-repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .stat-card { background: #ffffff; border-radius: 16px; padding: 20px 17px; }
+  .stat-title { font: 500 14px/20px "Inter", sans-serif; color: #000; }
+  .stat-value { font: 500 36px/44px "Roboto", sans-serif; color: #000; margin-top: 4px; }
+  .progress-track { height: 6px; background: #d9d9d9; border-radius: 8px; margin-top: 12px; }
+  .progress-bar { height: 6px; background: #4d58f0; border-radius: 8px; }
+  @media (max-width: 768px) { .profile-content { padding: 24px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-shell">
+  <div class="profile-content">
+    <h1 class="font-instrument text-[44px] leading-[48px] tracking-[-0.66px] text-[#1b1b1b] mb-8">Account settings</h1>
+
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-20 h-20">
+        <svg xmlns="http://www.w3.org/2000/svg" width="78" height="78" viewBox="0 0 78 78" fill="none" class="block">
+          <circle cx="39" cy="39" r="39" fill="#282828"/>
+          <g transform="translate(27 27)">
+            <path d="M5.75 6.75H5.89445C6.89751 6.75 7.8342 6.2487 8.3906 5.4141L8.6094 5.0859C9.1658 4.2513 10.1025 3.75 11.1056 3.75H12.8944C13.8975 3.75 14.8342 4.2513 15.3906 5.0859L15.6094 5.4141C16.1658 6.2487 17.1025 6.75 18.1056 6.75H18.25C19.9069 6.75 21.25 8.09315 21.25 9.75V17.25C21.25 18.9069 19.9069 20.25 18.25 20.25H5.75C4.09315 20.25 2.75 18.9069 2.75 17.25L2.75 9.75C2.75 8.09315 4.09315 6.75 5.75 6.75Z" stroke="#FDFDFD" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="round"/>
+            <path d="M15.25 13C15.25 14.7949 13.7949 16.25 12 16.25C10.2051 16.25 8.75 14.7949 8.75 13C8.75 11.2051 10.2051 9.75 12 9.75C13.7949 9.75 15.25 11.2051 15.25 13Z" stroke="#FDFDFD" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+      <p class="text-[13px] leading-[16px] text-[#727272]">Update your avatar by clicking the image</p>
+    </div>
+
+    <section class="section-card">
+      <h2 class="font-instrument text-[28px] leading-[34px] text-[#1b1b1b]">Account Information</h2>
+      <div class="mt-5 two-col">
+        <div class="field">
+          <label class="label">User name</label>
+          <div class="input-ghost"></div>
+        </div>
+        <div class="field">
+          <label class="label">Email</label>
+          <div class="input-ghost light"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2 class="font-instrument text-[28px] leading-[34px] text-[#1b1b1b]">Security</h2>
+      <div class="mt-5 space-y-6">
+        <div class="two-col" style="align-items: flex-end;">
+          <div class="field">
+            <label class="label">Password</label>
+            <div class="input-outline">
+              <span class="text-[#a3a3a3] tracking-[0.35em] text-sm select-none">••••••••••••</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#727272]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z"/>
+                <circle cx="12" cy="12" r="2.75"/>
+              </svg>
+            </div>
+          </div>
+          <button class="btn-pill">Change your password</button>
+        </div>
+        <div class="two-col" style="align-items: flex-end;">
+          <div class="field">
+            <label class="label">Email</label>
+            <div class="input-outline"></div>
+          </div>
+          <button class="btn-pill">Change your Email adress</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <h2 class="font-instrument text-[28px] leading-[34px] text-[#1b1b1b]">Subscription Overview</h2>
+
+      <div class="hero mt-6">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div>
+            <h3 class="font-instrument text-[44px] leading-[48px] text-[#1b1b1b]">Active your Pro plan!</h3>
+            <p class="mt-2 text-[14px] leading-[20px] text-[#000] max-w-[413px]">
+              Unlimited generations, priority GPU access, and early access to our future premium model.
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="font-instrument text-[44px] leading-[48px] text-[#000]">Only $5<span class="text-[14px] leading-[20px] font-medium">/month</span></p>
+            <button class="btn-pill mt-4">Manage subscription</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid mt-6">
+        <div class="stat-card">
+          <p class="stat-title">Token used</p>
+          <p class="stat-value">0.6M/1M</p>
+          <div class="progress-track"><div class="progress-bar" style="width: 66%;"></div></div>
+        </div>
+        <div class="stat-card">
+          <p class="stat-title">Memory generated</p>
+          <p class="stat-value">133/150</p>
+          <div class="progress-track"><div class="progress-bar" style="width: 85%;"></div></div>
+        </div>
+        <div class="stat-card">
+          <p class="stat-title">Image generated</p>
+          <p class="stat-value">30/150</p>
+          <div class="progress-track"><div class="progress-bar" style="width: 22%;"></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

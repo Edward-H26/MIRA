@@ -3,7 +3,6 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template import loader
 
-# Create your views here.
 def home(request):
     template = loader.get_template("memoria/home.html")
     username = request.user.username if request.user.is_authenticated else "Guest"
@@ -27,10 +26,10 @@ def not_found_view(request, exception):
     return redirect("memoria:home")
 
 def chat(request):
-    return render(request, "chat.html")
+    return render(request, "memoria/chat.html")
 
 def memory(request):
-    return render(request, "memory.html")
+    return render(request, "memoria/memory.html")
 
 def profile(request):
-    return render(request, "profile.html")
+    return render(request, "memoria/profile.html")
