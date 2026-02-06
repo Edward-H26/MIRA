@@ -1,5 +1,6 @@
-<!doctype html>
-<html lang="en">
+{% extends "base.html" %}
+
+{% block content %}
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +10,6 @@
     <main>
       <h1>Memory {{ memory.id }}</h1>
       <p>Updated: {{ memory.updated_at }}</p>
-      {% if memory.memorybullet_set.all %}
         <ul>
           {% for bullet in memory.memorybullet_set.all %}
             <li>
@@ -18,11 +18,10 @@
               <div>{{ bullet.content }}</div>
               <div>Topic: {{ bullet.topic }}</div>
             </li>
+          {% empty %}
+              <p>No bullets yet.</p>
           {% endfor %}
         </ul>
-      {% else %}
-        <p>No bullets yet.</p>
-      {% endif %}
     </main>
   </body>
-</html>
+{% endblock %}

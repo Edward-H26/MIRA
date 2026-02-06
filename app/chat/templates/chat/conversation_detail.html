@@ -1,5 +1,6 @@
-<!doctype html>
-<html lang="en">
+{% extends "base.html" %}
+
+{% block content %}
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +10,6 @@
     <main>
       <h1>{{ session.title|default:"Untitled" }}</h1>
       <p>Started: {{ session.created_at }}</p>
-      {% if session.messages.all %}
         <ul>
           {% for message in session.messages.all %}
             <li>
@@ -17,11 +17,10 @@
               <span>{{ message.created_at }}</span>
               <div>{{ message.content }}</div>
             </li>
+          {% empty %}
+              <p>No messages yet.</p>
           {% endfor %}
         </ul>
-      {% else %}
-        <p>No messages yet.</p>
-      {% endif %}
     </main>
   </body>
-</html>
+{% endblock %}

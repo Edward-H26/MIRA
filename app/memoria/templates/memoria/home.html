@@ -1,52 +1,75 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Memoria | Landing</title>
-  </head>
-  <body>
-    <main>
-      <h1>Memoria</h1>
-      <p>Welcome, {{ username }}.</p>
-      {% if user.is_authenticated %}
-        <form method="post" action="{% url 'users:logout' %}">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="/">
-          <button type="submit">Log out</button>
-        </form>
-        <a href="{% url 'users:profile' %}">Edit profile</a>
-        <h2>Your sessions</h2>
-        {% if sessions %}
-          <ul>
-            {% for session in sessions %}
-              <li>
-                <a href="{{ session.get_absolute_url }}">
-                  {{ session.title|default:"Untitled" }}
-                </a>
-                <span>{{ session.created_at }}</span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p>No sessions yet.</p>
-        {% endif %}
-        <h2>Your memories</h2>
-        {% if memories %}
-          <ul>
-            {% for memory in memories %}
-              <li>
-                <a href="{{ memory.get_absolute_url }}">
-                  Memory {{ memory.id }}
-                </a>
-                <span>{{ memory.updated_at }}</span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p>No memories yet.</p>
-        {% endif %}
-      {% endif %}
-    </main>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 space-y-6 text-[#1b1b1b]">
+  <header class="space-y-2">
+    <h1 class="text-3xl font-semibold tracking-tight">Memoria</h1>
+    <p class="text-text-secondary">Welcome, {{ username }}.</p>
+  </header>
+
+  {% if user.is_authenticated %}
+    <div class="flex flex-wrap items-center gap-3">
+      <form method="post" action="{% url 'users:logout' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/">
+        <button type="submit" class="bg-bg-dark text-text-light px-5 py-2.5 rounded-button text-sm font-medium">
+          Log out
+        </button>
+      </form>
+      <a href="{% url 'users:profile' %}"
+         class="px-5 py-2.5 rounded-button bg-white shadow-sm border border-black/5 text-sm font-medium text-[#1b1b1b] hover:bg-black/5">
+        Edit profile
+      </a>
+    </div>
+
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Your sessions</h2>
+        <a href="{% url 'memoria:chat' %}" class="text-sm font-medium text-bg-dark hover:underline">New chat</a>
+      </div>
+      <ul class="space-y-2">
+        {% for session in sessions %}
+          <li class="flex items-center justify-between rounded-lg border border-black/5 bg-white/80 px-4 py-3 shadow-sm">
+            <div class="space-y-1">
+              <a href="{{ session.get_absolute_url }}" class="font-medium hover:underline">
+                {{ session.title|default:"Untitled" }}
+              </a>
+              <div class="text-xs text-text-secondary">{{ session.created_at }}</div>
+            </div>
+            <span class="text-xs text-text-secondary">Session</span>
+          </li>
+        {% empty %}
+          <li class="rounded-lg border border-dashed border-black/10 bg-white/60 px-4 py-3 text-sm text-text-secondary">
+            No sessions yet.
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="text-xl font-semibold">Your memories</h2>
+      <ul class="space-y-2">
+        {% for memory in memories %}
+          <li class="flex items-center justify-between rounded-lg border border-black/5 bg-white/80 px-4 py-3 shadow-sm">
+            <div class="space-y-1">
+              <a href="{{ memory.get_absolute_url }}" class="font-medium hover:underline">
+                Memory {{ memory.id }}
+              </a>
+              <div class="text-xs text-text-secondary">{{ memory.updated_at }}</div>
+            </div>
+            <span class="text-xs text-text-secondary">Memory</span>
+          </li>
+        {% empty %}
+          <li class="rounded-lg border border-dashed border-black/10 bg-white/60 px-4 py-3 text-sm text-text-secondary">
+            No memories yet.
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% else %}
+    <div class="rounded-lg border border-dashed border-black/10 bg-white/70 px-5 py-4 text-sm text-text-secondary">
+      Please sign in to see your sessions and memories.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
