@@ -1,4 +1,5 @@
 {% load static %}
+{% load chat_extras %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,9 +15,9 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body class="flex items-center justify-center p-4">
+<body class="min-h-screen">
     {% block body %}
-    <div class="w-[calc(100vw-32px)] max-w-[1200px] min-h-[400px] max-h-[780px] bg-bg-surface rounded-dashboard overflow-hidden relative shadow-lg" style="box-sizing: content-box; height: clamp(400px, calc(100vh - 80px), 780px);">
+    <div class="bg-bg-surface rounded-none overflow-hidden relative shadow-none" style="width: 100vw; height: 100vh;">
         <div class="absolute inset-0 w-full h-full opacity-70 pointer-events-none gradient-background"></div>
 
         <!-- Mobile Sidebar Overlay -->
@@ -102,10 +103,24 @@
                 <!-- Conversation List -->
                 <div class="sidebar-content flex-1 overflow-y-auto px-4 py-3">
                     <span class="sidebar-section-label font-inter font-medium text-sm leading-5 text-text-secondary block mb-4">
-                        Your projects
+                        Your Conversations
                     </span>
-                    <div id="conversations-list" class="flex flex-col gap-1">
+                    <div id="conversations-list" class="flex flex-col gap-3">
                         {% block conversations %}
+                        {% if user.is_authenticated %}
+                          {% for session in sessions %}
+                            <div class="conversation-item group relative" data-id="{{ session.id }}" data-selected="false">
+                              <a href="{{ session.get_absolute_url }}" class="conversation-content flex flex-col gap-0.5 rounded-lg px-3 py-2 transition-colors hover:bg-black/5">
+                                <span class="conversation-title font-inter font-medium text-sm leading-5 text-text-secondary truncate block">{{ session.title|default:"Untitled" }}</span>
+                                <span class="conversation-time font-inter text-xs text-text-secondary/60">{{ session.updated_at|relative_time }}</span>
+                              </a>
+                            </div>
+                          {% empty %}
+                            <div class="conversation-empty">No conversation history</div>
+                          {% endfor %}
+                        {% else %}
+                          <div class="conversation-empty">No conversation history</div>
+                        {% endif %}
                         {% endblock %}
                     </div>
 
@@ -203,7 +218,7 @@
     </div>
     {% endblock %}
 
-    <script type="module" src="{% static 'js/main.js' %}"></script>
+    <script type="module" src="{% static 'js/main.js' %}?v={% now 'U' %}"></script>
     {% block extra_js %}{% endblock %}
     <script>
         document.addEventListener("DOMContentLoaded", () => {

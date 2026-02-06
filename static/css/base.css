@@ -121,8 +121,8 @@ textarea {
 }
 .profile-content {
     position: relative;
-    padding: 18px 28px 48px;
-    max-width: 980px;
+    padding: 14px 20px 40px;
+    max-width: none;
     margin: 0 auto;
     z-index: 1;
     color: #f5f5f5;
@@ -203,6 +203,9 @@ textarea {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
     margin-bottom: 16px;
+}
+.profile-field-narrow {
+    max-width: 220px;
 }
 .profile-label {
     display: block;
@@ -544,6 +547,31 @@ textarea {
 
 #avatar-menu form.menu-item-form {
     margin: 0;
+}
+.conversation-bar {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    border-radius: 10px;
+    background: transparent;
+    padding: 0 12px;
+    color: #6f6f6f;
+    font-size: 12px;
+    text-decoration: none;
+    overflow: hidden;
+}
+.conversation-item[data-selected="true"] .conversation-bar {
+    background: rgba(0, 0, 0, 0.12);
+}
+.conversation-bar .conversation-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.conversation-empty {
+    font-size: 12px;
+    color: #9a9a9a;
+    padding: 2px 6px;
 }
 
 .home-start {
