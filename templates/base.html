@@ -86,13 +86,13 @@
                             <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
                         </svg>
                     </button>
-                    <a href="{% url 'chat:memory' %}" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
+                    <a href="{% url 'chat:memory' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="memory">
                         <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
                             <img src="{% static 'images/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />
                         </div>
                         <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Memory manage</span>
                     </a>
-                    <div onclick="createNewChat()" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
+                    <div onclick="createNewChat()" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="new-chat">
                         <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
                             <img src="{% static 'images/icon-edit.svg' %}" alt="" class="w-4 h-4 object-contain" />
                         </div>

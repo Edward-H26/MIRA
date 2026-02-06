@@ -110,237 +110,6 @@ textarea {
     border-radius: 4px;
 }
 
-.profile-shell {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border-radius: 28px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: transparent;
-}
-.profile-content {
-    position: relative;
-    padding: 14px 20px 40px;
-    max-width: none;
-    margin: 0 auto;
-    z-index: 1;
-    color: #f5f5f5;
-}
-.profile-hero-title {
-    font-size: 28px;
-    line-height: 34px;
-    font-weight: 600;
-    margin: 0 0 14px;
-    color: #1b1b1b;
-}
-.profile-avatar-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-.profile-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    overflow: hidden;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.profile-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.profile-avatar-fallback {
-    display: block;
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    background: #bdbdbd;
-}
-.profile-avatar-text {
-    font-size: 12px;
-    line-height: 16px;
-    color: #bdbdbd;
-    margin: 0;
-}
-.profile-file-input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-.profile-success {
-    margin: 0 0 10px;
-    font-size: 12px;
-    color: #6d6d6d;
-}
-.profile-card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-    margin-bottom: 16px;
-    color: #1b1b1b;
-}
-.profile-card-title {
-    font-size: 16px;
-    line-height: 20px;
-    font-weight: 600;
-    margin: 0 0 12px;
-}
-.profile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 16px;
-}
-.profile-field-narrow {
-    max-width: 220px;
-}
-.profile-label {
-    display: block;
-    font-size: 11px;
-    line-height: 14px;
-    color: #6d6d6d;
-    margin-bottom: 6px;
-}
-.profile-input {
-    width: 100%;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 8px;
-    border: 1px solid #dcdcdc;
-    background: #f2f2f2;
-    font-size: 12px;
-    color: #1b1b1b;
-}
-.profile-input-disabled {
-    cursor: default;
-    pointer-events: none;
-    color: #6d6d6d;
-    background: #f2f2f2;
-}
-.profile-primary-button {
-    background: #2a2a2a;
-    color: #f7f7f7;
-    border: 0;
-    border-radius: 18px;
-    padding: 8px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.profile-secondary-button {
-    background: #2a2a2a;
-    color: #f7f7f7;
-    border: 0;
-    border-radius: 18px;
-    padding: 8px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
-.profile-security {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-.profile-security-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-.profile-email-field {
-    flex: 1;
-    min-width: 220px;
-}
-.profile-email-input-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: nowrap;
-}
-.profile-email-input-row .profile-input {
-    width: 220px;
-    max-width: 100%;
-}
-.profile-inline-success {
-    font-size: 12px;
-    color: #6d6d6d;
-}
-.security-action {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.profile-modal {
-    border: none;
-    border-radius: 28px;
-    padding: 0;
-    max-width: 520px;
-    width: min(92vw, 520px);
-    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
-    position: fixed;
-    inset: 0;
-    margin: auto;
-    background: #f6f4f2;
-}
-.profile-modal::backdrop {
-    background: rgba(15, 23, 42, 0.4);
-}
-.profile-modal__content {
-    padding: 36px 36px 32px;
-}
-.profile-password-field {
-    height: 32px;
-    border-radius: 8px;
-    border: 1px solid #dcdcdc;
-    background: #f2f2f2;
-    padding: 0 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-width: 220px;
-}
-.profile-password-text {
-    color: #7b7b7b;
-    font-size: 12px;
-    letter-spacing: 3px;
-}
-.profile-password-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 10px;
-}
-.profile-error {
-    margin: 6px 0 0;
-    font-size: 12px;
-    color: #b3261e;
-}
-.profile-eye-icon {
-    width: 14px;
-    height: 14px;
-    color: #9a9a9a;
-}
-@media (max-width: 768px) {
-    .profile-content { padding: 24px; }
-}
-
 .thinking-dots {
     display: flex;
     align-items: center;
@@ -369,7 +138,7 @@ textarea {
     top: 12px;
     left: 12px;
     height: calc(100% - 24px);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    box-shadow: none;
 }
 
 #sidebar .frosted-glass {
@@ -382,7 +151,8 @@ textarea {
 }
 
 #sidebar .sidebar-content {
-    overflow: hidden;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 #sidebar[data-collapsed="true"] .sidebar-content {
@@ -436,6 +206,32 @@ textarea {
     display: none;
 }
 
+.sidebar-nav-item {
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-nav-item.is-active {
+    background: rgba(95, 115, 159, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(95, 115, 159, 0.12);
+}
+
+.sidebar-nav-item.is-active .sidebar-menu-label {
+    color: #4b5563;
+}
+
+.conversation-item[data-selected="true"] .conversation-content {
+    background: rgba(95, 115, 159, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(95, 115, 159, 0.12);
+}
+
+.conversation-item[data-selected="true"] .conversation-title {
+    color: #4b5563;
+}
+
 @media (max-width: 1023px) {
     #sidebar {
         position: fixed;
@@ -454,7 +250,7 @@ textarea {
     #sidebar.sidebar-open,
     #sidebar.sidebar-open[data-collapsed="true"] {
         transform: translateX(0);
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+        box-shadow: none;
         width: var(--sidebar-width);
         height: 100%;
     }

@@ -7,5 +7,5 @@ def user_sessions(request):
     Profile = apps.get_model("users", "User")
     Session = apps.get_model("chat", "Session")
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    sessions = Session.objects.filter(user=profile).order_by("-created_at")
+    sessions = Session.objects.filter(user=profile).order_by("-updated_at")
     return {"sessions": sessions}
