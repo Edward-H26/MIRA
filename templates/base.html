@@ -40,9 +40,9 @@
             <div class="relative z-10 flex flex-col h-full">
                 <!-- Sidebar Header -->
                 <div class="sidebar-header flex items-center justify-between py-3 px-3">
-                    <div id="sidebar-logo" class="w-10 h-10 rounded-full bg-bg-dark flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <a href="{% url 'memoria:home' %}" id="sidebar-logo" class="w-10 h-10 rounded-full bg-bg-dark flex items-center justify-center flex-shrink-0 overflow-hidden">
                         <img src="{% static 'images/logo.svg' %}" alt="Logo" class="h-5 w-auto" />
-                    </div>
+                    </a>
                     <div class="header-buttons flex items-center gap-1">
                         <button
                             id="collapse-btn"
@@ -132,13 +132,65 @@
             </div>
 
             <div class="flex items-center gap-4">
-                <button class="bg-bg-dark text-text-light font-inter font-medium text-xs leading-5 tracking-[-0.14px] px-5 py-2.5 rounded-button">
-                    Account Setting
-                </button>
-
-                <a href="{% url 'users:profile' %}" class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden">
-                    <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
-                </a>
+                <div class="relative">
+                    <button
+                        id="avatar-menu-trigger"
+                        type="button"
+                        class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                    >
+                        {% if user.is_authenticated and user.profile.profile_img %}
+                            <img src="{{ user.profile.profile_img.url }}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
+                        {% else %}
+                            <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
+                        {% endif %}
+                    </button>
+                    <div
+                        id="avatar-menu"
+                        class="hidden absolute right-0 mt-2 w-44 rounded-xl border border-black/10 bg-white shadow-lg"
+                        role="menu"
+                    >
+                        <div class="menu-header">
+                        <div class="menu-header-avatar">
+                            {% if user.is_authenticated and user.profile.profile_img %}
+                                <img src="{{ user.profile.profile_img.url }}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" />
+                            {% else %}
+                                <img src="{% static 'images/avatar.png' %}" alt="Avatar" />
+                            {% endif %}
+                        </div>
+                            <div class="menu-header-name">
+                                {{ user.username|default:"User" }}
+                            </div>
+                        </div>
+                        <div class="py-1">
+                            <a
+                                href="{% url 'users:profile' %}"
+                                class="menu-item menu-item-action menu-item-top"
+                                role="menuitem"
+                            >
+                                Settings
+                            </a>
+                            <div
+                                class="menu-item menu-item-disabled"
+                                role="menuitem"
+                                aria-disabled="true"
+                            >
+                                Billing
+                            </div>
+                            <form method="post" action="{% url 'users:logout' %}" class="menu-item-form">
+                              {% csrf_token %}
+                              <button
+                                type="submit"
+                                class="menu-item menu-item-action menu-item-bottom"
+                                role="menuitem"
+                              >
+                                Logout
+                              </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -153,5 +205,32 @@
 
     <script type="module" src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const trigger = document.getElementById("avatar-menu-trigger");
+            const menu = document.getElementById("avatar-menu");
+            if (!trigger || !menu) return;
+
+            const closeMenu = () => {
+                menu.classList.add("hidden");
+                trigger.setAttribute("aria-expanded", "false");
+            };
+
+            trigger.addEventListener("click", (event) => {
+                event.stopPropagation();
+                const isHidden = menu.classList.contains("hidden");
+                document.querySelectorAll("#avatar-menu").forEach((item) => item.classList.add("hidden"));
+                menu.classList.toggle("hidden", !isHidden);
+                trigger.setAttribute("aria-expanded", isHidden ? "true" : "false");
+            });
+
+            document.addEventListener("click", closeMenu);
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    closeMenu();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

@@ -8,9 +8,9 @@
     <h1 class="font-instrument text-[44px] leading-[48px] tracking-[-0.66px] text-[#1b1b1b] mb-8">Account settings</h1>
 
     <div class="flex items-center gap-4 mb-8">
-      <div class="w-20 h-20 rounded-full overflow-hidden bg-bg-dark flex items-center justify-center">
+      <div class="w-20 h-20 rounded-full overflow-hidden bg-white flex items-center justify-center">
         {% if profile.profile_img %}
-          <img src="{{ profile.profile_img.url }}" alt="Profile avatar" class="w-full h-full object-cover">
+          <img src="{{ profile.profile_img.url }}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar" class="w-full h-full object-cover">
         {% else %}
           <svg xmlns="http://www.w3.org/2000/svg" width="78" height="78" viewBox="0 0 78 78" fill="none" class="block">
             <circle cx="39" cy="39" r="39" fill="#282828"/>
