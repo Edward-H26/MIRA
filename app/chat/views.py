@@ -11,6 +11,14 @@ from django.db.models import Prefetch
 from .models import Memory, Message, Session
 
 
+def chat_view(request):
+    return render(request, "chat/chat.html")
+
+
+def memory_view(request):
+    return render(request, "chat/memory.html")
+
+
 @method_decorator(login_required(login_url="/"), name="dispatch")
 class ConversationMessagesView(View):
     def get(self, request, session_id):

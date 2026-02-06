@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'dist/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -33,14 +34,14 @@
         >
             <div
                 class="absolute inset-0 frosted-glass"
-                style="background-image: url('{% static 'assets/sidebar-bg.svg' %}'); background-size: cover; background-position: center;"
+                style="background-image: url('{% static 'images/sidebar-bg.svg' %}'); background-size: cover; background-position: center;"
             ></div>
 
             <div class="relative z-10 flex flex-col h-full">
                 <!-- Sidebar Header -->
                 <div class="sidebar-header flex items-center justify-between py-3 px-3">
                     <div id="sidebar-logo" class="w-10 h-10 rounded-full bg-bg-dark flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img src="{% static 'assets/logo.svg' %}" alt="Logo" class="h-5 w-auto" />
+                        <img src="{% static 'images/logo.svg' %}" alt="Logo" class="h-5 w-auto" />
                     </div>
                     <div class="header-buttons flex items-center gap-1">
                         <button
@@ -84,15 +85,15 @@
                             <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
                         </svg>
                     </button>
-                    <a href="{% url 'memoria:memory' %}" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
+                    <a href="{% url 'chat:memory' %}" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
                         <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <img src="{% static 'assets/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />
+                            <img src="{% static 'images/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />
                         </div>
                         <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Memory manage</span>
                     </a>
                     <div onclick="createNewChat()" class="flex items-center gap-3 cursor-pointer hover:bg-black/5 rounded-lg py-2 px-2 transition-colors">
                         <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <img src="{% static 'assets/icon-edit.svg' %}" alt="" class="w-4 h-4 object-contain" />
+                            <img src="{% static 'images/icon-edit.svg' %}" alt="" class="w-4 h-4 object-contain" />
                         </div>
                         <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">New chat</span>
                     </div>
@@ -135,8 +136,8 @@
                     Account Setting
                 </button>
 
-                <a href="{% url 'memoria:profile' %}" class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden">
-                    <img src="{% static 'assets/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
+                <a href="{% url 'users:profile' %}" class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden">
+                    <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
                 </a>
             </div>
         </nav>
@@ -150,7 +151,7 @@
     </div>
     {% endblock %}
 
-    <script type="module" src="{% static 'dist/main.js' %}"></script>
+    <script type="module" src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

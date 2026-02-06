@@ -8,13 +8,13 @@ export default defineConfig({
     open: true
   },
   build: {
-    outDir: "static/dist",
-    emptyOutDir: true,
+    outDir: "../static",
+    emptyOutDir: false,
     rollupOptions: {
-      input: "src/main.js",
+      input: "./src/main.js",
       output: {
-        entryFileNames: "main.js",
-        assetFileNames: "[name][extname]"
+        entryFileNames: "js/main.js",
+        assetFileNames: "css/[name][extname]"
       }
     }
   }

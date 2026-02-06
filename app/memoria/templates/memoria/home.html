@@ -25,7 +25,7 @@
     <section class="space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Your sessions</h2>
-        <a href="{% url 'memoria:chat' %}" class="text-sm font-medium text-bg-dark hover:underline">New chat</a>
+        <a href="{% url 'chat:chat' %}" class="text-sm font-medium text-bg-dark hover:underline">New chat</a>
       </div>
       <ul class="space-y-2">
         {% for session in sessions %}

@@ -1,6 +1,6 @@
 from django.apps import apps
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.template import loader
 
 def home(request):
@@ -24,12 +24,3 @@ def landing(request):
 
 def not_found_view(request, exception):
     return redirect("memoria:home")
-
-def chat(request):
-    return render(request, "memoria/chat.html")
-
-def memory(request):
-    return render(request, "memoria/memory.html")
-
-def profile(request):
-    return render(request, "memoria/profile.html")

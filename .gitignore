@@ -49,4 +49,4 @@ htmlcov/
 .mypy_cache/
 
 # Node.js
-app/memoria/templates/node_modules/
+node_modules/

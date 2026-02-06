@@ -1,6 +1,35 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Inter", sans-serif;
+    background-color: #e8e8e8;
+    min-height: 100vh;
+}
+
+img,
+svg,
+video,
+canvas {
+    display: block;
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
 
 :root {
     --app-bg: #f1f1f1;
@@ -11,18 +40,6 @@
     --radius: 24px;
     --sidebar-width: 220px;
     --sidebar-collapsed-width: 56px;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: "Inter", sans-serif;
-    background-color: #e8e8e8;
-    min-height: 100vh;
 }
 
 .gradient-background {
@@ -93,7 +110,6 @@ body {
     border-radius: 4px;
 }
 
-/* Profile page styles (kept in CSS instead of inline) */
 .profile-shell {
     position: relative;
     width: 100%;
@@ -107,7 +123,7 @@ body {
     content: "";
     position: absolute;
     inset: -40px;
-    background: url("/static/assets/d054096622fb3f8afb7b952747232d0774db1dda.png") center/cover no-repeat;
+    background: url("/static/images/herobackground.png") center/cover no-repeat;
     opacity: 0.7;
     pointer-events: none;
     z-index: 0;
@@ -160,7 +176,7 @@ body {
 }
 .hero::before {
     content: ""; position: absolute; inset: 0;
-    background: url("/static/assets/herobackground.png") center/cover no-repeat;
+    background: url("/static/images/herobackground.png") center/cover no-repeat;
     pointer-events: none;
     z-index: 0;
 }

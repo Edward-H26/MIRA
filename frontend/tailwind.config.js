@@ -1,10 +1,9 @@
 /** @type {import("tailwindcss").Config} */
 export default {
-  // scan all HTML inside this templates package plus any JS used for UI
   content: [
-    "./*.html",
-    "./**/*.html",          // covers ./frontend/**/*.html and ./memoria/**/*.html
-    "./src/**/*.{js,jsx}",
+    "../templates/**/*.html",
+    "../app/**/templates/**/*.html",
+    "./src/**/*.{js,jsx}"
   ],
   theme: {
     extend: {
