@@ -585,6 +585,13 @@ textarea {
     color: #1b1b1b;
     padding: 24px;
 }
+.home-start form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
 .home-start-title {
     font-size: 28px;
     font-weight: 600;

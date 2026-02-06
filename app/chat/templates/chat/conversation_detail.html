@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load tz %}
 
 {% block content %}
   <head>
@@ -9,12 +10,12 @@
   <body>
     <main>
       <h1>{{ session.title|default:"Untitled" }}</h1>
-      <p>Started: {{ session.created_at }}</p>
+      <p>Started: {{ session.created_at|localtime }}</p>
         <ul>
           {% for message in session.messages.all %}
             <li>
               <strong>{{ message.get_role_display }}</strong>
-              <span>{{ message.created_at }}</span>
+              <span>{{ message.created_at|localtime }}</span>
               <div>{{ message.content }}</div>
             </li>
           {% empty %}

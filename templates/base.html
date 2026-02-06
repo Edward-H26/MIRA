@@ -222,6 +222,16 @@
     {% block extra_js %}{% endblock %}
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tzName) {
+                const existing = document.cookie
+                    .split("; ")
+                    .find((item) => item.startsWith("user_tz="));
+                const encoded = encodeURIComponent(tzName);
+                if (!existing || existing.split("=")[1] !== encoded) {
+                    document.cookie = `user_tz=${encoded}; path=/; max-age=31536000`;
+                }
+            }
             const trigger = document.getElementById("avatar-menu-trigger");
             const menu = document.getElementById("avatar-menu");
             if (!trigger || !menu) return;

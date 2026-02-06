@@ -3,15 +3,18 @@
 {% block content %}
 <div class="home-start">
   <h1 class="home-start-title">Start your project here,</h1>
-  <div class="home-start-input">
-    <input type="text" placeholder="Enter what you think here..." aria-label="Project starter">
-  </div>
-  <div class="home-start-actions">
-    <button type="button" class="home-pill-button home-pill-ghost">
-      <span class="home-pill-icon">+</span>
-      Add something...
-    </button>
-    <button type="button" class="home-pill-button home-pill-solid">Continue</button>
-  </div>
+  <form method="post" action="{% url 'memoria:home' %}">
+    {% csrf_token %}
+    <div class="home-start-input">
+      <input type="text" name="message" placeholder="Enter what you think here..." aria-label="Project starter">
+    </div>
+    <div class="home-start-actions">
+      <button type="button" class="home-pill-button home-pill-ghost">
+        <span class="home-pill-icon">+</span>
+        Add something...
+      </button>
+      <button type="submit" class="home-pill-button home-pill-solid">Continue</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

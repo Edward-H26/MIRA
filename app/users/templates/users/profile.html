@@ -23,8 +23,8 @@
                 <img id="profile-avatar-preview" src="{{ profile.profile_img.url }}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar">
                 <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
               {% else %}
-                <img id="profile-avatar-preview" src="" alt="Profile avatar" class="hidden">
-                <span id="profile-avatar-fallback" class="profile-avatar-fallback" aria-hidden="true"></span>
+                <img id="profile-avatar-preview" src="{% static 'images/avatar.png' %}" alt="Default avatar">
+                <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
               {% endif %}
             </label>
             <p class="profile-avatar-text">Update your avatar by clicking the image</p>

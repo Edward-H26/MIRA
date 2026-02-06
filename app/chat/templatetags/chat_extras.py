@@ -15,4 +15,4 @@ def relative_time(value):
     delta = now - value
     if delta <= timedelta(days=3):
         return f"{timesince(value, now)} ago"
-    return value.strftime("%Y-%m-%d")
+    return timezone.localtime(value).strftime("%Y-%m-%d")
