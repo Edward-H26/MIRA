@@ -1,0 +1,25 @@
+<form method="post" action="{% url 'users:register' %}" class="auth-card">
+  {% csrf_token %}
+  <h2 class="auth-title">Create an account</h2>
+  {% if error %}
+    <p class="auth-error">{{ error }}</p>
+  {% endif %}
+  <label class="auth-field">
+    <span class="auth-label">Username</span>
+    <input class="auth-input" type="text" name="username" placeholder="username" required>
+  </label>
+  <label class="auth-field">
+    <span class="auth-label">Password</span>
+    <input class="auth-input" type="password" name="password1" required>
+  </label>
+  <label class="auth-field">
+    <span class="auth-label">Confirm password</span>
+    <input class="auth-input" type="password" name="password2" required>
+  </label>
+  <input type="hidden" name="next" value="/home/">
+  <button class="auth-submit" type="submit">Sign up</button>
+  <p class="auth-footer">
+    Already have an account?
+    <button type="button" class="auth-link" id="open-login-inline">Sign in</button>
+  </p>
+</form>

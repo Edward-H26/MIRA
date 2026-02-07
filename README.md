@@ -98,36 +98,71 @@ python manage.py runserver
 
 ```
 .
-|-- manage.py                 # Django management script
-|-- app/                      # Application modules
-|   |-- billing/              # Billing and subscription domain
+|-- manage.py                     # Django management script
+|-- requirements.txt              # Python dependencies
+|-- .env.example                  # Environment variable template
+|
+|-- app/                          # Application modules
+|   |-- billing/                  # Billing and subscription domain (scaffolded)
 |   |   `-- models: Plan, Subscription, Payment
-|   |-- chat/                 # Chat sessions, messages, memory
-|   |   `-- models: Memory, MemoryBullet, Session, Message
-|   |-- memoria/              # App wiring (urls, views)
-|   |   `-- models: (none)
-|   `-- users/                # User profile models
-|       `-- models: User
-|-- memoria/                  # Project configuration
-|   |-- settings/             # Environment-specific settings
-|   |   |-- base.py           # Shared settings
-|   |   |-- development.py    # Dev settings
-|   |   `-- production.py     # Production settings
+|   |
+|   |-- chat/                     # Chat sessions, messages, memory
+|   |   |-- models: Memory, MemoryBullet, Session, Message
+|   |   |-- views.py              # chat_view, memory_view, ConversationMessagesView, MemoryBulletsView
+|   |   |-- urls.py               # /chat/, /chat/memory/, /chat/c/<id>/, /chat/m/<id>/
+|   |   |-- service.py            # create_user_message_with_agent_reply()
+|   |   |-- context_processors.py # user_sessions (injects sidebar session list)
+|   |   |-- templatetags/         # chat_extras: relative_time filter
+|   |   |-- templates/chat/       # conversation_detail.html, memory.html
+|   |   `-- static/chat/          # chat.css, conversation.css, memory.css
+|   |
+|   |-- memoria/                  # Main app wiring (landing, home, 404)
+|   |   |-- views.py              # home(), landing(), not_found_view()
+|   |   |-- urls.py               # /, /home/
+|   |   |-- templates/memoria/    # home.html, landing.html
+|   |   `-- static/memoria/       # landing.css, landing-overrides.css
+|   |
+|   `-- users/                    # Authentication and user profiles
+|       |-- models.py             # User (profile with profile_img)
+|       |-- views.py              # login, register, logout, profile, password change
+|       |-- urls.py               # /users/login/, /users/register/, /users/profile/, etc.
+|       |-- services.py           # authenticate_and_login, register_and_login, create_user_with_profile
+|       |-- middleware.py         # Custom middleware
+|       |-- templates/users/      # login_form, register_form, profile, password_change_form
+|       `-- static/users/         # auth-modal.css, profile.css
+|
+|-- memoria/                      # Project configuration
+|   |-- settings/                 # Environment-specific settings
+|   |   |-- base.py               # Shared settings (apps, middleware, templates, db)
+|   |   |-- development.py        # Dev overrides (DEBUG, ALLOWED_HOSTS)
+|   |   `-- production.py         # Prod overrides
+|   |-- templates/memoria/        # landing.html (standalone, project-level)
+|   |-- urls.py                   # Root URL conf (includes app URLs + handler404)
 |   |-- asgi.py
-|   |-- urls.py
 |   `-- wsgi.py
-|-- docs/                     # Project documentation
-|   |-- 01_project_documents/ # Requirements, proposals
-|   |-- 02_wireframes/        # UI wireframes
-|   |-- 03_data_model/        # ER diagrams
-|   `-- design_choice/        # Architecture decisions
-|-- templates/                # Django HTML templates
-|-- data/                     # Local data storage
-|-- unit_test/                # Test suite
-|   `-- database_unit_test.py # Database unit tests
-|-- requirements.txt          # Python dependencies
-|-- .env                      # Local environment variables
-`-- .env.example              # Environment template
+|
+|-- templates/                    # Project-level templates
+|   `-- base.html                 # Global base template (sidebar, navbar, content blocks)
+|
+|-- static/                       # Project-level static assets
+|   |-- css/
+|   |   |-- base.css              # Global layout, sidebar, navbar styles
+|   |   `-- main.css              # Compiled/additional styles
+|   |-- js/
+|   |   `-- main.js               # Sidebar toggle, AJAX handlers, UI interactions
+|   `-- images/                   # Logo, avatar, icons, background images
+|
+|-- docs/                         # Project documentation
+|   |-- 01_project_documents/     # Idea description PDF, contribution report
+|   |-- 02_wireframes/            # UI wireframes v1, v2, v3 iterations + final PDF
+|   |-- 03_data_model/            # ER diagrams (Mermaid source, PNG, SVG)
+|   |-- 04_branching_strategy/    # Git branching documentation
+|   |-- 05_notes/                 # Weekly progress notes
+|   `-- design_choice/            # database_design_choice.md
+|
+|-- data/                         # Local data storage
+`-- unit_test/                    # Test suite
+    `-- database_unit_test.py     # Database unit tests
 ```
 
 ---

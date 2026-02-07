@@ -1,0 +1,590 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memoria | Landing</title>
+    <link rel="stylesheet" href="{% static 'memoria/landing.css' %}">
+    <link rel="stylesheet" href="{% static 'memoria/landing-overrides.css' %}">
+    <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}">
+  </head>
+  <body>
+    <div class="min-h-screen relative overflow-x-hidden">
+      <div class="fixed inset-0 w-full h-full z-0 pointer-events-none">
+        <img
+          src="{% static 'images/herobackground.png' %}"
+          alt="Memoria background"
+          class="w-full h-full object-cover"
+        >
+      </div>
+
+      <div class="relative z-10">
+        <nav class="fixed top-0 left-0 right-0 z-20 flex items-center justify-between p-[20px] md:px-10 lg:px-20 px-[30px] py-[20px]">
+          <div class="h-[59px] w-[42.759px] shrink-0">
+            <svg class="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 42.7586 59">
+              <g>
+                <path d="M19.5782 39.2106C19.5782 44.6169 15.1955 48.9997 9.78913 48.9997C4.38277 48.9997 5.06118e-05 44.6169 5.06118e-05 39.2106C5.06118e-05 33.8042 4.38277 29.4215 9.78913 29.4215C15.1955 29.4215 19.5782 33.8042 19.5782 39.2106Z" fill="#4063FE"></path>
+                <path d="M31.4817 19.789C31.4817 25.1954 27.0989 29.5781 21.6926 29.5781C16.2862 29.5781 11.9035 25.1954 11.9035 19.789C11.9035 14.3827 16.2862 9.99996 21.6926 9.99996C27.0989 9.99996 31.4817 14.3827 31.4817 19.789Z" fill="#4063FE"></path>
+                <path d="M42.7585 39.2106C42.7585 44.6169 38.3758 48.9997 32.9695 48.9997C27.5631 48.9997 23.1804 44.6169 23.1804 39.2106C23.1804 33.8042 27.5631 29.4215 32.9695 29.4215C38.3758 29.4215 42.7585 33.8042 42.7585 39.2106Z" fill="#4063FE"></path>
+              </g>
+            </svg>
+          </div>
+
+          {% if user.is_authenticated %}
+            <a href="{% url 'memoria:home' %}" class="bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
+              Open app
+            </a>
+          {% else %}
+            <button type="button" id="open-login" class="bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
+              Sign in
+            </button>
+          {% endif %}
+        </nav>
+
+        <section class="px-5 py-12 md:py-20 lg:py-24 text-center max-w-4xl mx-auto pt-32">
+          <div class="space-y-6 md:space-y-8">
+            <h1 class="font-semibold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#1b1b1b] tracking-tight">
+              A self-evolving agentic assistant that adapts as you work.
+            </h1>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
+              Move beyond one-off prompts.<br>
+              This assistant learns how you work, maintains context across tasks, and helps you get consistent results with less repetition.
+            </p>
+            <div class="landing-cta-group">
+              {% if user.is_authenticated %}
+                <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                  Go to your workspace
+                </a>
+              {% else %}
+                <button type="button" id="open-register" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                  Get started for free
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+            <div class="flex items-center justify-center">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Assistant Learning</h4>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Help me draft an email to the team
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      I'll draft that for you. Should I use your usual friendly but professional tone?
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Yes, exactly!
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+                      <p class="mb-2">Here's your draft:</p>
+                      <div class="bg-white rounded-lg p-3 text-xs border border-[#e5e5e5]">
+                        <p class="mb-2">Hi team,</p>
+                        <p class="mb-2">Hope you're all doing well! Just wanted to share a quick update on our progress...</p>
+                        <p>Best regards</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Perfect! Can you make it a bit more concise?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Done! I've tightened it up while keeping your friendly tone.
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-[#4063FE] bg-[#e8eaf6] rounded-lg px-3 py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    <span>Remembered your communication style and preference for brevity</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3 flex items-center justify-between">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
+                  <button class="text-xs text-[#4063FE] hover:underline" type="button">View all</button>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      What do you remember about my project?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Here's what I know:
+                    </div>
+                  </div>
+                  <div class="space-y-2 ml-4">
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Project: E-commerce redesign</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Tech stack: React + TypeScript</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Deadline: Q1 2026</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Target: Mobile-first approach</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Team size: 5 developers</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                  </div>
+                  <div class="text-xs text-[#727272] italic pl-4">
+                    Tap any item to edit or remove
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Can you show me my design preferences?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Sure! You prefer:
+                    </div>
+                  </div>
+                  <div class="space-y-2 ml-4">
+                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                      <span>UI</span>
+                      <span>Minimalist UI with lots of whitespace</span>
+                    </div>
+                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                      <span>CTA</span>
+                      <span>Bold CTAs with high contrast</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Context Maintained</h4>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Make it more concise
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Done! I've shortened the paragraph while keeping the key points.
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Now add a call to action
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Added a CTA at the end: "Ready to get started? Join us today."
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Make it urgent
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Updated to: "Limited spots available - join us today!"
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Add discount
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      "Limited spots - join today and save 20%!"
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-[#727272] bg-[#f9f9f9] rounded-lg px-3 py-2 border border-[#e5e5e5]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span>No need to repeat context - I remember what we're working on</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-8">
+            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Learns as you work</h3>
+            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Transparent memory you can trust</h3>
+            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Consistent results with minimal effort</h3>
+          </div>
+        </section>
+
+        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="flex items-center justify-center">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Assistant Learning</h4>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Help me draft an email to the team
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      I'll draft that for you. Should I use your usual friendly but professional tone?
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Yes, exactly!
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+                      <p class="mb-2">Here's your draft:</p>
+                      <div class="bg-white rounded-lg p-3 text-xs border border-[#e5e5e5]">
+                        <p class="mb-2">Hi team,</p>
+                        <p class="mb-2">Hope you're all doing well! Just wanted to share a quick update on our progress...</p>
+                        <p>Best regards</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Perfect! Can you make it a bit more concise?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Done! I've tightened it up while keeping your friendly tone.
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-[#4063FE] bg-[#e8eaf6] rounded-lg px-3 py-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    <span>Remembered your communication style and preference for brevity</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Learns as you work</h2>
+              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
+                The assistant watches how you approach tasks and remembers your preferences over time, so it can better anticipate your needs in future interactions.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="space-y-4 order-2 lg:order-1">
+              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Transparent memory you can trust</h2>
+              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
+                See what the assistant remembers, edit what it stores, and always know what's shaping the advice you get. Every piece of context is visible and in your control.
+              </p>
+            </div>
+            <div class="flex items-center justify-center order-1 lg:order-2">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3 flex items-center justify-between">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
+                  <button class="text-xs text-[#4063FE] hover:underline" type="button">View all</button>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      What do you remember about my project?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Here's what I know:
+                    </div>
+                  </div>
+                  <div class="space-y-2 ml-4">
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Project: E-commerce redesign</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Tech stack: React + TypeScript</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
+                      <span>Deadline: Q1 2026</span>
+                      <button class="text-[#4063FE]" type="button">x</button>
+                    </div>
+                  </div>
+                  <div class="text-xs text-[#727272] italic pl-4">
+                    Tap any item to edit or remove
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Can you show me my design preferences?
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Sure! You prefer:
+                    </div>
+                  </div>
+                  <div class="space-y-2 ml-4">
+                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                      <span>UI</span>
+                      <span>Minimalist UI with lots of whitespace</span>
+                    </div>
+                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
+                      <span>CTA</span>
+                      <span>Bold CTAs with high contrast</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="flex items-center justify-center">
+              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
+                <div class="border-b pb-3">
+                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Context Maintained</h4>
+                </div>
+                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Make it more concise
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Done! I've shortened the paragraph while keeping the key points.
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Now add a call to action
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Added a CTA at the end: "Ready to get started? Join us today."
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Make it urgent
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      Updated to: "Limited spots available - join us today!"
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                      Add discount
+                    </div>
+                  </div>
+                  <div class="flex justify-start">
+                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                      "Limited spots - join today and save 20%!"
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-[#727272] bg-[#f9f9f9] rounded-lg px-3 py-2 border border-[#e5e5e5]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span>No need to repeat context - I remember what we're working on</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Consistent results with minimal effort</h2>
+              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
+                Save time from re-teaching context and build on past conversations so each prompt can be simpler and more focused.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="px-5 py-16 md:py-24 text-center">
+          <div class="landing-cta-group">
+            {% if user.is_authenticated %}
+              <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                Go to your workspace
+              </a>
+            {% else %}
+              <button type="button" id="open-register-bottom" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                Get started for free
+              </button>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+    </div>
+
+    {% if not user.is_authenticated %}
+      <dialog id="login-modal" class="landing-modal">
+        <div id="login-modal-content" class="landing-modal__content"></div>
+      </dialog>
+      <dialog id="register-modal" class="landing-modal">
+        <div id="register-modal-content" class="landing-modal__content"></div>
+      </dialog>
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+      <script>
+        const bindModalForm = (modal, content, closeId) => {
+          const closeBtn = document.getElementById(closeId);
+          if (closeBtn) {
+            closeBtn.addEventListener("click", () => modal.close());
+          }
+          const inlineRegister = content.querySelector("#open-register-inline");
+          if (inlineRegister) {
+            inlineRegister.addEventListener("click", async () => {
+              const registerModal = document.getElementById("register-modal");
+              const registerContent = document.getElementById("register-modal-content");
+              if (!registerModal || !registerContent) {
+                return;
+              }
+              if (!registerContent.dataset.loaded) {
+                const response = await fetch("{% url 'users:register' %}", {
+                  headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+                registerContent.innerHTML = await response.text();
+                bindModalForm(registerModal, registerContent, "close-register");
+                registerContent.dataset.loaded = "true";
+              }
+              modal.close();
+              registerModal.showModal();
+            });
+          }
+          const inlineLogin = content.querySelector("#open-login-inline");
+          if (inlineLogin) {
+            inlineLogin.addEventListener("click", async () => {
+              const loginModal = document.getElementById("login-modal");
+              const loginContent = document.getElementById("login-modal-content");
+              if (!loginModal || !loginContent) {
+                return;
+              }
+              if (!loginContent.dataset.loaded) {
+                const response = await fetch("{% url 'users:login' %}", {
+                  headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+                loginContent.innerHTML = await response.text();
+                bindModalForm(loginModal, loginContent, "close-login");
+                loginContent.dataset.loaded = "true";
+              }
+              modal.close();
+              loginModal.showModal();
+            });
+          }
+          const form = content.querySelector("form");
+          if (form) {
+            form.addEventListener("submit", async (event) => {
+              event.preventDefault();
+              const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+              });
+              if (response.ok) {
+                const payload = await response.json();
+                window.location.href = payload.redirect_url || "/home/";
+                return;
+              }
+              content.innerHTML = await response.text();
+              bindModalForm(modal, content, closeId);
+              modal.showModal();
+            });
+          }
+        };
+
+        const setupModal = (openId, modalId, contentId, url, closeId) => {
+          const openBtn = document.getElementById(openId);
+          const modal = document.getElementById(modalId);
+          const content = document.getElementById(contentId);
+          if (!openBtn || !modal || !content) {
+            return;
+          }
+          openBtn.addEventListener("click", async () => {
+            if (!content.dataset.loaded) {
+              const response = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+              });
+              content.innerHTML = await response.text();
+              bindModalForm(modal, content, closeId);
+              content.dataset.loaded = "true";
+            }
+            modal.showModal();
+          });
+        };
+
+        setupModal(
+          "open-login",
+          "login-modal",
+          "login-modal-content",
+          "{% url 'users:login' %}",
+          "close-login"
+        );
+        setupModal(
+          "open-register",
+          "register-modal",
+          "register-modal-content",
+          "{% url 'users:register' %}",
+          "close-register"
+        );
+        setupModal(
+          "open-register-bottom",
+          "register-modal",
+          "register-modal-content",
+          "{% url 'users:register' %}",
+          "close-register"
+        );
+        setupModal(
+          "open-register-inline",
+          "register-modal",
+          "register-modal-content",
+          "{% url 'users:register' %}",
+          "close-register"
+        );
+      </script>
+    {% endif %}
+  </body>
+</html>
