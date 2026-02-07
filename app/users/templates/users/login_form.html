@@ -1,20 +1,23 @@
-<form method="post" action="{% url 'users:login' %}">
+<form method="post" action="{% url 'users:login' %}" class="auth-card">
   {% csrf_token %}
-  <h2>Log in</h2>
+  <h2 class="auth-title">Sign in to Memoria</h2>
   {% if error %}
-    <p>{{ error }}</p>
+    <p class="auth-error">{{ error }}</p>
   {% endif %}
-  <label>
-    Username
-    <input type="text" name="username" required>
+  <label class="auth-field">
+    <span class="auth-label">Username</span>
+    <input class="auth-input" type="text" name="username" placeholder="username" required>
   </label>
-  <label>
-    Password
-    <input type="password" name="password" required>
+  <label class="auth-field">
+    <span class="auth-label">Password</span>
+    <span class="auth-input-wrap">
+      <input class="auth-input" type="password" name="password" required>
+    </span>
   </label>
   <input type="hidden" name="next" value="/home/">
-  <div>
-    <button type="submit">Log in</button>
-    <button type="button" id="close-login">Cancel</button>
-  </div>
+  <button class="auth-submit" type="submit">Sign in</button>
+  <p class="auth-footer">
+    Need an account?
+    <button type="button" class="auth-link" id="open-register-inline">Sign up</button>
+  </p>
 </form>

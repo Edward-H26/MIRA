@@ -1,11 +1,29 @@
 from django.apps import apps
+from django.utils import timezone
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template import loader
 
-# Create your views here.
+
+
 def home(request):
     template = loader.get_template("memoria/home.html")
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect("memoria:landing")
+        content = request.POST.get("message", "").strip()
+        if not content:
+            return redirect("memoria:home")
+        Profile = apps.get_model("users", "User")
+        Session = apps.get_model("chat", "Session")
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        session = Session.objects.create(user=profile, title=content[:200])
+        Message = apps.get_model("chat", "Message")
+        Message.objects.create(session=session, role=2, content=content)
+        Message.objects.create(session=session, role=3, content="Agent Response")
+        session.updated_at = timezone.now()
+        session.save(update_fields=["updated_at"])
+        return redirect(session.get_absolute_url())
     username = request.user.username if request.user.is_authenticated else "Guest"
     sessions = []
     memories = []

@@ -1,27 +1,34 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Conversation</title>
-  </head>
-  <body>
-    <main>
-      <h1>{{ session.title|default:"Untitled" }}</h1>
-      <p>Started: {{ session.created_at }}</p>
-      {% if session.messages.all %}
-        <ul>
-          {% for message in session.messages.all %}
-            <li>
-              <strong>{{ message.get_role_display }}</strong>
-              <span>{{ message.created_at }}</span>
-              <div>{{ message.content }}</div>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No messages yet.</p>
+{% extends "base.html" %}
+{% load tz %}
+{% load static %}
+
+{% block title %}Conversation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/conversation.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="conversation-shell">
+  <div class="conversation-messages scroll-container">
+    {% for message in session.messages.all %}
+      {% if message.role != 1 %}
+        <div class="message-row {% if message.role == 2 %}is-user{% else %}is-agent{% endif %}">
+          <div class="message-bubble {% if message.role == 2 %}bubble-user{% else %}bubble-agent{% endif %}">{{ message.content|linebreaksbr }}</div>
+        </div>
       {% endif %}
-    </main>
-  </body>
-</html>
+    {% empty %}
+      <div class="conversation-empty-state">No messages yet.</div>
+    {% endfor %}
+  </div>
+
+  <form class="conversation-input" method="post">
+    {% csrf_token %}
+    <input type="text" name="message" placeholder="Enter what you think here..." aria-label="Message input" autocomplete="off">
+    <div class="conversation-actions">
+      <button class="ghost-button" type="button">+ Add something...</button>
+      <button class="primary-button" type="submit">Continue</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

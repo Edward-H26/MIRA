@@ -1,39 +1,153 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Edit Profile</title>
-  </head>
-  <body>
-    <main>
-      <h1>Edit Profile</h1>
-      <p><a href="{% url 'memoria:home' %}">Back to home</a></p>
-      {% if success %}
-        <p>Your profile has been updated.</p>
-      {% endif %}
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Account Settings{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}">
+  <link rel="stylesheet" href="{% static 'users/profile.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-shell">
+  <div class="profile-content">
+    <div class="profile-hero">
+      <h1 class="profile-hero-title">Account Settings</h1>
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div>
-          <label for="username">Username</label>
-          <input id="username" name="username" type="text" value="{{ username }}" readonly>
-        </div>
-        <div>
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" value="{{ email }}">
-        </div>
-        <div>
-          <label for="profile_img">Profile image</label>
-          <input id="profile_img" name="profile_img" type="file" accept="image/*">
-        </div>
-        {% if profile.profile_img %}
-          <div>
-            <p>Current image:</p>
-            <img src="{{ profile.profile_img.url }}" alt="Current profile image" width="160">
+        <input id="profile_img" name="profile_img" type="file" accept="image/*" class="profile-file-input">
+
+        <section class="profile-card">
+          <h2 class="profile-card-title">Account Information</h2>
+          <div class="profile-avatar-row">
+            <label class="profile-avatar" for="profile_img" aria-label="Upload avatar">
+              {% if profile.profile_img %}
+                <img id="profile-avatar-preview" src="{{ profile.profile_img.url }}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar">
+                <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
+              {% else %}
+                <img id="profile-avatar-preview" src="{% static 'images/avatar.png' %}" alt="Default avatar">
+                <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
+              {% endif %}
+            </label>
+            <p class="profile-avatar-text">Update your avatar by clicking the image</p>
           </div>
-        {% endif %}
-        <button type="submit">Save changes</button>
+          <div class="profile-grid">
+            <div class="profile-field-narrow">
+              <label class="profile-label" for="username">User name</label>
+              <input id="username" name="username" type="text" value="{{ username }}" readonly tabindex="-1" class="profile-input profile-input-disabled">
+            </div>
+          </div>
+          <button type="submit" name="save_account" value="1" class="profile-primary-button">Save changes</button>
+          {% if success and request.POST.save_account %}
+            <p class="profile-success">Your profile has been updated.</p>
+          {% endif %}
+        </section>
+
+        <section class="profile-card">
+          <h2 class="profile-card-title">Security</h2>
+          <div class="profile-security">
+            <div class="profile-security-row">
+              <div>
+                <label class="profile-label">Password</label>
+                <div class="profile-password-field">
+                  <span class="profile-password-text">************</span>
+                </div>
+              </div>
+              <div class="security-action">
+                <span id="password-update-message" class="profile-inline-success hidden">Your password has been updated.</span>
+                <button class="profile-secondary-button" type="button" id="open-password-modal">Change your password</button>
+              </div>
+            </div>
+            <div class="profile-security-row">
+              <div class="profile-email-field">
+                <label class="profile-label" for="email">Email</label>
+                <div class="profile-email-input-row">
+                  <input id="email" name="email" class="profile-input" type="email" value="{{ email }}">
+                  {% if email_success and request.POST.save_email %}
+                    <span class="profile-inline-success">Your email has been updated.</span>
+                  {% endif %}
+                </div>
+              </div>
+              <button class="profile-secondary-button" type="submit" name="save_email" value="1">Change your Email adress</button>
+            </div>
+          </div>
+        </section>
       </form>
-    </main>
-  </body>
-</html>
+    </div>
+  </div>
+</div>
+
+<dialog id="password-modal" class="profile-modal">
+  <div id="password-modal-content" class="profile-modal__content">
+    {% include "users/password_change_form.html" %}
+  </div>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const fileInput = document.getElementById("profile_img");
+      const preview = document.getElementById("profile-avatar-preview");
+      const fallback = document.getElementById("profile-avatar-fallback");
+      if (fileInput && preview && fallback) {
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          preview.src = URL.createObjectURL(file);
+          preview.classList.remove("hidden");
+          fallback.classList.add("hidden");
+        });
+      }
+
+      const modal = document.getElementById("password-modal");
+      const content = document.getElementById("password-modal-content");
+      const openBtn = document.getElementById("open-password-modal");
+      const message = document.getElementById("password-update-message");
+      if (!modal || !content || !openBtn) return;
+
+      const bindModal = () => {
+        const closeBtn = content.querySelector("#close-password-modal");
+        if (closeBtn) {
+          closeBtn.addEventListener("click", () => modal.close());
+        }
+        const form = content.querySelector("form");
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = "true";
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          });
+          if (response.ok) {
+            if (message) {
+              message.classList.remove("hidden");
+            }
+            modal.close();
+            return;
+          }
+          content.innerHTML = await response.text();
+          bindModal();
+          modal.showModal();
+        });
+      };
+
+      openBtn.addEventListener("click", () => {
+        if (message) {
+          message.classList.add("hidden");
+        }
+        const form = content.querySelector("form");
+        if (form) {
+          form.reset();
+          const error = content.querySelector(".auth-error");
+          if (error) {
+            error.remove();
+          }
+        }
+        bindModal();
+        modal.showModal();
+      });
+    });
+  </script>
+{% endblock %}

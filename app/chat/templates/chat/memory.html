@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Memory Management{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/memory.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="memory-shell">
+    <form class="memory-toolbar" method="get">
+        <div class="memory-search">
+            <span class="memory-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="11" cy="11" r="7" stroke-width="2"></circle>
+                    <path d="M20 20l-3.5-3.5" stroke-width="2" stroke-linecap="round"></path>
+                </svg>
+            </span>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search your AI LTM..." aria-label="Search memory">
+            <div class="memory-filter-wrap">
+                <button class="memory-filter{% if active_memory_type %} is-active{% endif %}" type="button" aria-label="Filter" id="memory-filter-btn" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 6h16l-6 7v5l-4 2v-7L4 6z" stroke-width="2" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+                <div class="memory-filter-menu" id="memory-filter-menu" role="menu">
+                    <button type="button" class="memory-filter-item{% if not active_memory_type %} is-selected{% endif %}" data-value="">All</button>
+                    {% for value, label in memory_type_choices %}
+                    <button type="button" class="memory-filter-item{% if active_memory_type == value|stringformat:'s' %} is-selected{% endif %}" data-value="{{ value }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="type" id="memory-type-input" value="{{ active_memory_type }}">
+        <input type="hidden" name="sort" id="memory-sort-input" value="{{ active_sort }}">
+        <div class="memory-sort-wrap">
+            <button class="memory-sort" type="button" id="memory-sort-btn" aria-expanded="false">
+                Sort by {{ sort_label }}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </button>
+            <div class="memory-sort-menu" id="memory-sort-menu" role="menu">
+                <button type="button" class="memory-sort-item{% if active_sort == 'created' %} is-selected{% endif %}" data-value="created">Created time</button>
+                <button type="button" class="memory-sort-item{% if active_sort == 'strength' %} is-selected{% endif %}" data-value="strength">Strength</button>
+                <button type="button" class="memory-sort-item{% if active_sort == 'affect' %} is-selected{% endif %}" data-value="affect">Affect</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="memory-grid">
+        {% for bullet in bullets %}
+        <div class="memory-card">
+            <div class="memory-card-top">
+                <span class="memory-pill">{{ bullet.get_memory_type_display }}</span>
+                <div class="memory-actions">
+                    <button type="button" aria-label="Helpful">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h10.3a2 2 0 0 0 2-1.7l1.2-7A2 2 0 0 0 18.5 11H14z" stroke-width="1.6" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                    <button type="button" aria-label="Not helpful">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H6.7a2 2 0 0 0-2 1.7l-1.2 7A2 2 0 0 0 5.5 13H10z" stroke-width="1.6" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p class="memory-content">{{ bullet.content }}</p>
+            <div class="memory-meta">{{ bullet.last_accessed }}</div>
+        </div>
+        {% empty %}
+        <div class="memory-empty">No memory bullets yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
