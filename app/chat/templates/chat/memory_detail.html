@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Memory #{{ memory.id }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/memory.css' %}?v={% now 'U' %}">
+<style>
+.memory-detail-shell { padding: 24px 32px; max-width: 900px; margin: 0 auto; }
+.memory-detail-breadcrumb { font-family: Inter, sans-serif; font-size: 13px; color: #999; margin-bottom: 20px; }
+.memory-detail-breadcrumb a { color: #8b5cf6; text-decoration: none; }
+.memory-detail-breadcrumb a:hover { text-decoration: underline; }
+.memory-detail-header { margin-bottom: 24px; }
+.memory-detail-title { font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #333; margin: 0 0 12px 0; }
+.memory-detail-meta { display: flex; gap: 20px; flex-wrap: wrap; }
+.memory-detail-meta-item { font-family: Inter, sans-serif; font-size: 13px; color: #777; }
+.memory-detail-meta-item strong { color: #555; font-weight: 500; }
+.memory-detail-bullets { display: flex; flex-direction: column; gap: 12px; }
+.memory-bullet-card { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 16px; backdrop-filter: blur(8px); }
+.memory-bullet-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.memory-bullet-badges { display: flex; gap: 8px; align-items: center; }
+.memory-bullet-pill { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: #ede9fe; color: #7c3aed; }
+.memory-bullet-topic { font-family: Inter, sans-serif; font-size: 11px; color: #999; }
+.memory-bullet-content { font-family: Inter, sans-serif; font-size: 14px; color: #444; line-height: 1.5; }
+.memory-bullet-footer { display: flex; gap: 16px; margin-top: 10px; font-family: Inter, sans-serif; font-size: 12px; color: #999; }
+.memory-bullet-footer span strong { color: #666; font-weight: 500; }
+.memory-detail-empty { text-align: center; padding: 48px 16px; color: #999; font-family: Inter, sans-serif; font-size: 15px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="memory-detail-shell">
+    <div class="memory-detail-breadcrumb">
+        <a href="{% url 'chat:memory' %}">Memory</a> / Memory #{{ memory.id }}
+    </div>
+
+    <div class="memory-detail-header">
+        <h1 class="memory-detail-title">Memory #{{ memory.id }}</h1>
+        <div class="memory-detail-meta">
+            <span class="memory-detail-meta-item"><strong>Access Clock:</strong> {{ memory.access_clock }}</span>
+            <span class="memory-detail-meta-item"><strong>Created:</strong> {{ memory.created_at }}</span>
+            <span class="memory-detail-meta-item"><strong>Updated:</strong> {{ memory.updated_at }}</span>
+        </div>
+    </div>
+
+    <div class="memory-detail-bullets">
+        {% for bullet in memory.memorybullet_set.all %}
+        <div class="memory-bullet-card">
+            <div class="memory-bullet-top">
+                <div class="memory-bullet-badges">
+                    <span class="memory-bullet-pill">{{ bullet.get_memory_type_display }}</span>
+                    {% if bullet.topic %}
+                    <span class="memory-bullet-topic">{{ bullet.topic }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="memory-bullet-content">{{ bullet.content }}</p>
+            <div class="memory-bullet-footer">
+                <span><strong>Strength:</strong> {{ bullet.strength }}</span>
+                <span><strong>Helpful:</strong> {{ bullet.helpful_count }}</span>
+                <span><strong>Harmful:</strong> {{ bullet.harmful_count }}</span>
+                <span><strong>TTL:</strong> {{ bullet.ttl_days }} days</span>
+                <span><strong>Last accessed:</strong> {{ bullet.last_accessed }}</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="memory-detail-empty">No memory bullets in this memory record.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
