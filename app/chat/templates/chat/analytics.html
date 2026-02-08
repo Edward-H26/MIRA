@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/analytics.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="analytics-shell">
+    <h1 class="analytics-title">Analytics Dashboard</h1>
+
+    <div class="analytics-stats">
+        <div class="analytics-stat-card">
+            <span class="analytics-stat-value">{{ total_memories }}</span>
+            <span class="analytics-stat-label">Total Memories</span>
+        </div>
+        <div class="analytics-stat-card">
+            <span class="analytics-stat-value">{{ total_sessions }}</span>
+            <span class="analytics-stat-label">Conversations</span>
+        </div>
+        <div class="analytics-stat-card">
+            <span class="analytics-stat-value">{{ total_messages }}</span>
+            <span class="analytics-stat-label">Messages</span>
+        </div>
+        <div class="analytics-stat-card">
+            <span class="analytics-stat-value">{{ avg_strength|floatformat:1|default:"0" }}</span>
+            <span class="analytics-stat-label">Avg Strength</span>
+        </div>
+        {% for item in type_summary %}
+        <div class="analytics-stat-card">
+            <span class="analytics-stat-value">{{ item.count }}</span>
+            <span class="analytics-stat-label">{{ item.label }}</span>
+        </div>
+        {% empty %}
+        {% endfor %}
+    </div>
+
+    <div class="analytics-charts">
+        <div class="analytics-chart-section">
+            <h2 class="analytics-chart-heading">Memory Type Distribution</h2>
+            <p class="analytics-chart-caption">
+                Shows the balance of Semantic, Episodic, and Procedural memories. If one type dominates, consider adjusting your interactions so the AI captures a broader range of knowledge.
+            </p>
+            <div class="analytics-chart-wrap">
+                <img src="{% url 'chat:memory_type_chart' %}" alt="Pie chart showing distribution of memory bullets across Semantic, Episodic, and Procedural types">
+            </div>
+        </div>
+
+        <div class="analytics-chart-section">
+            <h2 class="analytics-chart-heading">Memory Strength Distribution</h2>
+            <p class="analytics-chart-caption">
+                Reveals the health of your memory system. A cluster of low-strength memories suggests the AI needs more reinforcement through user feedback. Strong memories confirm the system is learning effectively.
+            </p>
+            <div class="analytics-chart-wrap">
+                <img src="{% url 'chat:memory_strength_chart' %}" alt="Bar chart showing the count of memory bullets in each strength range from 0 to 100">
+            </div>
+        </div>
+
+        <div class="analytics-chart-section">
+            <h2 class="analytics-chart-heading">Conversation Activity</h2>
+            <p class="analytics-chart-caption">
+                Tracks your engagement over the last 30 days. Identify when you are most active and understand how your memory store grows with continued usage.
+            </p>
+            <div class="analytics-chart-wrap">
+                <img src="{% url 'chat:activity_chart' %}" alt="Line chart showing the number of conversation sessions created per day over the past 30 days">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

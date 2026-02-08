@@ -1,0 +1,432 @@
+MEMORIA WEEK 4 PROGRESS NOTES
+
+These notes document the MEMORIA project's weekly progress for Feb 6 through Feb 13, 2026. They cover URL linking, ORM queries, static files, data visualization, forms, and APIs.
+
+================================================================================
+
+Section 1: URL Linking and Navigation
+=======================================
+
+1.1 get_absolute_url() Implementation
+---------------------------------------
+
+get_absolute_url() is implemented on two models:
+
+  Session model (app/chat/models/session.py):
+    def get_absolute_url(self):
+        return reverse("chat:conversation_detail", kwargs={"session_id": self.pk})
+
+  Memory model (app/chat/models/memory.py):
+    def get_absolute_url(self):
+        return reverse("chat:memory_detail", kwargs={"memory_id": self.pk})
+
+Why get_absolute_url() is useful:
+
+  1. Single source of truth: The URL for any object is defined once in the model, not scattered across templates. If the URL pattern changes, only the model method needs updating.
+
+  2. Decouples templates from URL structure: Templates use {{ session.get_absolute_url }} instead of manually constructing /chat/c/{{ session.id }}/. This prevents hard-coded path errors and keeps templates clean.
+
+  3. Used across multiple surfaces: The same method is called in sidebar conversation links (base.html), memory card links (memory.html), search results on the home page (home.html), and API response url fields (SessionAPIView). All these locations automatically stay consistent.
+
+  4. Django admin integration: Django uses get_absolute_url() in the admin interface to provide a "View on site" link for each object.
+
+1.2 Navigation Design
+----------------------
+
+The sidebar navigation includes 5 items modeled after patterns observed in ChatGPT, Claude, and Gemini:
+
+  1. Home: Dashboard view showing recent conversations and a message input
+  2. Memory: Memory management page with search, filter, and sort
+  3. Analytics: Data visualization dashboard with charts
+  4. New Chat: Creates a new conversation session
+  5. Search: Opens a search modal (Ctrl+K / Cmd+K shortcut) for finding conversations
+
+ChatGPT influenced the Ctrl+K search modal pattern and conversation hover actions (rename/delete). Claude influenced the session metadata display and project organization. Gemini influenced the flat navigation layout and recent conversations section.
+
+1.3 Detail Page URLs
+---------------------
+
+Two detail page patterns use primary keys in the URL:
+
+  /chat/c/<int:session_id>/   Conversation detail (messages for a session)
+  /chat/m/<int:memory_id>/    Memory detail (bullets for a memory record)
+
+Each list item links to its detail page:
+  Sidebar conversations link to /chat/c/<id>/ via get_absolute_url()
+  Memory cards link to /chat/m/<id>/ via get_absolute_url()
+
+1.4 Conversation Management
+-----------------------------
+
+Rename and delete features are wired to backend API endpoints:
+
+  POST /chat/c/<id>/rename/   Updates the session title
+  POST /chat/c/<id>/delete/   Removes the session and all its messages
+
+JavaScript functions (renameConversation, deleteConversation) in main.js call these endpoints via fetch() with CSRF token authentication. The DOM is updated immediately for a responsive feel, while the backend persists the change.
+
+================================================================================
+
+Section 2: ORM Queries and Data Presentation
+=============================================
+
+2.1 GET Search (Memory Page)
+-----------------------------
+
+The memory page uses GET search via request.GET.get("q"). This makes the search URL shareable and bookmarkable:
+
+  /chat/memory/?q=python&type=1&sort=strength
+
+Users can copy and share filtered views. The URL appears in browser history and can be cached. This is the correct pattern for read-only search where the query terms are not sensitive.
+
+2.2 POST Search (Home Page)
+-----------------------------
+
+The home page uses POST search via request.POST.get("search"). The search term is sent in the HTTP request body, not the URL:
+
+  POST /home/  (body: search=private+conversation+content)
+
+This hides the search terms from the URL bar, browser history, server access logs, and shared links. This is the correct pattern when searching through private conversation content that users would not want exposed.
+
+The POST search uses relationship spanning to query across models:
+
+  Session.objects.filter(
+      user=profile,
+      messages__content__icontains=search_term,
+  ).distinct()
+
+This spans Session -> Message using messages__content__icontains, demonstrating both a reverse ForeignKey traversal and the __icontains field lookup.
+
+2.3 Relationship Spanning Examples
+-----------------------------------
+
+The project uses Django's double-underscore (__ ) syntax for relationship spanning and field lookups:
+
+  MemoryBullet.objects.filter(memory__user=profile)
+    Spans: MemoryBullet -> Memory -> User (2 FK hops)
+
+  Session.objects.filter(messages__content__icontains=term)
+    Spans: Session -> Message (reverse FK with __icontains)
+
+  MemoryBullet.objects.filter(memory__user__user__username="alice")
+    Spans: MemoryBullet -> Memory -> User(profile) -> auth.User (3 FK hops)
+
+Field lookups used across the project: __icontains, __exact (implicit), __gte, __lte.
+
+2.4 Aggregations
+-----------------
+
+The project uses 5+ distinct ORM aggregation patterns:
+
+  1. Count (total):
+     total_count = all_user_bullets.count()
+
+  2. Grouped Count (annotate + Count):
+     all_user_bullets.values("memory_type").annotate(count=Count("id"))
+
+  3. Average (Avg):
+     all_user_bullets.aggregate(avg=Avg("strength"))
+
+  4. Max and Min:
+     all_user_bullets.aggregate(max_strength=Max("strength"), min_strength=Min("strength"))
+
+  5. Sum:
+     all_user_bullets.aggregate(total_helpful=Sum("helpful_count"), total_harmful=Sum("harmful_count"))
+
+  6. ExpressionWrapper with F():
+     affect=ExpressionWrapper(F("helpful_count") - F("harmful_count"), output_field=IntegerField())
+
+  7. TruncDate + Count (for activity charts):
+     Session.objects.annotate(day=TruncDate("created_at")).values("day").annotate(count=Count("id"))
+
+All aggregation results are displayed in templates with stat cards showing totals, averages, and per-type breakdowns.
+
+================================================================================
+
+Section 3: Static Files and UI Styling
+=======================================
+
+3.1 Static File Organization
+------------------------------
+
+The project uses a hybrid static file organization:
+
+  Project-level (static/):
+    css/base.css       Global layout, sidebar, navbar styles
+    css/main.css       Additional compiled styles
+    js/main.js         Sidebar, search modal, AJAX handlers
+    images/            Logo, avatar, icons, background images
+
+  App-level (app/<name>/static/<name>/):
+    chat/chat.css            Chat interface styles
+    chat/conversation.css    Conversation detail styles
+    chat/memory.css          Memory management styles
+    chat/analytics.css       Analytics dashboard styles
+    memoria/landing.css      Landing page styles
+    users/auth-modal.css     Authentication modal styles
+    users/profile.css        Profile page styles
+
+The hybrid approach keeps shared assets centralized while allowing each app to own its feature-specific styles. This prevents namespace conflicts (two apps can each have a style.css) and makes apps more portable.
+
+Configuration in memoria/settings/base.py:
+
+  STATIC_URL = "/static/"
+  STATICFILES_DIRS = [BASE_DIR / "static"]
+  STATIC_ROOT = BASE_DIR / "staticfiles"
+
+App-level static files are found automatically by Django's AppDirectoriesFinder because APP_DIRS is implied by django.contrib.staticfiles.
+
+3.2 Cache Busting
+------------------
+
+Development cache busting:
+
+  All static file references in base.html use the pattern:
+
+    {% static 'css/base.css' %}?v={% now 'U' %}
+
+  The {% now 'U' %} tag outputs the current Unix timestamp (seconds since epoch). This appends a unique query parameter on every page load, forcing the browser to request a fresh copy of the file instead of serving a stale cached version.
+
+  Example output:
+    /static/css/base.css?v=1738900000
+
+  This approach is simple and effective for development, where CSS/JS files change frequently.
+
+Production cache busting:
+
+  In production, Django offers ManifestStaticFilesStorage which provides automatic, content-based cache busting:
+
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+
+  When you run "python manage.py collectstatic", Django:
+    1. Copies all static files to STATIC_ROOT
+    2. Hashes each file's content
+    3. Renames files with the hash baked into the filename
+
+  Example:
+    style.css -> style.4f6a9c3f1a.css
+
+  If the file content changes, the hash changes, creating a new filename. Browsers must fetch the new file because the URL is different. This is more efficient than timestamp-based busting because unchanged files keep their cached versions.
+
+================================================================================
+
+Section 4: Data Visualization (Matplotlib)
+==========================================
+
+4.1 Chart Implementation
+--------------------------
+
+Three charts are generated using Matplotlib with the Agg (Anti-Grain Geometry) non-interactive backend:
+
+  1. Memory Type Distribution (Pie Chart):
+     URL: /chat/analytics/memory-type.png
+     ORM: MemoryBullet grouped by memory_type with Count
+     Shows: Balance of Semantic, Episodic, Procedural memories
+
+  2. Memory Strength Distribution (Bar Chart):
+     URL: /chat/analytics/memory-strength.png
+     ORM: MemoryBullet strengths bucketed into 5 ranges
+     Shows: Distribution of memory health across strength levels
+
+  3. Conversation Activity Over Time (Line Chart):
+     URL: /chat/analytics/activity.png
+     ORM: Sessions grouped by TruncDate with Count (last 30 days)
+     Shows: User engagement patterns over time
+
+4.2 BytesIO and Memory Awareness
+----------------------------------
+
+All chart views use io.BytesIO() to store the generated PNG image in RAM:
+
+  buf = io.BytesIO()
+  fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+  plt.close(fig)
+  buf.seek(0)
+  return HttpResponse(buf.getvalue(), content_type="image/png")
+
+BytesIO avoids writing temporary files to disk, which is faster and avoids disk cleanup overhead. However, each chart generation allocates approximately 100KB to 500KB of RAM per request depending on chart complexity and DPI.
+
+plt.close(fig) is called after every render to release the Figure object and prevent memory leaks. Without this, repeated chart generation would accumulate Figure objects in memory.
+
+For high-traffic production use, charts should be cached (using Django's cache framework or a CDN) or pre-rendered periodically via a background task, rather than generated on every request.
+
+4.3 Image Endpoint
+--------------------
+
+Each chart is served via its own URL endpoint that returns an HttpResponse with content_type="image/png". These URLs can be accessed directly in a browser to view just the image, similar to how Google Images serves image URLs directly.
+
+The analytics dashboard template embeds these images using standard HTML img tags:
+
+  <img src="{% url 'chat:memory_type_chart' %}" alt="Pie chart showing memory type distribution">
+
+================================================================================
+
+Section 5: Forms and User Input
+================================
+
+5.1 GET Forms
+--------------
+
+  Memory search form (method="get"):
+    URL params: ?q=, ?type=, ?sort=
+    The search terms appear in the URL, making results shareable
+
+  Sidebar search modal:
+    Fetches /chat/api/sessions/?q= via JavaScript
+    GET request with query parameter
+
+  API filtering:
+    /chat/api/memories/?type=1&topic=python
+    GET request with multiple filter parameters
+
+5.2 POST Forms
+---------------
+
+  Home message creation (method="post"):
+    Creates a new Session and Message pair
+    Data modification requires POST
+
+  Home conversation search (method="post"):
+    Searches private conversation content
+    Terms hidden from URL for privacy
+
+  Conversation message input (method="post"):
+    Adds messages to an existing session
+
+  Profile email/image update (method="post"):
+    Modifies user profile data
+
+  Password change (method="post"):
+    Updates authentication credentials
+
+  Conversation rename (AJAX POST):
+    Updates session title via fetch()
+
+  Conversation delete (AJAX POST):
+    Removes session via fetch()
+
+5.3 CSRF Protection
+---------------------
+
+All POST forms include {% csrf_token %} which renders a hidden input:
+
+  <input type="hidden" name="csrfmiddlewaretoken" value="...">
+
+AJAX POST requests (rename, delete) include the CSRF token in the X-CSRFToken header, extracted from the csrftoken cookie.
+
+Django's CsrfViewMiddleware validates the token before the view executes. If the token is missing or invalid, Django returns a 403 Forbidden response.
+
+5.4 CBV Handling of GET and POST
+----------------------------------
+
+ConversationMessagesView(View):
+  Defines explicit get() and post() methods
+  GET renders the conversation; POST creates a new message
+
+MemoryListView(ListView):
+  The post() method delegates to get():
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+  get_queryset() reads from both request.GET and request.POST
+  This mirrors the lecture pattern for adapting a ListView to handle POST
+
+MemoryBulletsView(DetailView):
+  Generic CBV that handles GET automatically via class attributes
+  model, template_name, context_object_name, pk_url_kwarg
+
+================================================================================
+
+Section 6: Creating APIs
+=========================
+
+6.1 API Planning
+-----------------
+
+The MEMORIA API serves memory and session data as JSON for several purposes:
+
+  1. Internal frontend consumption: The sidebar search modal fetches from /chat/api/sessions/ to search conversations without a full page reload.
+
+  2. Future mobile/SPA clients: JSON endpoints enable building a mobile app or single-page application that consumes the same backend data.
+
+  3. Third-party integration: External tools could read MEMORIA data to analyze user memory patterns or build complementary features.
+
+6.2 Available Endpoints
+------------------------
+
+FBV (Function-Based View) APIs:
+
+  GET /chat/api/memories/
+    Returns memory bullets as JSON
+    Filters: ?q=, ?type=, ?topic=, ?strength_min=
+    Auth: login required
+
+  GET /chat/api/analytics/
+    Returns aggregated analytics summary as JSON
+    No filters (returns all user data)
+    Auth: login required
+
+CBV (Class-Based View) APIs:
+
+  GET /chat/api/sessions/
+    Returns user sessions as JSON
+    Filters: ?q= (title search)
+    Auth: checked in view logic
+
+  GET /chat/api/sessions/<id>/messages/
+    Returns messages for a specific session
+    Filters: ?role= (filter by message role)
+    Auth: checked in view logic
+
+Demo endpoint:
+
+  GET /chat/api/demo/
+    Demonstrates HttpResponse vs JsonResponse
+    Param: ?format=json (default) | html | text
+    No auth required
+
+6.3 HttpResponse vs JsonResponse
+----------------------------------
+
+HttpResponse is the base class for all Django responses. It accepts raw content and an explicit content_type parameter:
+
+  HttpResponse("<html>...</html>", content_type="text/html")
+  HttpResponse(png_bytes, content_type="image/png")
+  HttpResponse("plain text", content_type="text/plain")
+
+JsonResponse is a subclass of HttpResponse specifically for JSON data. It automatically:
+  1. Serializes Python dicts/lists to JSON using json.dumps()
+  2. Sets Content-Type to application/json
+  3. Handles encoding and escaping
+
+  JsonResponse({"key": "value"})
+
+The /chat/api/demo/ endpoint demonstrates this difference. Visiting with ?format=json returns application/json, ?format=html returns text/html, and ?format=text returns text/plain. The MIME type tells the browser how to interpret the response body.
+
+6.4 FBV vs CBV API Comparison
+-------------------------------
+
+FBV APIs (api_memory_bullets, api_analytics_summary):
+  Straightforward for single-resource endpoints
+  All logic in one function
+  Easy to read and understand
+  Best for simple query-and-return patterns
+
+CBV APIs (SessionAPIView, MessageAPIView):
+  Organized by HTTP method (get, post, put, delete)
+  Class structure allows method-level organization
+  Can use mixins and inheritance for shared logic
+  Best for resources that need multiple HTTP methods
+
+================================================================================
+
+Team Notes and Reminders
+=========================
+
+Reminders:
+  Always run "python manage.py migrate" after pulling changes
+  Copy .env.example to .env and fill in DJANGO_SECRET_KEY before running
+  Install matplotlib: pip install matplotlib
+  The feature/template branch is the active development branch
+
+New dependencies added this week:
+  matplotlib==3.10.6 (for chart generation in the analytics dashboard)

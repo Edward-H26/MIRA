@@ -191,6 +191,55 @@ The LTMBSE-ACE algorithm implemented in MEMORIA derives from foundational work o
 
 ---
 
+## UI and Styling
+
+MEMORIA features a polished, production-grade interface built with vanilla CSS and no frontend build tools. The design uses frosted glass effects (`backdrop-filter: blur`), gradient backgrounds with layered radial gradients, the Inter typeface for clean typography, and custom SVG icons throughout. A collapsible sidebar modeled after ChatGPT, Claude, and Gemini provides 5 navigation items: Home, Memory, Analytics, New Chat, and Search. Static files use a hybrid organization with project-level shared assets (`static/`) and app-level feature-specific styles (`app/<name>/static/<name>/`). Cache busting in development appends Unix timestamps via `{% now 'U' %}`.
+
+---
+
+## Analytics Dashboard
+
+The analytics page at `/chat/analytics/` displays three server-side charts generated with Matplotlib:
+
+1. **Memory Type Distribution** (Pie): Balance of Semantic, Episodic, and Procedural memories
+2. **Memory Strength Distribution** (Bar): Count of memories across strength ranges
+3. **Conversation Activity** (Line): Sessions created per day over the last 30 days
+
+Each chart is served as a standalone PNG image at its own URL endpoint (e.g., `/chat/analytics/memory-type.png`).
+
+---
+
+## API Endpoints
+
+MEMORIA exposes JSON APIs for internal frontend use and future client integration:
+
+| Endpoint | Method | Description | Filters |
+|---|---|---|---|
+| `/chat/api/memories/` | GET | Memory bullets | `?q=`, `?type=`, `?topic=`, `?strength_min=` |
+| `/chat/api/analytics/` | GET | Aggregated analytics summary | None |
+| `/chat/api/sessions/` | GET | User sessions | `?q=` |
+| `/chat/api/sessions/<id>/messages/` | GET | Messages for a session | `?role=` |
+| `/chat/api/demo/` | GET | HttpResponse vs JsonResponse demo | `?format=json\|html\|text` |
+
+The sessions API powers the sidebar search modal (Ctrl+K). The demo endpoint demonstrates MIME type differences between HttpResponse and JsonResponse.
+
+---
+
+## Week 4 Features
+
+Features added in Week 4:
+- **Sidebar navigation** with 5 items (Home, Memory, Analytics, New Chat, Search)
+- **Conversation search modal** triggered by Ctrl+K / Cmd+K
+- **Conversation rename and delete** with backend persistence
+- **Memory detail page** at `/chat/m/<id>/` showing all bullets for a memory record
+- **POST search** on home page for private conversation content search
+- **ORM aggregations** (Count, grouped Count, Avg, Max, Min, Sum) displayed in stat cards
+- **Analytics dashboard** with 3 Matplotlib charts using BytesIO
+- **MemoryListView** (ListView CBV) handling both GET and POST
+- **5 JSON API endpoints** (2 FBV, 2 CBV, 1 demo)
+
+---
+
 ## Development
 
 This project uses Django 6.0.1. For development setup, ensure you have Python 3.12+ installed.

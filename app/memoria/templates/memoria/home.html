@@ -3,6 +3,34 @@
 {% block content %}
 <div class="home-start">
   <h1 class="home-start-title">Start your project here,</h1>
+
+  <form method="post" action="{% url 'memoria:home' %}" style="margin-bottom: 24px;">
+    {% csrf_token %}
+    <div class="home-start-input" style="position: relative;">
+      <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search your conversations (POST)..." aria-label="Search conversations" style="width: 100%;">
+      <input type="hidden" name="action" value="search">
+    </div>
+    <div class="home-start-actions">
+      <button type="submit" class="home-pill-button home-pill-ghost">Search</button>
+    </div>
+  </form>
+
+  {% if search_results is not None %}
+  <div style="margin-bottom: 32px; padding: 16px; background: rgba(255,255,255,0.7); border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); backdrop-filter: blur(8px);">
+    <h2 style="font-family: Inter, sans-serif; font-size: 16px; font-weight: 600; color: #333; margin: 0 0 12px 0;">
+      Search Results for "{{ search_query }}"
+    </h2>
+    {% for session in search_results %}
+      <a href="{{ session.get_absolute_url }}" style="display: block; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #333; font-family: Inter, sans-serif; font-size: 14px; transition: background 0.15s;" onmouseenter="this.style.background='rgba(0,0,0,0.04)'" onmouseleave="this.style.background='transparent'">
+        {{ session.title|default:"Untitled" }}
+        <span style="color: #999; font-size: 12px; margin-left: 8px;">{{ session.updated_at }}</span>
+      </a>
+    {% empty %}
+      <p style="font-family: Inter, sans-serif; font-size: 14px; color: #999; text-align: center; padding: 16px 0; margin: 0;">No conversations match your search.</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <form method="post" action="{% url 'memoria:home' %}">
     {% csrf_token %}
     <div class="home-start-input">

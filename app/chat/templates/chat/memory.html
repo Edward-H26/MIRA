@@ -48,6 +48,23 @@
         </div>
     </form>
 
+    <div class="memory-stats" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+        <div class="memory-stat-card" style="flex: 1 1 100px; min-width: 100px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 12px; text-align: center; backdrop-filter: blur(8px);">
+            <div style="font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #333;">{{ total_count }}</div>
+            <div style="font-family: Inter, sans-serif; font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
+        </div>
+        <div class="memory-stat-card" style="flex: 1 1 100px; min-width: 100px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 12px; text-align: center; backdrop-filter: blur(8px);">
+            <div style="font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #333;">{{ avg_strength|floatformat:1|default:"0" }}</div>
+            <div style="font-family: Inter, sans-serif; font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">Avg Strength</div>
+        </div>
+        {% for item in type_summary %}
+        <div class="memory-stat-card" style="flex: 1 1 100px; min-width: 100px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 12px; text-align: center; backdrop-filter: blur(8px);">
+            <div style="font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #333;">{{ item.count }}</div>
+            <div style="font-family: Inter, sans-serif; font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px;">{{ item.label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
     <div class="memory-grid">
         {% for bullet in bullets %}
         <div class="memory-card">
@@ -66,7 +83,9 @@
                     </button>
                 </div>
             </div>
-            <p class="memory-content">{{ bullet.content }}</p>
+            <a href="{{ bullet.memory.get_absolute_url }}" style="text-decoration: none; color: inherit;">
+                <p class="memory-content">{{ bullet.content }}</p>
+            </a>
             <div class="memory-meta">{{ bullet.last_accessed }}</div>
         </div>
         {% empty %}
