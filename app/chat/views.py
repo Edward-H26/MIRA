@@ -20,6 +20,25 @@ from django.apps import apps
 from .models import Memory, Message, MemoryBullet, Session
 from .service import create_user_message_with_agent_reply
 
+PROGRESSIVE_COLORS = ["#575BEF", "#6F82FF", "#8DA0FF", "#AEBBFF", "#D6DDFF"]
+SEGMENT_COLORS = ["#9698FF", "#664FA1", "#FFC5D6", "#DAC6FF", "#B4EDE4"]
+CHART_BG = "#F7F8FF"
+CHART_GRID = "#DCE1FF"
+CHART_TEXT = "#2F3A4A"
+CHART_MUTED = "#6A7290"
+
+
+def _apply_chart_style(ax):
+    ax.set_facecolor(CHART_BG)
+    ax.tick_params(colors=CHART_MUTED, labelsize=9)
+    ax.yaxis.grid(True, color=CHART_GRID, linestyle="--", linewidth=0.8, alpha=0.7)
+    ax.set_axisbelow(True)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    for spine in ("left", "bottom"):
+        ax.spines[spine].set_color(CHART_GRID)
+        ax.spines[spine].set_linewidth(1)
+
 
 def _get_profile(request):
     Profile = apps.get_model("users", "User")
@@ -247,18 +266,34 @@ def memory_type_chart_png(request):
     labels = [type_choices.get(d["memory_type"], str(d["memory_type"])) for d in type_data]
     counts = [d["count"] for d in type_data]
 
-    colors = ["#a78bfa", "#93c5fd", "#f9a8d4", "#86efac", "#fde68a"]
+    colors = SEGMENT_COLORS
     fig, ax = plt.subplots(figsize=(7, 5))
     if labels:
-        ax.pie(counts, labels=labels, autopct="%1.1f%%", colors=colors[:len(labels)], startangle=140)
-        ax.set_title("Memory Type Distribution", fontsize=14, fontweight="bold", pad=16)
+        non_zero_count = sum(1 for c in counts if c > 0)
+        wedge_linewidth = 0 if non_zero_count <= 1 else 1.2
+        wedges, texts, autotexts = ax.pie(
+            counts,
+            labels=labels,
+            autopct="%1.1f%%",
+            colors=colors[:len(labels)],
+            startangle=140,
+            wedgeprops={"linewidth": wedge_linewidth, "edgecolor": "#FFFFFF"},
+        )
+        for txt in texts:
+            txt.set_color(CHART_TEXT)
+            txt.set_fontsize(10)
+        for txt in autotexts:
+            txt.set_color("#FFFFFF")
+            txt.set_fontsize(9)
+            txt.set_fontweight("semibold")
+        ax.set_title("Memory Type Distribution", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
     else:
-        ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color="#999")
+        ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")
 
-    fig.patch.set_facecolor("#fafafa")
+    fig.patch.set_facecolor(CHART_BG)
     return _render_chart_to_response(fig)
 
 
@@ -282,19 +317,27 @@ def memory_strength_chart_png(request):
             buckets["81-100"] += 1
 
     fig, ax = plt.subplots(figsize=(7, 5))
-    colors = ["#fca5a5", "#fdba74", "#fde68a", "#86efac", "#6ee7b7"]
+    colors = PROGRESSIVE_COLORS
     if strengths:
-        ax.bar(buckets.keys(), buckets.values(), color=colors)
-        ax.set_title("Memory Strength Distribution", fontsize=14, fontweight="bold", pad=16)
-        ax.set_xlabel("Strength Range")
-        ax.set_ylabel("Count")
+        bars = ax.bar(
+            buckets.keys(),
+            buckets.values(),
+            color=colors,
+            edgecolor="#FFFFFF",
+            linewidth=1,
+        )
+        ax.set_title("Memory Strength Distribution", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Strength Range", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Count", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.bar_label(bars, padding=3, color=CHART_MUTED, fontsize=9)
     else:
-        ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color="#999")
+        ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")
 
-    fig.patch.set_facecolor("#fafafa")
+    fig.patch.set_facecolor(CHART_BG)
     return _render_chart_to_response(fig)
 
 
@@ -314,20 +357,22 @@ def activity_chart_png(request):
     if daily:
         days = [d["day"].strftime("%m/%d") for d in daily]
         counts = [d["count"] for d in daily]
-        ax.plot(days, counts, marker="o", color="#8b5cf6", linewidth=2, markersize=5)
-        ax.fill_between(range(len(days)), counts, alpha=0.15, color="#8b5cf6")
-        ax.set_xticks(range(len(days)))
-        ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8)
-        ax.set_title("Conversation Activity (Last 30 Days)", fontsize=14, fontweight="bold", pad=16)
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Sessions Created")
+        x = range(len(days))
+        ax.plot(x, counts, marker="o", color=PROGRESSIVE_COLORS[0], linewidth=2.5, markersize=5)
+        ax.fill_between(x, counts, alpha=0.22, color=PROGRESSIVE_COLORS[-1])
+        ax.set_xticks(x)
+        ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8, color=CHART_MUTED)
+        ax.set_title("Conversation Activity (Last 30 Days)", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Sessions Created", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
     else:
-        ax.text(0.5, 0.5, "No activity data yet", ha="center", va="center", fontsize=14, color="#999")
+        ax.text(0.5, 0.5, "No activity data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")
 
-    fig.patch.set_facecolor("#fafafa")
+    fig.patch.set_facecolor(CHART_BG)
     fig.tight_layout()
     return _render_chart_to_response(fig)
 

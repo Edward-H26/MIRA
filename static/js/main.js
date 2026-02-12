@@ -30,9 +30,8 @@ function initSidebar() {
     const searchModalPanel = document.getElementById("search-modal-panel")
 
     function getCollapsedMainOffset() {
-        const path = window.location.pathname
-        const isMemoryPage = path.startsWith("/chat/memory") || path.startsWith("/chat/m/")
-        return isMemoryPage ? "80px" : "0"
+        const keepOffsetForCollapsed = mainContent.querySelector("[data-collapsed-offset='sidebar']") !== null
+        return keepOffsetForCollapsed ? "80px" : "0"
     }
 
     function syncSearchModalPosition() {

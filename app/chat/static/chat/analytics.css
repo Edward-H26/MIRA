@@ -1,7 +1,18 @@
 .analytics-shell {
-    padding: 24px 32px;
-    max-width: 960px;
-    margin: 0 auto;
+    --dv-progress-1: #575BEF;
+    --dv-progress-2: #6F82FF;
+    --dv-progress-3: #8DA0FF;
+    --dv-progress-4: #AEBBFF;
+    --dv-progress-5: #D6DDFF;
+    --dv-segment-1: #9698FF;
+    --dv-segment-2: #664FA1;
+    --dv-segment-3: #FFC5D6;
+    --dv-segment-4: #DAC6FF;
+    --dv-segment-5: #B4EDE4;
+}
+
+.analytics-shell {
+    padding: 28px 24px;
     overflow-y: auto;
     height: 100%;
 }
@@ -57,11 +68,12 @@
 }
 
 .analytics-chart-section {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.82) 0%, rgba(243, 246, 255, 0.74) 100%);
+    border: 1px solid rgba(111, 130, 255, 0.2);
     border-radius: 16px;
     padding: 24px;
     backdrop-filter: blur(8px);
+    box-shadow: 0 12px 28px rgba(73, 84, 170, 0.12);
 }
 
 .analytics-chart-heading {
@@ -83,9 +95,10 @@
 .analytics-chart-wrap {
     display: flex;
     justify-content: center;
-    background: #fafafa;
+    background: linear-gradient(180deg, #f8f9ff 0%, #f2f5ff 100%);
     border-radius: 12px;
     padding: 8px;
+    border: 1px solid rgba(142, 157, 255, 0.25);
 }
 
 .analytics-chart-wrap img {
