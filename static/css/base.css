@@ -37,7 +37,9 @@ textarea {
     --surface-1: #e8e8e8;
     --surface-2: #e0e0e0;
     --surface-2-border: #d0d0d0;
-    --radius: 24px;
+    --radius: 16px;
+    --shell-radius: 14px;
+    --shell-offset: 12px;
     --sidebar-width: 20vw;
     --sidebar-collapsed-width: 56px;
 }
@@ -135,16 +137,42 @@ textarea {
 #sidebar {
     width: var(--sidebar-width);
     min-width: 220px;
-    border-radius: 28px;
-    top: 12px;
-    left: 12px;
-    height: calc(100% - 24px);
+    border-top-left-radius: var(--shell-radius);
+    border-bottom-left-radius: var(--shell-radius);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    top: var(--shell-offset);
+    left: var(--shell-offset);
+    height: calc(100% - (var(--shell-offset) * 2));
     box-shadow: none;
     overflow: hidden;
 }
 
+#sidebar > .relative {
+    border-top-left-radius: var(--shell-radius);
+    border-bottom-left-radius: var(--shell-radius);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    overflow: hidden;
+}
+
+#sidebar .sidebar-header {
+    padding: var(--shell-offset);
+}
+
 #sidebar .frosted-glass {
-    border-radius: 28px;
+    border-top-left-radius: var(--shell-radius);
+    border-bottom-left-radius: var(--shell-radius);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    border-left: none;
+}
+
+#sidebar-logo {
+    border-radius: 50%;
 }
 
 #sidebar[data-collapsed="true"] {
@@ -246,13 +274,13 @@ textarea {
         top: 0;
         width: var(--sidebar-width);
         height: 100%;
-        border-radius: 0 28px 28px 0;
+        border-radius: var(--shell-radius) 0 0 var(--shell-radius);
         transform: translateX(-100%);
         box-shadow: none;
         z-index: 100;
     }
     #sidebar .frosted-glass {
-        border-radius: 0 28px 28px 0;
+        border-radius: var(--shell-radius) 0 0 var(--shell-radius);
     }
     #sidebar.sidebar-open,
     #sidebar.sidebar-open[data-collapsed="true"] {
@@ -457,6 +485,8 @@ textarea {
     justify-content: center;
     gap: 18px;
     flex-wrap: wrap;
+    width: min(560px, 86vw);
+    margin: 0 auto;
 }
 .home-pill-button {
     border-radius: 999px;

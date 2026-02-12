@@ -26,6 +26,16 @@ function initSidebar() {
     const conversationActions = document.querySelectorAll(".conversation-actions")
     const navItems = document.querySelectorAll("[data-nav]")
     const sidebarContent = sidebar.querySelector(".sidebar-content")
+    const searchModalPanel = document.getElementById("search-modal-panel")
+
+    function syncSearchModalPosition() {
+        if (!searchModalPanel) return
+        const isDesktop = window.innerWidth >= 1024
+        const isCollapsed = sidebar.dataset.collapsed === "true"
+        searchModalPanel.style.left = (isDesktop && !isCollapsed)
+            ? "calc((20vw + 100vw) / 2)"
+            : "50%"
+    }
 
     function setSidebarExpanded() {
         sidebar.classList.remove("collapsed")
@@ -35,6 +45,7 @@ function initSidebar() {
         conversationActions.forEach(el => el.classList.remove("hidden"))
         if (newChatText) newChatText.classList.remove("hidden")
         if (newChatContainer) newChatContainer.classList.remove("hidden")
+        syncSearchModalPosition()
     }
 
     function setSidebarCollapsed() {
@@ -45,6 +56,7 @@ function initSidebar() {
         conversationActions.forEach(el => el.classList.add("hidden"))
         if (newChatText) newChatText.classList.add("hidden")
         if (newChatContainer) newChatContainer.classList.add("hidden")
+        syncSearchModalPosition()
     }
 
     function toggleSidebarCollapse() {
@@ -59,7 +71,7 @@ function initSidebar() {
             setSidebarExpanded()
         } else {
             sidebar.dataset.collapsed = "true"
-            mainContent.style.left = "80px"
+            mainContent.style.left = "0"
             if (collapseArrow) collapseArrow.classList.add("hidden")
             if (expandArrow) expandArrow.classList.remove("hidden")
             if (collapseBtn) collapseBtn.title = "Expand sidebar"
@@ -240,6 +252,7 @@ function initSidebar() {
             sidebar.classList.remove("sidebar-open")
             if (sidebarOverlay) sidebarOverlay.classList.add("hidden")
         }
+        syncSearchModalPosition()
     })
 
     document.addEventListener("keydown", function(e) {
@@ -259,6 +272,7 @@ function initSidebar() {
     if (window.innerWidth < 1024) {
         mainContent.style.left = "0"
     }
+    syncSearchModalPosition()
 
     window.toggleSidebarCollapse = toggleSidebarCollapse
     window.openSidebar = openSidebar
