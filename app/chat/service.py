@@ -260,7 +260,7 @@ def get_memory_type_chart_png(user):
     if labels:
         non_zero_count = sum(1 for c in counts if c > 0)
         wedge_linewidth = 0 if non_zero_count <= 1 else 1.2
-        _, texts, autotexts = ax.pie(
+        wedges, texts, autotexts = ax.pie(
             counts,
             labels=labels,
             autopct="%1.1f%%",
@@ -276,6 +276,15 @@ def get_memory_type_chart_png(user):
             txt.set_fontsize(9)
             txt.set_fontweight("semibold")
         ax.set_title("Memory Type Distribution", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.legend(
+            wedges,
+            labels,
+            title="Memory Type",
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=False,
+            labelcolor=CHART_MUTED,
+        )
     else:
         ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
@@ -319,6 +328,13 @@ def get_memory_strength_chart_png(user):
         ax.set_ylabel("Count", color=CHART_MUTED, fontsize=10)
         _apply_chart_style(ax)
         ax.bar_label(bars, padding=3, color=CHART_MUTED, fontsize=9)
+        ax.legend(
+            [bars[0]],
+            ["Memory bullets per strength range"],
+            loc="upper right",
+            frameon=False,
+            labelcolor=CHART_MUTED,
+        )
     else:
         ax.text(0.5, 0.5, "No memory data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
@@ -345,7 +361,15 @@ def get_activity_chart_png(user):
         days = [d["day"].strftime("%m/%d") for d in daily]
         counts = [d["count"] for d in daily]
         x = range(len(days))
-        ax.plot(x, counts, marker="o", color=PROGRESSIVE_COLORS[0], linewidth=2.5, markersize=5)
+        ax.plot(
+            x,
+            counts,
+            marker="o",
+            color=PROGRESSIVE_COLORS[0],
+            linewidth=2.5,
+            markersize=5,
+            label="Sessions Created",
+        )
         ax.fill_between(x, counts, alpha=0.22, color=PROGRESSIVE_COLORS[-1])
         ax.set_xticks(x)
         ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8, color=CHART_MUTED)
@@ -353,6 +377,7 @@ def get_activity_chart_png(user):
         ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
         ax.set_ylabel("Sessions Created", color=CHART_MUTED, fontsize=10)
         _apply_chart_style(ax)
+        ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
     else:
         ax.text(0.5, 0.5, "No activity data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)

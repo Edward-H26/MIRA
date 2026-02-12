@@ -158,6 +158,7 @@ python manage.py runserver
 |   |-- 03_data_model/            # ER diagrams (Mermaid source, PNG, SVG)
 |   |-- 04_branching_strategy/    # Git branching documentation
 |   |-- 05_notes/                 # Weekly progress notes
+|   |-- imgs/                     # Screenshot evidence for assignment sections
 |   `-- design_choice/            # database_design_choice.md
 |
 |-- data/                         # Local data storage
@@ -193,7 +194,22 @@ The LTMBSE-ACE algorithm implemented in MEMORIA derives from foundational work o
 
 ## UI and Styling
 
-MEMORIA features a polished, production-grade interface built with vanilla CSS and no frontend build tools. The design uses frosted glass effects (`backdrop-filter: blur`), gradient backgrounds with layered radial gradients, the Inter typeface for clean typography, and custom SVG icons throughout. A collapsible sidebar modeled after ChatGPT, Claude, and Gemini provides 5 navigation items: Home, Memory, Analytics, New Chat, and Search. Static files use a hybrid organization with project-level shared assets (`static/`) and app-level feature-specific styles (`app/<name>/static/<name>/`). Cache busting in development appends Unix timestamps via `{% now 'U' %}`.
+MEMORIA features a polished, production-grade interface built with vanilla CSS and no frontend build tools. The design uses frosted glass effects (`backdrop-filter: blur`), gradient backgrounds with layered radial gradients, the Inter typeface for clean typography, and custom SVG icons throughout. A collapsible sidebar modeled after ChatGPT, Claude, and Gemini provides 5 navigation items: Home, Memory, Analytics, New Chat, and Search. Static files use a hybrid organization with project-level shared assets and app-level feature-specific styles. Cache busting in development appends Unix timestamps via `{% now 'U' %}`.
+
+Screenshots:
+
+![Home Dashboard](docs/imgs/home_dashboard_normal.png)
+![Memory Management](docs/imgs/memory_management_normal.png)
+![Conversation Detail](docs/imgs/conversation_detail_normal.png)
+![Sidebar Collapsed](docs/imgs/sidebar_collapsed.png)
+
+---
+
+## URL Note
+
+The root URL (`/`) resolves to the landing page, and authenticated workflow continues through `/home/`, `/chat/memory/`, `/chat/c/<session_id>/`, and `/chat/m/<memory_id>/`.  
+Detail navigation uses model-driven URLs via `get_absolute_url()` on `Session` and `Memory`, so templates link objects directly without hard-coded paths.  
+This keeps URL routing maintainable and ensures list-to-detail navigation stays consistent across sidebar conversations, memory cards, and API payloads.
 
 ---
 
@@ -212,6 +228,9 @@ Each chart is served as a standalone PNG image at its own URL endpoint (e.g., `/
 ## API Endpoints
 
 MEMORIA exposes JSON APIs for internal frontend use and future client integration:
+
+Detailed API documentation:
+- [API Overview](docs/06_api/api_overview.md)
 
 | Endpoint | Method | Description | Filters |
 |---|---|---|---|

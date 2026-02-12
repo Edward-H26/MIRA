@@ -1,0 +1,122 @@
+MEMORIA WEEK 5 PROGRESS NOTES
+
+These notes document the MEMORIA project's weekly progress for Week 5. This week completes User Input, Analysis & APIs for assignment compliance.
+
+================================================================================
+
+Section 1 Add-on: get_absolute_url() Usefulness
+================================================
+
+For which feature `get_absolute_url()` is implemented and useful:
+
+  1. Conversation detail navigation
+     - Implemented on the `Session` model.
+     - Used in the sidebar conversation list so each session links to its own detail page.
+
+  2. Memory detail navigation
+     - Implemented on the `Memory` model.
+     - Used in memory list cards so each item links to `/chat/m/<id>/` via model-driven URL resolution.
+
+Why this is useful:
+
+  - Single source of truth for object URLs.
+  - Templates avoid hard-coded paths.
+  - URL pattern changes only need model-level updates, improving maintainability.
+
+================================================================================
+
+Section 3 Add-on: Static Files & Cache Busting
+===============================================
+
+Static file organization choice:
+
+We use a hybrid static structure:
+
+  1. Project-level shared assets in `static/`
+     - `static/css/` for global styles
+     - `static/js/` for shared scripts
+     - `static/images/` for shared icons and branding assets
+
+  2. App-level feature assets in `app/<app_name>/static/<app_name>/`
+     - `app/chat/static/chat/`
+     - `app/users/static/users/`
+     - `app/memoria/static/memoria/`
+
+Why this choice is useful:
+
+  - Shared resources are centralized and reusable.
+  - Feature-specific styling stays close to each app.
+  - It improves maintainability and reduces naming conflicts.
+
+Cache busting explanation (implemented):
+
+We append a version query parameter to static assets in templates, for example:
+
+  `{% static 'css/base.css' %}?v={% now 'U' %}`
+
+`{% now 'U' %}` generates the current Unix timestamp, which forces the browser to request a fresh file when CSS/JS changes during development.
+
+Production note:
+
+For production deployment, content-hash-based static files (for example with ManifestStaticFilesStorage) are preferred for stable and efficient long-term caching.
+
+================================================================================
+
+Section 6: Creating APIs (Completed Item)
+=========================================
+
+6.1 API Planning
+-----------------
+
+How we are planning to create an API for this project:
+
+The project API is implemented under the `/chat/api/` route group in Django.  
+We use `JsonResponse` as the primary response format for data endpoints, and we keep both FBV and CBV patterns to demonstrate multiple Django API styles required by the assignment.
+
+Implementation approach:
+
+  1. Route API URLs in `app/chat/urls.py` using clear resource-based paths.
+  2. Implement API logic in `app/chat/api.py`.
+  3. Reuse query and aggregation logic from the service layer (`app/chat/service.py`) so API responses remain consistent with UI pages.
+  4. Use query parameters for non-destructive filtering.
+  5. Require authentication on user-private resources.
+
+6.2 Data to Serve
+------------------
+
+What kind of data we are planning to serve:
+
+  1. Memory bullet data
+     - id, content, memory_type, topic, strength
+     - helpful_count, harmful_count
+     - created_at, last_accessed
+
+  2. Session data
+     - session id and title
+     - created_at, updated_at
+     - detail URL for direct navigation
+
+  3. Message data
+     - per-session message list
+     - role (user/assistant), content, timestamp
+
+  4. Analytics summary data
+     - total memories, total sessions, total messages
+     - grouped memory-type counts
+     - average strength and feedback totals
+
+6.3 Filtering and Response Types
+---------------------------------
+
+Current filtering plan uses query parameters such as:
+
+  - `q` for keyword matching
+  - `type` for memory type
+  - `topic` for memory topic
+  - `strength_min` for minimum memory strength
+  - `role` for message role filtering
+
+Response-type plan:
+
+  - Use `JsonResponse` for normal API payloads.
+  - Keep one demo endpoint that can return HTML or plain text via `HttpResponse` to demonstrate MIME-type differences (`application/json` vs `text/html` vs `text/plain`).
