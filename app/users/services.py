@@ -38,3 +38,8 @@ def register_and_login(request, username, password1, password2):
     user = create_user_with_profile(username=username, password=password1)
     login(request, user)
     return user, None
+
+
+def get_or_create_profile_for_user(user):
+    profile, _ = Profile.objects.get_or_create(user=user)
+    return profile

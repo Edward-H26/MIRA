@@ -6,7 +6,6 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from . import services
-from .models import User as Profile
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -31,10 +30,9 @@ def login_view(request):
     return redirect(next_url)
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 def logout_view(request):
-    if request.method == "POST":
-        logout(request)
+    logout(request)
     next_url = request.POST.get("next") or "/"
     return redirect(next_url)
 
@@ -72,7 +70,7 @@ def register_view(request):
 @login_required(login_url="/")
 @require_http_methods(["GET", "POST"])
 def profile_view(request):
-    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile = services.get_or_create_profile_for_user(request.user)
     if request.method == "POST":
         email_success = False
         account_success = False

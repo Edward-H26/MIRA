@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'memoria/home.css' %}?v={% now 'U' %}">
+{% endblock %}
 
 {% block content %}
 <div class="home-start">

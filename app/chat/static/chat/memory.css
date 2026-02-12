@@ -202,6 +202,39 @@
     gap: 14px;
 }
 
+.memory-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.memory-stat-card {
+    flex: 1 1 100px;
+    min-width: 100px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+}
+
+.memory-stat-value {
+    font-family: Inter, sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #333;
+}
+
+.memory-stat-label {
+    font-family: Inter, sans-serif;
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .memory-card {
     background: rgba(255, 255, 255, 0.86);
     border-radius: 16px;
@@ -254,6 +287,11 @@
     line-height: 1.5;
     color: #2b2b2b;
     word-break: break-word;
+}
+
+.memory-card-link {
+    text-decoration: none;
+    color: inherit;
 }
 
 .memory-meta {
