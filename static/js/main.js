@@ -9,6 +9,7 @@ function getCSRFToken() {
 }
 
 function initSidebar() {
+    const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed"
     const sidebar = document.getElementById("sidebar")
     const sidebarOverlay = document.getElementById("sidebar-overlay")
     const mainContent = document.getElementById("main-content")
@@ -27,6 +28,12 @@ function initSidebar() {
     const navItems = document.querySelectorAll("[data-nav]")
     const sidebarContent = sidebar.querySelector(".sidebar-content")
     const searchModalPanel = document.getElementById("search-modal-panel")
+
+    function getCollapsedMainOffset() {
+        const path = window.location.pathname
+        const isMemoryPage = path.startsWith("/chat/memory") || path.startsWith("/chat/m/")
+        return isMemoryPage ? "80px" : "0"
+    }
 
     function syncSearchModalPosition() {
         if (!searchModalPanel) return
@@ -64,6 +71,7 @@ function initSidebar() {
 
         if (isCollapsed) {
             sidebar.dataset.collapsed = "false"
+            sessionStorage.setItem(SIDEBAR_COLLAPSED_KEY, "false")
             mainContent.style.left = "20vw"
             if (collapseArrow) collapseArrow.classList.remove("hidden")
             if (expandArrow) expandArrow.classList.add("hidden")
@@ -71,7 +79,8 @@ function initSidebar() {
             setSidebarExpanded()
         } else {
             sidebar.dataset.collapsed = "true"
-            mainContent.style.left = "0"
+            sessionStorage.setItem(SIDEBAR_COLLAPSED_KEY, "true")
+            mainContent.style.left = getCollapsedMainOffset()
             if (collapseArrow) collapseArrow.classList.add("hidden")
             if (expandArrow) expandArrow.classList.remove("hidden")
             if (collapseBtn) collapseBtn.title = "Expand sidebar"
@@ -206,7 +215,7 @@ function initSidebar() {
         let activeKey = ""
 
         if (path === "/home/" || path === "/home") {
-            activeKey = "home"
+            activeKey = "new-chat"
         } else if (path.startsWith("/chat/memory") || path.startsWith("/chat/m/")) {
             activeKey = "memory"
         } else if (path.startsWith("/chat/analytics")) {
@@ -271,6 +280,23 @@ function initSidebar() {
 
     if (window.innerWidth < 1024) {
         mainContent.style.left = "0"
+    } else {
+        const persistedCollapsed = sessionStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true"
+        if (persistedCollapsed) {
+            sidebar.dataset.collapsed = "true"
+            mainContent.style.left = getCollapsedMainOffset()
+            if (collapseArrow) collapseArrow.classList.add("hidden")
+            if (expandArrow) expandArrow.classList.remove("hidden")
+            if (collapseBtn) collapseBtn.title = "Expand sidebar"
+            setSidebarCollapsed()
+        } else {
+            sidebar.dataset.collapsed = "false"
+            mainContent.style.left = "20vw"
+            if (collapseArrow) collapseArrow.classList.remove("hidden")
+            if (expandArrow) expandArrow.classList.add("hidden")
+            if (collapseBtn) collapseBtn.title = "Collapse sidebar"
+            setSidebarExpanded()
+        }
     }
     syncSearchModalPosition()
 

@@ -160,10 +160,30 @@
     color: #4b5563;
     text-align: left;
     border-radius: 8px;
+    position: relative;
 }
 
 .memory-sort-item:hover {
     background: rgba(95, 115, 159, 0.12);
+}
+
+.memory-sort-item:hover::after {
+    content: attr(data-explanation);
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(27, 27, 27, 0.94);
+    color: #f8fafc;
+    font-size: 11px;
+    line-height: 1.35;
+    padding: 7px 9px;
+    border-radius: 8px;
+    white-space: normal;
+    width: 220px;
+    pointer-events: none;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.22);
+    z-index: 20;
 }
 
 .memory-sort-item.is-selected {

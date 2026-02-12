@@ -86,15 +86,6 @@
                             <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
                         </svg>
                     </button>
-                    <a href="{% url 'memoria:home' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="home">
-                        <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#727272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
-                        </div>
-                        <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Home</span>
-                    </a>
                     <a href="{% url 'chat:memory' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="memory">
                         <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
                             <img src="{% static 'images/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />

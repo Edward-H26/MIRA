@@ -179,6 +179,15 @@ textarea {
     width: var(--sidebar-collapsed-width);
     min-width: var(--sidebar-collapsed-width);
     height: auto;
+    border-radius: var(--shell-radius);
+}
+
+#sidebar[data-collapsed="true"] > .relative {
+    border-radius: var(--shell-radius);
+}
+
+#sidebar[data-collapsed="true"] .frosted-glass {
+    border-radius: var(--shell-radius);
 }
 
 #sidebar .sidebar-content {
