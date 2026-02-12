@@ -5,19 +5,24 @@ from django.contrib.auth import authenticate
 from .models import User as Profile
 
 def validate_registration(username, password1, password2):
-    if not username or not password1:
-        return "Username and password are required."
-    if password1 != password2:
-        return "Passwords do not match."
-    if AuthUser.objects.filter(username=username).exists():
-        return "Username already exists."
-    return None
+    errors = {}
+    if not username:
+        errors["username"] = "Username is required."
+    elif AuthUser.objects.filter(username=username).exists():
+        errors["username"] = "Username already exists."
+    if not password1:
+        errors["password1"] = "Password is required."
+    if not password2:
+        errors["password2"] = "Please confirm your password."
+    elif password1 and password1 != password2:
+        errors["password2"] = "Passwords do not match."
+    return errors or None
 
 
 def authenticate_and_login(request, username, password):
     user = authenticate(request, username=username, password=password)
     if user is None:
-        return None, "Invalid username or password."
+        return None, {"login": "Invalid username or password."}
     login(request, user)
     return user, None
 
@@ -27,9 +32,9 @@ def create_user_with_profile(username, password):
     return user
 
 def register_and_login(request, username, password1, password2):
-    error = validate_registration(username, password1, password2)
-    if error:
-        return None, error
+    errors = validate_registration(username, password1, password2)
+    if errors:
+        return None, errors
     user = create_user_with_profile(username=username, password=password1)
     login(request, user)
     return user, None

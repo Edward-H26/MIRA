@@ -16,9 +16,15 @@ def login_view(request):
         return redirect("memoria:home")
     username = request.POST.get("username", "").strip()
     password = request.POST.get("password", "")
-    user, error = services.authenticate_and_login(request, username, password)
-    if error:
-        return render(request, "users/login_form.html", {"error": error}, status=400)
+    user, errors = services.authenticate_and_login(request, username, password)
+    if errors:
+        login_error = errors.get("login", "")
+        return render(
+            request,
+            "users/login_form.html",
+            {"login_error": login_error, "username": username},
+            status=400,
+        )
     next_url = request.POST.get("next") or "/"
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"ok": True, "redirect_url": next_url})
@@ -42,12 +48,19 @@ def register_view(request):
     username = request.POST.get("username", "").strip()
     password1 = request.POST.get("password1", "")
     password2 = request.POST.get("password2", "")
-    user, error = services.register_and_login(request, username, password1, password2)
-    if error:
+    user, errors = services.register_and_login(request, username, password1, password2)
+    if errors:
+        password_mismatch = errors.get("password2") == "Passwords do not match."
         return render(
             request,
             "users/register_form.html",
-            {"error": error},
+            {
+                "username": username,
+                "username_error": errors.get("username", ""),
+                "password1_error": errors.get("password1", ""),
+                "password2_error": errors.get("password2", ""),
+                "password_mismatch": password_mismatch,
+            },
             status=400,
         )
     next_url = request.POST.get("next") or "/"

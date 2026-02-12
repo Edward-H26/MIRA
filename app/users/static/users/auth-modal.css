@@ -14,12 +14,34 @@
 
 .auth-error {
   margin: 0;
-  color: #c2410c;
+  color: #dc2626;
   font-size: 13px;
 }
 
 .auth-field {
   text-align: left;
+}
+
+.auth-input.auth-input-error,
+.auth-input-wrap.auth-input-wrap-error {
+  border-color: #ef4444;
+}
+
+.auth-input.auth-input-error:focus,
+.auth-input-wrap.auth-input-wrap-error:focus-within {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.18);
+}
+
+.auth-error-slot {
+  display: block;
+  min-height: 16px;
+  line-height: 16px;
+  margin: 6px 0 0 14px;
+}
+
+.auth-error-hidden {
+  visibility: hidden;
 }
 
 .auth-label {
@@ -32,6 +54,10 @@
   position: relative;
   top: 10px;
   display: inline-block;
+}
+
+.auth-label.auth-label-error {
+  color: #dc2626;
 }
 
 .auth-input,

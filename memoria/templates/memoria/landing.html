@@ -470,6 +470,17 @@
 
     {% if not user.is_authenticated %}
       <script>
+        const transferUsernameValue = (fromRoot, toRoot) => {
+          if (!fromRoot || !toRoot) return;
+          const fromInput = fromRoot.querySelector('input[name="username"]');
+          const toInput = toRoot.querySelector('input[name="username"]');
+          if (!fromInput || !toInput) return;
+          const value = fromInput.value.trim();
+          if (value) {
+            toInput.value = value;
+          }
+        };
+
         const bindModalForm = (modal, content, closeId) => {
           const closeBtn = document.getElementById(closeId);
           if (closeBtn) {
@@ -491,6 +502,7 @@
                 bindModalForm(registerModal, registerContent, "close-register");
                 registerContent.dataset.loaded = "true";
               }
+              transferUsernameValue(content, registerContent);
               modal.close();
               registerModal.showModal();
             });
@@ -511,6 +523,7 @@
                 bindModalForm(loginModal, loginContent, "close-login");
                 loginContent.dataset.loaded = "true";
               }
+              transferUsernameValue(content, loginContent);
               modal.close();
               loginModal.showModal();
             });
@@ -536,6 +549,18 @@
           }
         };
 
+        const ensureBackdropClose = (modal) => {
+          if (!modal || modal.dataset.backdropCloseBound === "true") {
+            return;
+          }
+          modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+              modal.close();
+            }
+          });
+          modal.dataset.backdropCloseBound = "true";
+        };
+
         const setupModal = (openId, modalId, contentId, url, closeId) => {
           const openBtn = document.getElementById(openId);
           const modal = document.getElementById(modalId);
@@ -543,6 +568,7 @@
           if (!openBtn || !modal || !content) {
             return;
           }
+          ensureBackdropClose(modal);
           openBtn.addEventListener("click", async () => {
             if (!content.dataset.loaded) {
               const response = await fetch(url, {

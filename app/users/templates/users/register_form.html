@@ -1,20 +1,20 @@
 <form method="post" action="{% url 'users:register' %}" class="auth-card">
   {% csrf_token %}
   <h2 class="auth-title">Create an account</h2>
-  {% if error %}
-    <p class="auth-error">{{ error }}</p>
-  {% endif %}
   <label class="auth-field">
-    <span class="auth-label">Username</span>
-    <input class="auth-input" type="text" name="username" placeholder="username" required>
+    <span class="auth-label{% if username_error %} auth-label-error{% endif %}">Username</span>
+    <input class="auth-input{% if username_error %} auth-input-error{% endif %}" type="text" name="username" placeholder="username" value="{{ username|default:'' }}" required>
+    <p class="auth-error auth-error-slot{% if not username_error %} auth-error-hidden{% endif %}">{{ username_error|default:'' }}</p>
   </label>
   <label class="auth-field">
-    <span class="auth-label">Password</span>
-    <input class="auth-input" type="password" name="password1" required>
+    <span class="auth-label{% if password1_error or password_mismatch %} auth-label-error{% endif %}">Password</span>
+    <input class="auth-input{% if password1_error or password_mismatch %} auth-input-error{% endif %}" type="password" name="password1" required>
+    <p class="auth-error auth-error-slot{% if not password1_error %} auth-error-hidden{% endif %}">{{ password1_error|default:'' }}</p>
   </label>
   <label class="auth-field">
-    <span class="auth-label">Confirm password</span>
-    <input class="auth-input" type="password" name="password2" required>
+    <span class="auth-label{% if password2_error %} auth-label-error{% endif %}">Confirm password</span>
+    <input class="auth-input{% if password2_error %} auth-input-error{% endif %}" type="password" name="password2" required>
+    <p class="auth-error auth-error-slot{% if not password2_error %} auth-error-hidden{% endif %}">{{ password2_error|default:'' }}</p>
   </label>
   <input type="hidden" name="next" value="/home/">
   <button class="auth-submit" type="submit">Sign up</button>

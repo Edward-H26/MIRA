@@ -1,18 +1,17 @@
 <form method="post" action="{% url 'users:login' %}" class="auth-card">
   {% csrf_token %}
   <h2 class="auth-title">Sign in to Memoria</h2>
-  {% if error %}
-    <p class="auth-error">{{ error }}</p>
-  {% endif %}
   <label class="auth-field">
-    <span class="auth-label">Username</span>
-    <input class="auth-input" type="text" name="username" placeholder="username" required>
+    <span class="auth-label{% if login_error %} auth-label-error{% endif %}">Username</span>
+    <input class="auth-input{% if login_error %} auth-input-error{% endif %}" type="text" name="username" placeholder="username" value="{{ username|default:'' }}" required>
+    <p class="auth-error auth-error-slot{% if not login_error %} auth-error-hidden{% endif %}"></p>
   </label>
   <label class="auth-field">
-    <span class="auth-label">Password</span>
-    <span class="auth-input-wrap">
+    <span class="auth-label{% if login_error %} auth-label-error{% endif %}">Password</span>
+    <span class="auth-input-wrap{% if login_error %} auth-input-wrap-error{% endif %}">
       <input class="auth-input" type="password" name="password" required>
     </span>
+    <p class="auth-error auth-error-slot{% if not login_error %} auth-error-hidden{% endif %}">{{ login_error|default:'' }}</p>
   </label>
   <input type="hidden" name="next" value="/home/">
   <button class="auth-submit" type="submit">Sign in</button>
