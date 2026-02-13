@@ -275,7 +275,13 @@ MEMORIA includes a comprehensive test suite covering database integrity, service
 
 ### Running Tests
 
+All test and data scripts must be run from the **project root**:
+
 ```bash
+# Seed the database with mock data
+python unit_test/mock_data.py
+
+# Run tests
 python unit_test/database_unit_test.py          # Run all database tests
 python unit_test/feature_unit_test.py           # Run all feature tests
 python unit_test/feature_unit_test.py --test-api    # Run API payload tests only
