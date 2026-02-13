@@ -120,3 +120,85 @@ Response-type plan:
 
   - Use `JsonResponse` for normal API payloads.
   - Keep one demo endpoint that can return HTML or plain text via `HttpResponse` to demonstrate MIME-type differences (`application/json` vs `text/html` vs `text/plain`).
+
+================================================================================
+
+Section 7: Testing Infrastructure
+==================================
+
+7.1 Test Architecture
+----------------------
+
+The testing infrastructure uses a standalone script-based approach (no pytest or
+unittest framework) with argparse for selective test execution, print-based
+assertions, and failure counters with sys.exit codes for CI compatibility.
+
+Test files:
+
+  1. `unit_test/mock_data.py`
+     Shared test data module providing 8 user personas, 5 plans, 7 memories,
+     26 memory bullets, 12 sessions, 36 messages, 5 subscriptions, and 7 payments.
+     Exports `cleanup_all_test_data()` and `create_all_test_data()` functions
+     used by both test files.
+
+  2. `unit_test/database_unit_test.py`
+     Tests database relationships and constraints: FK chains (Memory to
+     MemoryBullet, Session to Message, Subscription to Payment), uniqueness
+     constraints (Plan code+interval, Subscription user+plan), on_delete
+     behaviors (CASCADE, PROTECT, SET_NULL), and model methods
+     (create_with_opening_exchange, get_absolute_url, __str__).
+
+  3. `unit_test/feature_unit_test.py`
+     Tests all 20 service layer functions from app/chat/service.py, 5 user
+     service functions from app/users/services.py, 4 API payload builders, 3
+     chart generators (PNG validation), and edge cases (empty users, boundary
+     values, non-numeric filter parameters). Contains 67 tests organized into
+     8 independently runnable groups (--test-users, --test-sessions,
+     --test-memory, --test-analytics, --test-charts, --test-api,
+     --test-models, --test-edge).
+
+7.2 Coverage Summary
+---------------------
+
+  Database tests:
+    - FK relationship validation across all model chains
+    - Uniqueness constraints for Plan and Subscription
+    - on_delete behaviors: CASCADE (auth.User through full chain),
+      PROTECT (Plan with Subscriptions), SET_NULL (Payment.subscription,
+      Payment.plan)
+    - Model methods: create_with_opening_exchange, get_absolute_url, __str__
+
+  Service layer tests:
+    - User services: validate_registration (5 cases), create_user_with_profile,
+      get_or_create_profile_for_user (idempotency)
+    - Session services: sidebar sessions, home context, create/get/message
+      operations, Http404 for invalid and cross-user access
+    - Memory services: list data with filtering and sorting, summary aggregates
+    - Analytics: dashboard context with type_summary labels
+    - Charts: all 3 chart functions return valid PNG bytes
+    - API payloads: all 4 payload builders with filter combinations
+
+  Edge case tests:
+    - Empty user returns zero/empty for all service functions
+    - Non-numeric filter parameters gracefully ignored
+    - Whitespace and empty string inputs handled correctly
+
+7.3 Mock Data Design
+---------------------
+
+The 8 user personas serve specific testing purposes:
+
+  - maria_garcia: Power user with 7 memory bullets, 4 sessions, pro subscriber
+  - james_chen: Free tier with 5 bullets, 3 sessions, moderate activity
+  - sarah_johnson: Episodic memory focus, 5 bullets, expired subscription
+  - alex_kumar: New user with minimal data (2 bullets, 0 sessions)
+  - emma_wilson: CASCADE deletion target with full data chain
+  - test_edge_empty: Zero data, tests empty queryset code paths
+  - test_edge_maxlen: Maximum length fields for boundary testing
+  - test_edge_special: Special characters in content and metadata
+
+Memory bullet strengths cover all 5 histogram buckets:
+  0-20: 17 bullets | 21-40: 2 | 41-60: 3 | 61-80: 1 | 81-100: 2
+
+Subscription statuses: ACTIVE (3), EXPIRED (1), INCOMPLETE (1)
+Payment statuses: SUCCEEDED (3), FAILED (1), PENDING (1), CANCELLED (1)

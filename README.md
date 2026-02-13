@@ -163,7 +163,9 @@ python manage.py runserver
 |
 |-- data/                         # Local data storage
 `-- unit_test/                    # Test suite
-    `-- database_unit_test.py     # Database unit tests
+    |-- mock_data.py              # Shared test data (8 users, 5 plans, 26 bullets)
+    |-- database_unit_test.py     # Database relationship and constraint tests
+    `-- feature_unit_test.py      # Service layer and API payload tests
 ```
 
 ---
@@ -256,6 +258,43 @@ Features added in Week 4:
 - **Analytics dashboard** with 3 Matplotlib charts using BytesIO
 - **MemoryListView** (ListView CBV) handling both GET and POST
 - **5 JSON API endpoints** (2 FBV, 2 CBV, 1 demo)
+
+---
+
+## Testing
+
+MEMORIA includes a comprehensive test suite covering database integrity, service layer functions, API payloads, and chart generation.
+
+### Test Files
+
+| File | Purpose | Tests |
+|---|---|---|
+| `unit_test/mock_data.py` | Shared test data module | 8 users, 5 plans, 26 memory bullets, 12 sessions, 36 messages |
+| `unit_test/database_unit_test.py` | Database relationships and constraints | FK chains, uniqueness, on_delete (CASCADE, PROTECT, SET_NULL), model methods |
+| `unit_test/feature_unit_test.py` | Service layer and API testing | 67 tests across 8 groups (users, sessions, memory, analytics, charts, API, models, edge cases) |
+
+### Running Tests
+
+```bash
+python unit_test/database_unit_test.py          # Run all database tests
+python unit_test/feature_unit_test.py           # Run all feature tests
+python unit_test/feature_unit_test.py --test-api    # Run API payload tests only
+python unit_test/feature_unit_test.py --test-charts # Run chart generation tests only
+```
+
+### Mock Data Coverage
+
+The shared mock data module provides realistic test personas covering power users, free tier users, edge cases (empty data, max-length fields, special characters), and deletion targets. Memory bullet strengths span all 5 histogram buckets (0-20, 21-40, 41-60, 61-80, 81-100), and all 3 MemoryType values (Semantic, Episodic, Procedural) are distributed across users. Subscription and payment records cover all status enums (ACTIVE, EXPIRED, INCOMPLETE, SUCCEEDED, FAILED, PENDING, CANCELLED).
+
+---
+
+## Week 5 Features
+
+Features added in Week 5:
+- **Comprehensive test infrastructure** with shared mock data module
+- **Database unit tests** expanded with model method validation, extended uniqueness checks, and failure counter with exit codes
+- **Feature unit tests** covering all 20 service functions, 5 user service functions, 4 API payload builders, and 3 chart generators
+- **Edge case testing** for empty users, boundary values, and non-numeric filter parameters
 
 ---
 
