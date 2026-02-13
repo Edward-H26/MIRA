@@ -138,6 +138,11 @@ Test files:
   1. `unit_test/mock_data.py`
      Shared test data module providing 8 user personas, 5 plans, 7 memories,
      26 memory bullets, 12 sessions, 36 messages, 5 subscriptions, and 7 payments.
+     Also seeds the existing admin account ('tester') with 5 sessions, 13 messages,
+     1 memory, and 5 memory bullets so the admin sees demo content immediately.
+     All sessions are backdated to different days within the last 30 days to
+     produce a realistic Conversation Activity chart (with at least one day
+     containing 2 sessions).
      Exports `cleanup_all_test_data()` and `create_all_test_data()` functions
      used by both test files.
 
@@ -196,6 +201,14 @@ The 8 user personas serve specific testing purposes:
   - test_edge_empty: Zero data, tests empty queryset code paths
   - test_edge_maxlen: Maximum length fields for boundary testing
   - test_edge_special: Special characters in content and metadata
+
+  Admin seeding (Step 8):
+  The script detects the existing admin account ('tester') and seeds it with
+  demo sessions, messages, and memories so the admin user sees data in the
+  sidebar, memory page, and analytics charts without creating a separate
+  test account. The admin's chat data is cleaned on each re-run (the account
+  itself is preserved). Sessions are backdated to days 28, 21, 12, and 6
+  (two sessions share day 6 to demonstrate multi-session days on the chart).
 
 Memory bullet strengths cover all 5 histogram buckets:
   0-20: 17 bullets | 21-40: 2 | 41-60: 3 | 61-80: 1 | 81-100: 2

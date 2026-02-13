@@ -10,6 +10,8 @@ from django.db.models.functions import TruncDate
 from django.http import Http404
 from django.utils import timezone
 
+import math
+
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
 from app.users.services import get_or_create_profile_for_user
@@ -376,6 +378,9 @@ def get_activity_chart_png(user):
         ax.set_title("Conversation Activity (Last 30 Days)", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
         ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
         ax.set_ylabel("Sessions Created", color=CHART_MUTED, fontsize=10)
+        max_count = max(counts)
+        ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+        ax.set_ylim(bottom=0, top=max_count + max(1, math.ceil(max_count * 0.15)))
         _apply_chart_style(ax)
         ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
     else:

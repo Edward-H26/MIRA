@@ -269,7 +269,7 @@ MEMORIA includes a comprehensive test suite covering database integrity, service
 
 | File | Purpose | Tests |
 |---|---|---|
-| `unit_test/mock_data.py` | Shared test data module | 8 users, 5 plans, 26 memory bullets, 12 sessions, 36 messages |
+| `unit_test/mock_data.py` | Shared test data module | 8 test users + admin seeding, 5 plans, 26 memory bullets, 12 sessions + 5 admin sessions, 36 + 13 messages |
 | `unit_test/database_unit_test.py` | Database relationships and constraints | FK chains, uniqueness, on_delete (CASCADE, PROTECT, SET_NULL), model methods |
 | `unit_test/feature_unit_test.py` | Service layer and API testing | 67 tests across 8 groups (users, sessions, memory, analytics, charts, API, models, edge cases) |
 
@@ -291,6 +291,8 @@ python unit_test/feature_unit_test.py --test-charts # Run chart generation tests
 ### Mock Data Coverage
 
 The shared mock data module provides realistic test personas covering power users, free tier users, edge cases (empty data, max-length fields, special characters), and deletion targets. Memory bullet strengths span all 5 histogram buckets (0-20, 21-40, 41-60, 61-80, 81-100), and all 3 MemoryType values (Semantic, Episodic, Procedural) are distributed across users. Subscription and payment records cover all status enums (ACTIVE, EXPIRED, INCOMPLETE, SUCCEEDED, FAILED, PENDING, CANCELLED).
+
+In addition to the 8 test users, the script seeds demo data for the existing admin account (`tester`). This includes 5 sessions (backdated across different days), 13 messages, 1 memory record, and 5 memory bullets so the admin user sees realistic content in the sidebar, memory page, and analytics charts immediately after seeding. All sessions (both test user and admin) are backdated to different days within the last 30 days to produce a realistic Conversation Activity chart, with at least one day containing 2 sessions.
 
 ---
 
