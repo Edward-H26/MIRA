@@ -108,19 +108,20 @@ python manage.py runserver
 |   |
 |   |-- chat/                     # Chat sessions, messages, memory
 |   |   |-- models: Memory, MemoryBullet, Session, Message
-|   |   |-- views.py              # chat_view, memory_view, ConversationMessagesView, MemoryBulletsView
-|   |   |-- urls.py               # /chat/, /chat/memory/, /chat/c/<id>/, /chat/m/<id>/
-|   |   |-- service.py            # create_user_message_with_agent_reply()
+|   |   |-- views.py              # MemoryListView, ConversationMessagesView, MemoryBulletsView, analytics, charts, rename/delete
+|   |   |-- urls.py               # /chat/memory/, /chat/c/<id>/, /chat/m/<id>/, analytics, API routes (15 patterns)
+|   |   |-- api.py                # JSON API views (memories, analytics, sessions, messages, demo)
+|   |   |-- service.py            # 22 service functions (sessions, memory, analytics, charts, API payloads)
 |   |   |-- context_processors.py # user_sessions (injects sidebar session list)
 |   |   |-- templatetags/         # chat_extras: relative_time filter
-|   |   |-- templates/chat/       # conversation_detail.html, memory.html
-|   |   `-- static/chat/          # chat.css, conversation.css, memory.css
+|   |   |-- templates/chat/       # conversation_detail.html, memory.html, analytics.html
+|   |   `-- static/chat/          # analytics.css, chat.css, conversation.css, memory.css
 |   |
 |   |-- memoria/                  # Main app wiring (landing, home, 404)
 |   |   |-- views.py              # home(), landing(), not_found_view()
 |   |   |-- urls.py               # /, /home/
 |   |   |-- templates/memoria/    # home.html, landing.html
-|   |   `-- static/memoria/       # landing.css, landing-overrides.css
+|   |   `-- static/memoria/       # home.css, landing.css, landing-overrides.css
 |   |
 |   `-- users/                    # Authentication and user profiles
 |       |-- models.py             # User (profile with profile_img)
@@ -163,7 +164,7 @@ python manage.py runserver
 |
 |-- data/                         # Local data storage
 `-- unit_test/                    # Test suite
-    |-- mock_data.py              # Shared test data (8 users, 5 plans, 26 bullets)
+    |-- mock_data.py              # Shared test data (8 users + admin, 5 plans, 26 bullets, 17 sessions, 49 messages)
     |-- database_unit_test.py     # Database relationship and constraint tests
     `-- feature_unit_test.py      # Service layer and API payload tests
 ```
