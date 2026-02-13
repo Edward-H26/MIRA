@@ -8,7 +8,8 @@
 
 {% block content %}
 <div class="memory-shell" data-collapsed-offset="sidebar">
-    <form class="memory-toolbar" method="get">
+    <form class="memory-toolbar" method="post">
+        {% csrf_token %}
         <div class="memory-search">
             <span class="memory-search-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
