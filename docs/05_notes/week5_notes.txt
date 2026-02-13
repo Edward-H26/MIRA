@@ -215,3 +215,296 @@ Memory bullet strengths cover all 5 histogram buckets:
 
 Subscription statuses: ACTIVE (3), EXPIRED (1), INCOMPLETE (1)
 Payment statuses: SUCCEEDED (3), FAILED (1), PENDING (1), CANCELLED (1)
+
+================================================================================
+
+Section 8: Functional Unit Mappings (View to Model to URL to Template)
+======================================================================
+
+Each unit below documents one interconnected feature: the view function or
+class in views.py, the model class(es) it queries from models.py, the URL
+pattern in urls.py, and the template it renders (or JSON response for APIs).
+
+8.1 Landing Page Unit
+----------------------
+
+  View:     app/memoria/views.py :: landing() [FBV]
+  Model:    None (static page)
+  URL:      app/memoria/urls.py :: path("", views.landing, name="landing")
+  Template: app/memoria/templates/memoria/landing.html
+
+  Flow: User visits / -> landing() renders the landing page. If the user is
+  already authenticated, the page shows a link to /home/. Otherwise it shows
+  Log in and Register buttons that open modal dialogs loaded via AJAX from
+  the users app.
+
+8.2 Home Page Unit
+-------------------
+
+  View:     app/memoria/views.py :: home() [FBV]
+  Models:   chat.Session, chat.Memory (via service layer)
+  URL:      app/memoria/urls.py :: path("home/", views.home, name="home")
+  Template: app/memoria/templates/memoria/home.html
+
+  Flow: GET renders the home dashboard. If the user is authenticated,
+  get_home_context_for_user() provides the user's sessions (ordered by
+  created_at descending) and memories (ordered by updated_at descending)
+  for display. Unauthenticated users see a guest view with empty lists.
+  POST reads request.POST["message"], creates a new Session with an
+  opening exchange via create_home_session_for_user(), and redirects to
+  session.get_absolute_url(). If the message is empty or session creation
+  fails, the view redirects back to /home/.
+
+  Form on this page:
+    POST form: method="post" with {% csrf_token %}, name="message",
+    creates a new conversation session and redirects to it.
+
+8.3 Conversation Detail Unit
+-----------------------------
+
+  View:     app/chat/views.py :: ConversationMessagesView [CBV: View]
+  Models:   chat.Session, chat.Message
+  URL:      app/chat/urls.py :: path("c/<int:session_id>/", ..., name="conversation_detail")
+  Template: app/chat/templates/chat/conversation_detail.html
+
+  Flow: GET loads the session with prefetched messages via
+  get_session_for_user(with_messages=True). POST reads request.POST["message"],
+  creates a user message and an agent reply via
+  create_user_message_with_agent_reply(), then redirects back to
+  session.get_absolute_url(). AJAX POST returns a JsonResponse instead.
+  The template uses {% for %} to iterate messages and {% csrf_token %} for
+  the POST form.
+
+8.4 Memory List Unit
+---------------------
+
+  View:     app/chat/views.py :: MemoryListView [CBV: ListView]
+  Models:   chat.MemoryBullet, chat.Memory
+  URL:      app/chat/urls.py :: path("memory/", ..., name="memory")
+  Template: app/chat/templates/chat/memory.html
+
+  Flow: The ListView handles both GET and POST. post() delegates to get().
+  get_queryset() reads search_query, memory_type, and sort_key from either
+  request.POST or request.GET, then calls get_memory_list_data() which
+  filters using __icontains and __gte lookups, annotates with
+  ExpressionWrapper(F("helpful_count") - F("harmful_count")), and orders
+  results. get_context_data() adds aggregation summaries from
+  get_memory_summary() (Count, Avg, Max, Min, Sum). The template uses
+  {% for %}/{% empty %} for the memory grid and links each card to
+  bullet.memory.get_absolute_url.
+
+  Search form: method="post" with {% csrf_token %}, name="q" for search,
+  hidden inputs for type and sort filters.
+
+8.5 Memory Detail Unit
+-----------------------
+
+  View:     app/chat/views.py :: MemoryBulletsView [CBV: DetailView]
+  Models:   chat.Memory, chat.MemoryBullet
+  URL:      app/chat/urls.py :: path("m/<int:memory_id>/", ..., name="memory_detail")
+  Template: app/chat/templates/chat/memory_detail.html
+
+  Flow: The DetailView uses pk_url_kwarg="memory_id" to look up a Memory
+  record. get_queryset() filters by the current user's profile and
+  prefetches the related memorybullet_set. The template displays breadcrumb
+  navigation (back to /chat/memory/), memory metadata (access_clock,
+  created_at, updated_at), and iterates over memorybullet_set.all showing
+  each bullet's type, topic, content, strength, helpful/harmful counts,
+  TTL, and last_accessed. Uses {% for %}/{% empty %} for the bullet list.
+
+8.6 Analytics Dashboard Unit
+------------------------------
+
+  View:     app/chat/views.py :: analytics_view() [FBV]
+            app/chat/views.py :: memory_type_chart_png() [FBV]
+            app/chat/views.py :: memory_strength_chart_png() [FBV]
+            app/chat/views.py :: activity_chart_png() [FBV]
+  Models:   chat.MemoryBullet, chat.Session, chat.Message
+  URLs:     app/chat/urls.py ::
+              path("analytics/", ..., name="analytics")
+              path("analytics/memory-type.png", ..., name="memory_type_chart")
+              path("analytics/memory-strength.png", ..., name="memory_strength_chart")
+              path("analytics/activity.png", ..., name="activity_chart")
+  Template: app/chat/templates/chat/analytics.html (dashboard page)
+            PNG image endpoints return HttpResponse(content_type="image/png")
+
+  Flow: analytics_view() calls get_analytics_dashboard_context() which
+  computes total_memories, total_sessions, total_messages, avg_strength,
+  and type_summary using Count, Avg, Sum aggregations. The template displays
+  stat cards and embeds three chart images via <img src="{% url ... %}">.
+  Each chart view calls a service function that queries the ORM, generates
+  a Matplotlib figure, renders it to a BytesIO buffer, calls plt.close()
+  to prevent memory leaks, and returns the PNG bytes. Charts: pie (memory
+  type distribution), bar (memory strength histogram), line (30-day
+  session activity via TruncDate + Count).
+
+8.7 User Authentication Unit
+------------------------------
+
+  View:     app/users/views.py :: login_view() [FBV]
+            app/users/views.py :: register_view() [FBV]
+            app/users/views.py :: logout_view() [FBV]
+  Models:   django.contrib.auth.models.User, app.users.models.User (profile)
+  URLs:     app/users/urls.py ::
+              path("login/", ..., name="login")
+              path("register/", ..., name="register")
+              path("logout/", ..., name="logout")
+  Templates: app/users/templates/users/login_form.html
+             app/users/templates/users/register_form.html
+
+  Flow: login_view() handles GET (returns form HTML for AJAX modal loading)
+  and POST (authenticates via services.authenticate_and_login(), returns
+  JsonResponse for AJAX or redirects). register_view() validates via
+  services.validate_registration(), creates user+profile via
+  services.create_user_with_profile(), and logs in. logout_view() calls
+  django.contrib.auth.logout() and redirects. All POST forms include
+  {% csrf_token %}.
+
+8.8 Profile and Password Unit
+-------------------------------
+
+  View:     app/users/views.py :: profile_view() [FBV]
+            app/users/views.py :: change_password_view() [FBV]
+  Models:   app.users.models.User (profile with profile_img)
+  URLs:     app/users/urls.py ::
+              path("profile/", ..., name="profile")
+              path("password-change/", ..., name="password_change")
+  Templates: app/users/templates/users/profile.html
+             app/users/templates/users/password_change_form.html
+
+  Flow: profile_view() handles GET (renders profile page with username,
+  email, avatar) and POST (updates profile_img via request.FILES, email via
+  request.POST). change_password_view() validates current password, checks
+  new password match, calls set_password() and update_session_auth_hash().
+  Password form opens in a modal dialog via AJAX.
+
+8.9 JSON API Unit
+------------------
+
+  View:     app/chat/api.py :: api_memory_bullets() [FBV]
+            app/chat/api.py :: api_analytics_summary() [FBV]
+            app/chat/api.py :: SessionAPIView [CBV: View]
+            app/chat/api.py :: MessageAPIView [CBV: View]
+            app/chat/api.py :: api_demo_response() [FBV]
+  Models:   chat.MemoryBullet, chat.Memory, chat.Session, chat.Message
+  URLs:     app/chat/urls.py ::
+              path("api/memories/", ..., name="api_memories")
+              path("api/analytics/", ..., name="api_analytics")
+              path("api/sessions/", ..., name="api_sessions")
+              path("api/sessions/<int:session_id>/messages/", ..., name="api_messages")
+              path("api/demo/", ..., name="api_demo")
+  Templates: None (all return JsonResponse or HttpResponse)
+
+  Flow: Each API view calls a corresponding service function
+  (get_api_memory_bullets_payload, get_api_analytics_summary_payload,
+  get_api_sessions_payload, get_api_messages_payload) that queries the ORM,
+  serializes results into dicts, and returns them. All user-scoped endpoints
+  require login. Filtering via GET query parameters: ?q=, ?type=, ?topic=,
+  ?strength_min=, ?role=. The demo endpoint returns JsonResponse for
+  ?format=json, HttpResponse with text/html for ?format=html, and
+  HttpResponse with text/plain for ?format=text, demonstrating MIME type
+  differences.
+
+  FBV APIs: api_memory_bullets (4 filters), api_analytics_summary (no filters)
+  CBV APIs: SessionAPIView (?q= filter), MessageAPIView (?role= filter)
+
+8.10 Session Management Unit
+------------------------------
+
+  View:     app/chat/views.py :: session_rename_view() [FBV]
+            app/chat/views.py :: session_delete_view() [FBV]
+  Models:   chat.Session
+  URLs:     app/chat/urls.py ::
+              path("c/<int:session_id>/rename/", ..., name="session_rename")
+              path("c/<int:session_id>/delete/", ..., name="session_delete")
+  Templates: None (return JsonResponse)
+
+  Flow: Both are POST-only views (enforced by @require_http_methods(["POST"])).
+  session_rename_view() reads request.POST["title"], truncates to 200
+  characters, saves, and returns {"ok": true, "title": "..."}. 
+  session_delete_view() deletes the session (CASCADE removes all messages)
+  and returns {"ok": true}. Called from JavaScript in main.js via fetch()
+  with CSRF token in the X-CSRFToken header.
+
+================================================================================
+
+Section 9: Teammate Notes, Reminders, and Challenges
+====================================================
+
+9.1 Reminders
+--------------
+
+  1. Always run "python manage.py migrate" after pulling changes.
+  2. Copy .env.example to .env and set DJANGO_SECRET_KEY before running.
+  3. Install all dependencies: pip install -r requirements.txt
+     (includes matplotlib for chart generation).
+  4. Seed demo data: python unit_test/mock_data.py
+     This creates 8 test users and seeds the admin 'tester' account with
+     sessions, messages, and memories for visible demo content.
+  5. Run the dev server with:
+     DJANGO_SETTINGS_MODULE=memoria.settings.development python manage.py runserver
+  6. Run unit tests from the project root:
+     python unit_test/database_unit_test.py
+     python unit_test/feature_unit_test.py
+
+9.2 Challenges Encountered
+----------------------------
+
+  1. Memory page form method: The memory search form was initially GET.
+     We switched it to POST with {% csrf_token %} to demonstrate a POST
+     search form that hides sensitive memory search terms from the URL.
+     The backend get_queryset() reads from both request.POST and request.GET
+     so the page still works if accessed with URL query parameters.
+
+  2. Home page dual-purpose POST: The home page handles two distinct POST
+     actions on the same URL. We distinguish them by checking which form
+     field is present: request.POST.get("search") triggers conversation
+     content search, while request.POST.get("message") creates a new
+     session. This required careful ordering in the view logic.
+
+  3. Chart memory management: Matplotlib figures must be explicitly closed
+     with plt.close(fig) after rendering to BytesIO. Without this, repeated
+     chart requests accumulate Figure objects and leak memory.
+
+  4. CSRF for AJAX: Sidebar conversation rename and delete operations use
+     JavaScript fetch() with POST. The CSRF token must be sent in the
+     X-CSRFToken header, extracted from the csrftoken cookie, not as a form
+     field.
+
+9.3 Screenshot Evidence
+------------------------
+
+  All screenshot evidence is stored in docs/imgs/:
+
+  Section 1 (URL Linking & Navigation):
+    home_dashboard_normal.png       Home page with sidebar and content
+    home_dashboard_empty.png        Home page with no session data
+    sidebar_collapsed.png           Sidebar collapsed state
+    sidebar_empty.png               Sidebar with no conversations
+    conversation_detail_normal.png  Conversation detail page via PK link
+
+  Section 2 (ORM Queries & Data Presentation):
+    memory_management_normal.png    Memory list with stat cards and grid
+    memory_management_empty.png     Empty memory list with {% empty %}
+    memory_filtered_semantic.png    Filtered by Semantic memory type
+    memory_searched.png             Search results for a query
+    memory_searched_empty.png       Empty search results with {% empty %}
+    memory_sorted_affect.png        Sorted by affect score
+    memory_sorted_strength.png      Sorted by strength
+
+  Section 3 (Static Files & UI Styling):
+    landing_page.png                Landing page with custom fonts and layout
+    profile_page_normal.png         Profile page with CSS styling
+    profile_page_empty.png          Profile page with no avatar
+
+  Section 5 (Forms & User Input):
+    login_modal.png                 Login form with {% csrf_token %}
+    login_error.png                 Login form with validation error
+    register_modal.png              Register form with {% csrf_token %}
+    register_error.png              Register form with validation error
+    password_change_modal.png       Password change form
+
+  Section 6 (Creating APIs):
+    api_json_no_filter.png          JSON API response without filters
+    api_json_with_filter.png        JSON API response with query filters
+    api_http.png                    HttpResponse demo endpoint
