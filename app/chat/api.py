@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 
 from .service import (
     get_api_analytics_summary_payload,
+    get_api_daily_active_users_payload,
     get_api_memory_bullets_payload,
     get_api_messages_payload,
     get_api_sessions_payload,
@@ -50,3 +51,8 @@ class MessageAPIView(View):
             role_filter=request.GET.get("role", ""),
         )
         return JsonResponse(payload)
+
+
+@require_http_methods(["GET"])
+def api_public_daily_active_users(request):
+    return JsonResponse(get_api_daily_active_users_payload())

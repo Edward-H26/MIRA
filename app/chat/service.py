@@ -467,3 +467,26 @@ def get_api_messages_payload(user, session_id, role_filter=""):
         for m in messages
     ]
     return {"session_id": session_id, "count": len(data), "messages": data}
+
+
+def get_api_daily_active_users_payload():
+    daily = (
+        Message.objects
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(
+            active_users=Count("session__user_id", distinct=True),
+            message_count=Count("id"),
+        )
+        .order_by("day")
+    )
+
+    results = [
+        {
+            "date": row["day"].isoformat(),
+            "active_users": row["active_users"],
+            "message_count": row["message_count"],
+        }
+        for row in daily
+    ]
+    return {"count": len(results), "results": results}

@@ -17,4 +17,5 @@ urlpatterns = [
     path("api/analytics/", api.api_analytics_summary, name="api_analytics"),
     path("api/sessions/", api.SessionAPIView.as_view(), name="api_sessions"),
     path("api/sessions/<int:session_id>/messages/", api.MessageAPIView.as_view(), name="api_messages"),
+    path("api/public/active-users/", api.api_public_daily_active_users, name="api_daily_active_users"),
 ]
