@@ -16,7 +16,6 @@ Primary goals:
 - support current UI features (for example, sidebar conversation search)
 - provide filtered data retrieval via query parameters
 - demonstrate both FBV and CBV implementation styles in Django
-- demonstrate `HttpResponse` vs `JsonResponse` MIME type differences
 
 ## 2. Base Route Group
 
@@ -73,14 +72,6 @@ Supported filter:
 Example:
 - `/chat/api/sessions/12/messages/?role=2`
 
-### 4.5 `GET /chat/api/demo/` (FBV)
-
-Demonstrates response type differences:
-- `?format=json` -> `JsonResponse` (`application/json`)
-- `?format=html` -> `HttpResponse` (`text/html`)
-- `?format=text` -> `HttpResponse` (`text/plain`)
-
 ## 5. Response Design
 
-Standard API endpoints return `JsonResponse` with list/count structures for easy frontend consumption.  
-The demo endpoint intentionally returns different MIME types to satisfy assignment comparison requirements.
+Standard API endpoints return `JsonResponse` with list/count structures for easy frontend consumption.

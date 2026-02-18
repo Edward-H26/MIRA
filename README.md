@@ -241,9 +241,8 @@ Detailed API documentation:
 | `/chat/api/analytics/` | GET | Aggregated analytics summary | None |
 | `/chat/api/sessions/` | GET | User sessions | `?q=` |
 | `/chat/api/sessions/<id>/messages/` | GET | Messages for a session | `?role=` |
-| `/chat/api/demo/` | GET | HttpResponse vs JsonResponse demo | `?format=json\|html\|text` |
 
-The sessions API powers the sidebar search modal (Ctrl+K). The demo endpoint demonstrates MIME type differences between HttpResponse and JsonResponse.
+The sessions API powers the sidebar search modal (Ctrl+K).
 
 ---
 
@@ -258,7 +257,7 @@ Features added in Week 4:
 - **ORM aggregations** (Count, grouped Count, Avg, Max, Min, Sum) displayed in stat cards
 - **Analytics dashboard** with 3 Matplotlib charts using BytesIO
 - **MemoryListView** (ListView CBV) handling both GET and POST
-- **5 JSON API endpoints** (2 FBV, 2 CBV, 1 demo)
+- **4 JSON API endpoints** (2 FBV, 2 CBV)
 
 ---
 

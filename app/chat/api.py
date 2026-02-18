@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.http import require_http_methods
@@ -50,20 +50,3 @@ class MessageAPIView(View):
             role_filter=request.GET.get("role", ""),
         )
         return JsonResponse(payload)
-
-
-@require_http_methods(["GET"])
-def api_demo_response(request):
-    sample = {"project": "MEMORIA", "version": "1.0", "description": "Memory Enhanced AI Assistant"}
-    fmt = request.GET.get("format", "json").strip()
-    if fmt == "html":
-        return HttpResponse(
-            "<html><body><h1>MEMORIA API</h1><p>This response uses text/html MIME type.</p></body></html>",
-            content_type="text/html",
-        )
-    if fmt == "text":
-        return HttpResponse(
-            "MEMORIA API: Memory Enhanced AI Assistant (text/plain MIME type)",
-            content_type="text/plain",
-        )
-    return JsonResponse(sample)
