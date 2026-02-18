@@ -329,16 +329,6 @@ def get_analytics_dashboard_context_with_reports(user, session_group="month", me
         "type_summary": type_summary,
         "session_group": session_group,
         "memory_group": memory_group,
-        "session_group_options": [
-            {"value": "day", "label": "Day"},
-            {"value": "week", "label": "Week"},
-            {"value": "month", "label": "Month"},
-        ],
-        "memory_group_options": [
-            {"value": "memory_type", "label": "Memory Type"},
-            {"value": "topic", "label": "Topic"},
-            {"value": "month", "label": "Month"},
-        ],
         "session_grouped_rows": session_grouped_rows,
         "memory_grouped_rows": memory_grouped_rows,
         "session_group_count": len(session_grouped_rows),

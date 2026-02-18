@@ -1,20 +1,25 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Active Users (Vega-Lite)</title>
-    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-</head>
-<body>
-    <div id="vis"></div>
+{% block title %}Daily Active Users (Vega-Lite){% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/analytics.css' %}?v={% now 'U' %}">
+{% endblock %}
 
-    <script>
-        const specUrl = "{% static 'chat/vega_specs/vega_daily_users_bar.json' %}";
-        vegaEmbed("#vis", specUrl, {actions: true});
-    </script>
-</body>
-</html>
+{% block content %}
+<div class="analytics-shell" data-collapsed-offset="sidebar">
+    <h1 class="analytics-title">Daily Active Users (Vega-Lite)</h1>
+    <div class="analytics-chart-section">
+        <div id="vis"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+<script>
+    const specUrl = "{% static 'chat/vega_specs/vega_daily_users_bar.json' %}";
+    vegaEmbed("#vis", specUrl, {actions: true});
+</script>
+{% endblock %}

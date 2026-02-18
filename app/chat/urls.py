@@ -3,7 +3,8 @@ from django.urls import path
 from . import api, views
 
 app_name = "chat"
-urlpatterns = [
+
+page_urlpatterns = [
     path("memory/", views.MemoryListView.as_view(), name="memory"),
     path("c/<int:session_id>/", views.ConversationMessagesView.as_view(), name="conversation_detail"),
     path("c/<int:session_id>/rename/", views.session_rename_view, name="session_rename"),
@@ -25,6 +26,9 @@ urlpatterns = [
         views.vega_daily_messages_chart_view,
         name="charts_messages",
     ),
+]
+
+api_urlpatterns = [
     path("api/memories/", api.api_memory_bullets, name="api_memories"),
     path("api/analytics/", api.api_analytics_summary, name="api_analytics"),
     path("api/sessions/", api.SessionAPIView.as_view(), name="api_sessions"),
@@ -36,3 +40,5 @@ urlpatterns = [
         name="api_active_users_holidays",
     ),
 ]
+
+urlpatterns = page_urlpatterns + api_urlpatterns
