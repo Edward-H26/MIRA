@@ -8,10 +8,10 @@ from app.chat.service import create_home_session_for_user, get_home_context_for_
 def home(request):
     template = loader.get_template("memoria/home.html")
 
-    if request.method == "POST":
-        if not request.user.is_authenticated:
-            return redirect("memoria:landing")
+    if not request.user.is_authenticated:
+        return redirect("memoria:landing")
 
+    if request.method == "POST":
         content = request.POST.get("message", "").strip()
         if not content:
             return redirect("memoria:home")
@@ -20,10 +20,7 @@ def home(request):
             return redirect("memoria:home")
         return redirect(session.get_absolute_url())
 
-    if request.user.is_authenticated:
-        context = get_home_context_for_user(request.user)
-    else:
-        context = {"username": "Guest", "sessions": [], "memories": []}
+    context = get_home_context_for_user(request.user)
     return HttpResponse(template.render(context, request))
 
 
