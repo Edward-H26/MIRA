@@ -187,7 +187,7 @@
                         aria-expanded="false"
                     >
                         {% if user.is_authenticated and user.profile.profile_img %}
-                            <img src="{{ user.profile.profile_img.url }}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
+                            <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
                         {% else %}
                             <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
                         {% endif %}
@@ -200,7 +200,7 @@
                         <div class="menu-header">
                         <div class="menu-header-avatar">
                             {% if user.is_authenticated and user.profile.profile_img %}
-                                <img src="{{ user.profile.profile_img.url }}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" />
+                                <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}-{{ user.profile.profile_img.size }}" alt="Avatar" />
                             {% else %}
                                 <img src="{% static 'images/avatar.png' %}" alt="Avatar" />
                             {% endif %}

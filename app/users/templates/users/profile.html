@@ -14,14 +14,14 @@
       <h1 class="profile-hero-title">Account Settings</h1>
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <input id="profile_img" name="profile_img" type="file" accept="image/*" class="profile-file-input">
+        <input id="profile_img" name="profile_img" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" class="profile-file-input">
 
         <section class="profile-card">
           <h2 class="profile-card-title">Account Information</h2>
           <div class="profile-avatar-row">
             <label class="profile-avatar" for="profile_img" aria-label="Upload avatar">
               {% if profile.profile_img %}
-                <img id="profile-avatar-preview" src="{{ profile.profile_img.url }}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar">
+                <img id="profile-avatar-preview" src="{% url 'users:avatar' profile.uuid %}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar">
                 <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
               {% else %}
                 <img id="profile-avatar-preview" src="{% static 'images/avatar.png' %}" alt="Default avatar">
@@ -37,6 +37,9 @@
             </div>
           </div>
           <button type="submit" name="save_account" value="1" class="profile-primary-button">Save changes</button>
+          {% if account_error and request.POST.save_account %}
+            <p class="profile-error">{{ account_error }}</p>
+          {% endif %}
           {% if success and request.POST.save_account %}
             <p class="profile-success">Your profile has been updated.</p>
           {% endif %}

@@ -1,8 +1,13 @@
+from pathlib import Path
+from uuid import uuid4
+
 from django.db import models
 
 def avatar_upload_to(instance, filename):
-    """"""
-    return f"avatars/users/{instance.user_id}"
+    extension = Path(filename).suffix.lower()
+    if not extension:
+        extension = ".jpg"
+    return f"avatars/users/{instance.uuid}/{uuid4().hex}{extension}"
 
 # Create your models here.
 class User(models.Model):
@@ -12,6 +17,8 @@ class User(models.Model):
     """
     # Link to the Django auth user record this profile extends; cascade to remove profile if auth user is deleted
     user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name='profile')
+    # Opaque identifier for URL routing.
+    uuid = models.UUIDField(default=uuid4, unique=True, editable=False, db_index=True)
     # Profile avatar image for the user
     profile_img = models.ImageField(null=True, blank=True, upload_to=avatar_upload_to)
 

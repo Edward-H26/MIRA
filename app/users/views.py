@@ -1,11 +1,17 @@
 from django.contrib.auth import logout
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.http import FileResponse
+from django.http import Http404
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
+from pathlib import Path
 
 from . import services
+from .models import User as Profile
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -74,6 +80,7 @@ def profile_view(request):
     if request.method == "POST":
         email_success = False
         account_success = False
+        account_error = ""
         email = request.POST.get("email", "").strip()
         if request.POST.get("save_email"):
             if request.user.email != email:
@@ -82,11 +89,17 @@ def profile_view(request):
             email_success = True
         profile_img = request.FILES.get("profile_img")
         if profile_img and request.POST.get("save_account"):
-            if profile.profile_img:
-                profile.profile_img.delete(save=False)
-            profile.profile_img = profile_img
-            profile.save(update_fields=["profile_img"])
-            account_success = True
+            extension = Path(profile_img.name).suffix.lower()
+            allowed_extensions = {".png", ".jpg", ".jpeg"}
+            allowed_content_types = {"image/png", "image/jpeg"}
+            if extension not in allowed_extensions or profile_img.content_type not in allowed_content_types:
+                account_error = "Avatar must be a PNG or JPG image."
+            else:
+                if profile.profile_img:
+                    profile.profile_img.delete(save=False)
+                profile.profile_img = profile_img
+                profile.save(update_fields=["profile_img"])
+                account_success = True
         return render(
             request,
             "users/profile.html",
@@ -95,6 +108,7 @@ def profile_view(request):
                 "username": request.user.username,
                 "email": request.user.email,
                 "success": account_success,
+                "account_error": account_error,
                 "email_success": email_success,
             },
         )
@@ -107,6 +121,27 @@ def profile_view(request):
             "email": request.user.email,
         },
     )
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def avatar_view(request, uuid):
+    profile = get_object_or_404(Profile, uuid=uuid)
+    if request.user.id != profile.user_id and not request.user.is_staff:
+        raise Http404()
+    if not profile.profile_img:
+        raise Http404()
+    try:
+        return FileResponse(profile.profile_img.open("rb"))
+    except FileNotFoundError:
+        # Clear stale DB path so future page renders use the default avatar branch.
+        profile.profile_img = None
+        profile.save(update_fields=["profile_img"])
+        default_avatar_path = settings.BASE_DIR / "static" / "images" / "avatar.png"
+        try:
+            return FileResponse(open(default_avatar_path, "rb"))
+        except FileNotFoundError:
+            raise Http404()
 
 
 @login_required(login_url="/")
