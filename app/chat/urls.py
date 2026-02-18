@@ -13,6 +13,8 @@ urlpatterns = [
     path("analytics/memory-type.png", views.memory_type_chart_png, name="memory_type_chart"),
     path("analytics/memory-strength.png", views.memory_strength_chart_png, name="memory_strength_chart"),
     path("analytics/activity.png", views.activity_chart_png, name="activity_chart"),
+    path("analytics/export/sessions/", views.export_sessions_report, name="export_sessions_report"),
+    path("analytics/export/memory-bullets/", views.export_memory_bullets_report, name="export_memory_bullets_report"),
     path(
         "charts/active-users/",
         views.vega_daily_users_chart_view,

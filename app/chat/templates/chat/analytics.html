@@ -67,5 +67,303 @@
             </div>
         </div>
     </div>
+
+    <div class="analytics-reports">
+        <div class="analytics-chart-section analytics-report-section" data-report-section="sessions">
+            <h2 class="analytics-chart-heading">Conversation Sessions Summary</h2>
+            <p class="analytics-chart-caption">
+                Grouped conversation summary with session and message totals.
+            </p>
+
+            <form method="get" class="analytics-filter-form">
+                <input type="hidden" name="session_group" value="{{ session_group }}" class="analytics-group-filter-input">
+                <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
+                    <button class="analytics-export-picker-btn analytics-group-picker-btn" type="button" id="session-group-filter" aria-expanded="false">
+                        <span class="analytics-group-picker-text">
+                            Group by {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
+                        </span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                    <div class="analytics-export-picker-menu analytics-group-picker-menu" role="menu">
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if session_group == 'day' %} is-selected{% endif %}" data-value="day">Day</button>
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if session_group == 'week' %} is-selected{% endif %}" data-value="week">Week</button>
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if session_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
+                    </div>
+                </div>
+                <input type="hidden" name="memory_group" value="{{ memory_group }}">
+            </form>
+
+            <div class="analytics-table-wrap">
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
+                            </th>
+                            <th>Sessions</th>
+                            <th>Message Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in session_grouped_rows %}
+                        <tr>
+                            <td>{{ item.group_label }}</td>
+                            <td>{{ item.session_count }}</td>
+                            <td>{{ item.message_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No sessions found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="analytics-report-total">
+                {{ session_group_count }} groups. Total sessions: {{ total_sessions }}. Total messages: {{ total_messages }}.
+            </div>
+
+            <form method="get" action="{% url 'chat:export_sessions_report' %}" class="analytics-export-form">
+                <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
+                <label for="session-export-format" class="analytics-export-label">Download</label>
+                <div class="analytics-export-picker-wrap">
+                    <button class="analytics-export-picker-btn" type="button" id="session-export-format" aria-expanded="false">
+                        <span class="analytics-export-picker-text">CSV</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                    <div class="analytics-export-picker-menu" role="menu">
+                        <button type="button" class="analytics-export-picker-item is-selected" data-value="csv">CSV</button>
+                        <button type="button" class="analytics-export-picker-item" data-value="json">JSON</button>
+                    </div>
+                </div>
+                <button type="submit" class="analytics-export-btn">Download</button>
+            </form>
+        </div>
+
+        <div class="analytics-chart-section analytics-report-section" data-report-section="memory-bullets">
+            <h2 class="analytics-chart-heading">Memory Bullets Summary</h2>
+            <p class="analytics-chart-caption">
+                Grouped memory summary with counts and average strength.
+            </p>
+
+            <form method="get" class="analytics-filter-form">
+                <input type="hidden" name="session_group" value="{{ session_group }}">
+                <input type="hidden" name="memory_group" value="{{ memory_group }}" class="analytics-group-filter-input">
+                <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
+                    <button class="analytics-export-picker-btn analytics-group-picker-btn" type="button" id="memory-group-filter" aria-expanded="false">
+                        <span class="analytics-group-picker-text">
+                            Group by {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
+                        </span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                <div class="analytics-export-picker-menu analytics-group-picker-menu" role="menu">
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if memory_group == 'memory_type' %} is-selected{% endif %}" data-value="memory_type">Memory Type</button>
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if memory_group == 'topic' %} is-selected{% endif %}" data-value="topic">Topic</button>
+                        <button type="button" class="analytics-export-picker-item analytics-group-picker-item{% if memory_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="analytics-table-wrap">
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
+                            </th>
+                            <th>Memory Bullets</th>
+                            <th>Avg Strength</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in memory_grouped_rows %}
+                        <tr>
+                            <td>{{ item.group_label }}</td>
+                            <td>{{ item.bullet_count }}</td>
+                            <td>{{ item.avg_strength|floatformat:1|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No memory bullets found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="analytics-report-total">
+                {{ memory_group_count }} groups. Total memory bullets: {{ total_memories }}.
+            </div>
+
+            <form method="get" action="{% url 'chat:export_memory_bullets_report' %}" class="analytics-export-form">
+                <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
+                <label for="memory-export-format" class="analytics-export-label">Download</label>
+                <div class="analytics-export-picker-wrap">
+                    <button class="analytics-export-picker-btn" type="button" id="memory-export-format" aria-expanded="false">
+                        <span class="analytics-export-picker-text">CSV</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                    <div class="analytics-export-picker-menu" role="menu">
+                        <button type="button" class="analytics-export-picker-item is-selected" data-value="csv">CSV</button>
+                        <button type="button" class="analytics-export-picker-item" data-value="json">JSON</button>
+                    </div>
+                </div>
+                <button type="submit" class="analytics-export-btn">Download</button>
+            </form>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const closeAllMenus = () => {
+            const forms = document.querySelectorAll(".analytics-export-form");
+            forms.forEach((form) => {
+                const menu = form.querySelector(".analytics-export-picker-menu");
+                const button = form.querySelector(".analytics-export-picker-btn");
+                const section = form.closest(".analytics-chart-section");
+                if (menu) menu.classList.remove("is-open");
+                if (button) button.setAttribute("aria-expanded", "false");
+                if (section) section.classList.remove("export-menu-open");
+            });
+            document.querySelectorAll(".analytics-group-picker-menu").forEach((menu) => {
+                menu.classList.remove("is-open");
+            });
+            document.querySelectorAll(".analytics-group-picker-btn").forEach((button) => {
+                button.setAttribute("aria-expanded", "false");
+            });
+            document.querySelectorAll(".analytics-chart-section").forEach((section) => {
+                section.classList.remove("export-menu-open");
+            });
+        };
+
+        const initExportMenus = (root) => {
+            const forms = root.querySelectorAll(".analytics-export-form");
+            forms.forEach((form) => {
+                const button = form.querySelector(".analytics-export-picker-btn");
+                const menu = form.querySelector(".analytics-export-picker-menu");
+                const input = form.querySelector(".analytics-export-format-input");
+                const text = form.querySelector(".analytics-export-picker-text");
+                const items = form.querySelectorAll(".analytics-export-picker-item");
+
+                if (!button || !menu || !input || !text) return;
+
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    const willOpen = !menu.classList.contains("is-open");
+                    closeAllMenus();
+                    menu.classList.toggle("is-open", willOpen);
+                    button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+                    const section = form.closest(".analytics-chart-section");
+                    if (section && willOpen) section.classList.add("export-menu-open");
+                });
+
+                items.forEach((item) => {
+                    item.addEventListener("click", () => {
+                        const value = item.dataset.value;
+                        input.value = value;
+                        text.textContent = value.toUpperCase();
+                        items.forEach((n) => n.classList.remove("is-selected"));
+                        item.classList.add("is-selected");
+                        menu.classList.remove("is-open");
+                        button.setAttribute("aria-expanded", "false");
+                        const section = form.closest(".analytics-chart-section");
+                        if (section) section.classList.remove("export-menu-open");
+                    });
+                });
+            });
+        };
+
+        const initGroupPickers = (root) => {
+            const wraps = root.querySelectorAll(".analytics-group-picker-wrap");
+            wraps.forEach((wrap) => {
+                const button = wrap.querySelector(".analytics-group-picker-btn");
+                const menu = wrap.querySelector(".analytics-group-picker-menu");
+                const text = wrap.querySelector(".analytics-group-picker-text");
+                const input = wrap.parentElement.querySelector(".analytics-group-filter-input");
+                const items = wrap.querySelectorAll(".analytics-group-picker-item");
+
+                if (!button || !menu || !text || !input) return;
+
+                button.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    const willOpen = !menu.classList.contains("is-open");
+                    closeAllMenus();
+                    menu.classList.toggle("is-open", willOpen);
+                    button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+                    const section = wrap.closest(".analytics-chart-section");
+                    if (section && willOpen) section.classList.add("export-menu-open");
+                });
+
+                items.forEach((item) => {
+                    item.addEventListener("click", () => {
+                        const value = item.dataset.value;
+                        input.value = value;
+                        text.textContent = `Group by ${item.textContent.trim()}`;
+                        items.forEach((n) => n.classList.remove("is-selected"));
+                        item.classList.add("is-selected");
+                        menu.classList.remove("is-open");
+                        button.setAttribute("aria-expanded", "false");
+                        const section = wrap.closest(".analytics-chart-section");
+                        if (section) section.classList.remove("export-menu-open");
+                        const filterForm = wrap.closest(".analytics-filter-form");
+                        if (filterForm) filterForm.requestSubmit();
+                    });
+                });
+            });
+        };
+
+        const initReportSection = (section) => {
+            if (!section) return;
+            initGroupPickers(section);
+            initExportMenus(section);
+
+            const filterForm = section.querySelector(".analytics-filter-form");
+            if (!filterForm) return;
+
+            filterForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const params = new URLSearchParams(new FormData(filterForm));
+                const requestUrl = `${window.location.pathname}?${params.toString()}`;
+
+                try {
+                    const response = await fetch(requestUrl, {
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                    });
+                    if (!response.ok) throw new Error("Failed to refresh report section");
+
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, "text/html");
+                    const reportKey = section.dataset.reportSection;
+                    const replacement = doc.querySelector(`[data-report-section="${reportKey}"]`);
+                    if (!replacement) throw new Error("Replacement section not found");
+
+                    section.replaceWith(replacement);
+                    initReportSection(replacement);
+                } catch (err) {
+                    console.error(err);
+                }
+            });
+        };
+
+        document.querySelectorAll(".analytics-report-section").forEach((section) => {
+            initReportSection(section);
+        });
+
+        document.addEventListener("click", closeAllMenus);
+    });
+</script>
 {% endblock %}

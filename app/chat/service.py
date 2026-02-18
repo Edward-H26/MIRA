@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from django.db.models import Avg, Count, ExpressionWrapper, F, IntegerField, Max, Min, Prefetch, Sum
-from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.http import Http404
 from django.utils import timezone
 
@@ -210,12 +210,116 @@ def get_memory_summary(user):
 
 
 def get_analytics_dashboard_context(user):
+    return get_analytics_dashboard_context_with_reports(user)
+
+
+def get_analytics_dashboard_context_with_reports(user, session_group="month", memory_group="memory_type"):
     metrics = _get_analytics_metrics_for_user(user)
+    profile = get_or_create_profile_for_user(user)
     type_choices = dict(MemoryBullet._meta.get_field("memory_type").choices)
     type_summary = [
         {"label": type_choices.get(d["memory_type"], str(d["memory_type"])), "count": d["count"]}
         for d in metrics["type_distribution_raw"]
     ]
+
+    session_group = (session_group or "month").strip().lower()
+    if session_group not in {"day", "week", "month"}:
+        session_group = "month"
+
+    session_group_field = {
+        "day": TruncDate("created_at"),
+        "week": TruncWeek("created_at"),
+        "month": TruncMonth("created_at"),
+    }[session_group]
+
+    grouped_sessions = (
+        Session.objects
+        .filter(user=profile)
+        .annotate(group_value=session_group_field)
+        .values("group_value")
+        .annotate(
+            session_count=Count("id"),
+            message_count=Count("messages__id"),
+        )
+        .order_by("-group_value")
+    )
+    session_grouped_rows = []
+    for row in grouped_sessions:
+        group_date = row["group_value"]
+        if session_group == "day":
+            group_label = group_date.strftime("%Y-%m-%d")
+        elif session_group == "week":
+            group_label = f"Week of {group_date.strftime('%Y-%m-%d')}"
+        else:
+            group_label = group_date.strftime("%Y-%m")
+        session_grouped_rows.append(
+            {
+                "group_label": group_label,
+                "session_count": row["session_count"],
+                "message_count": row["message_count"],
+            }
+        )
+
+    memory_group = (memory_group or "memory_type").strip().lower()
+    if memory_group not in {"memory_type", "topic", "month"}:
+        memory_group = "memory_type"
+
+    base_bullets = MemoryBullet.objects.filter(memory__user=profile)
+    if memory_group == "memory_type":
+        grouped_bullets = (
+            base_bullets
+            .values("memory_type")
+            .annotate(
+                bullet_count=Count("id"),
+                avg_strength=Avg("strength"),
+            )
+            .order_by("memory_type")
+        )
+        memory_grouped_rows = [
+            {
+                "group_label": type_choices.get(row["memory_type"], str(row["memory_type"])),
+                "bullet_count": row["bullet_count"],
+                "avg_strength": row["avg_strength"],
+            }
+            for row in grouped_bullets
+        ]
+    elif memory_group == "topic":
+        grouped_bullets = (
+            base_bullets
+            .values("topic")
+            .annotate(
+                bullet_count=Count("id"),
+                avg_strength=Avg("strength"),
+            )
+            .order_by("topic")
+        )
+        memory_grouped_rows = [
+            {
+                "group_label": row["topic"] or "(No Topic)",
+                "bullet_count": row["bullet_count"],
+                "avg_strength": row["avg_strength"],
+            }
+            for row in grouped_bullets
+        ]
+    else:
+        grouped_bullets = (
+            base_bullets
+            .annotate(group_value=TruncMonth("created_at"))
+            .values("group_value")
+            .annotate(
+                bullet_count=Count("id"),
+                avg_strength=Avg("strength"),
+            )
+            .order_by("-group_value")
+        )
+        memory_grouped_rows = [
+            {
+                "group_label": row["group_value"].strftime("%Y-%m"),
+                "bullet_count": row["bullet_count"],
+                "avg_strength": row["avg_strength"],
+            }
+            for row in grouped_bullets
+        ]
 
     return {
         "total_memories": metrics["total_memories"],
@@ -223,7 +327,61 @@ def get_analytics_dashboard_context(user):
         "total_messages": metrics["total_messages"],
         "avg_strength": metrics["avg_strength"],
         "type_summary": type_summary,
+        "session_group": session_group,
+        "memory_group": memory_group,
+        "session_group_options": [
+            {"value": "day", "label": "Day"},
+            {"value": "week", "label": "Week"},
+            {"value": "month", "label": "Month"},
+        ],
+        "memory_group_options": [
+            {"value": "memory_type", "label": "Memory Type"},
+            {"value": "topic", "label": "Topic"},
+            {"value": "month", "label": "Month"},
+        ],
+        "session_grouped_rows": session_grouped_rows,
+        "memory_grouped_rows": memory_grouped_rows,
+        "session_group_count": len(session_grouped_rows),
+        "memory_group_count": len(memory_grouped_rows),
     }
+
+
+def get_session_report_export_rows(user, q=""):
+    profile = get_or_create_profile_for_user(user)
+    normalized_q = (q or "").strip()
+    sessions_qs = Session.objects.filter(user=profile).order_by("-created_at")
+    if normalized_q:
+        sessions_qs = sessions_qs.filter(title__icontains=normalized_q)
+
+    return [
+        {
+            "title": s.title,
+            "created_at": s.created_at.isoformat(),
+            "message_count": s.messages.count(),
+        }
+        for s in sessions_qs
+    ]
+
+
+def get_memory_bullet_report_export_rows(user, q=""):
+    profile = get_or_create_profile_for_user(user)
+    normalized_q = (q or "").strip()
+    bullets_qs = (
+        MemoryBullet.objects
+        .filter(memory__user=profile)
+        .order_by("-created_at")
+    )
+    if normalized_q:
+        bullets_qs = bullets_qs.filter(content__icontains=normalized_q)
+
+    return [
+        {
+            "content": b.content,
+            "memory_type": b.get_memory_type_display(),
+            "created_at": b.created_at.isoformat(),
+        }
+        for b in bullets_qs
+    ]
 
 
 def _apply_chart_style(ax):
