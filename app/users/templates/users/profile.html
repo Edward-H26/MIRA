@@ -21,7 +21,7 @@
           <div class="profile-avatar-row">
             <label class="profile-avatar" for="profile_img" aria-label="Upload avatar">
               {% if profile.profile_img %}
-                <img id="profile-avatar-preview" src="{% url 'users:avatar' profile.uuid %}?v={{ profile.profile_img.name }}-{{ profile.profile_img.size }}" alt="Profile avatar">
+                <img id="profile-avatar-preview" src="{% url 'users:avatar' profile.uuid %}?v={{ profile.profile_img.name }}" alt="Profile avatar">
                 <span id="profile-avatar-fallback" class="profile-avatar-fallback hidden" aria-hidden="true"></span>
               {% else %}
                 <img id="profile-avatar-preview" src="{% static 'images/avatar.png' %}" alt="Default avatar">
