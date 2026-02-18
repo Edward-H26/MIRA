@@ -28,4 +28,9 @@ urlpatterns = [
     path("api/sessions/", api.SessionAPIView.as_view(), name="api_sessions"),
     path("api/sessions/<int:session_id>/messages/", api.MessageAPIView.as_view(), name="api_messages"),
     path("api/active-users/", api.api_public_daily_active_users, name="api_active_users"),
+    path(
+        "api/active-users/holidays/",
+        api.api_public_daily_active_users_with_holidays,
+        name="api_active_users_holidays",
+    ),
 ]

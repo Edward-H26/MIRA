@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 import django
+from unittest.mock import patch
+import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.development")
@@ -30,6 +32,11 @@ from app.chat.service import (
     get_memory_type_chart_png,
     get_session_for_user,
     get_sidebar_sessions_for_user,
+)
+from app.chat.holiday_service import (
+    HolidayAPIUnavailableError,
+    InvalidHolidayCountryCodeError,
+    get_daily_activity_with_holidays_payload,
 )
 from app.users.services import (
     create_user_with_profile,
@@ -466,6 +473,57 @@ def test_edge_cases(data):
     return failures
 
 
+def test_holiday_merge_service(data):
+    print("\n" + "=" * 60)
+    print("TEST GROUP I: Holiday Merge Service")
+    print("=" * 60)
+    failures = 0
+
+    class MockResponse:
+        def __init__(self, payload, status_code=200):
+            self._payload = payload
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise requests.HTTPError("HTTP error")
+
+        def json(self):
+            return self._payload
+
+    def mock_get_success(url, params=None, timeout=5):
+        if "AvailableCountries" in url:
+            return MockResponse([
+                {"countryCode": "US", "name": "United States"},
+                {"countryCode": "CA", "name": "Canada"},
+            ])
+        if "PublicHolidays" in url and "/US" in url:
+            return MockResponse([
+                {"date": "2026-01-01", "name": "New Year's Day", "localName": "New Year's Day"},
+            ])
+        return MockResponse([])
+
+    with patch("app.chat.holiday_service.requests.get", side_effect=mock_get_success):
+        payload = get_daily_activity_with_holidays_payload(country_code="US")
+        failures += assert_test("results" in payload and "analytics" in payload, "Holiday payload has results and analytics")
+
+    with patch("app.chat.holiday_service.requests.get", side_effect=mock_get_success):
+        try:
+            get_daily_activity_with_holidays_payload(country_code="ZZ")
+            failures += assert_test(False, "Invalid country code should raise error")
+        except InvalidHolidayCountryCodeError:
+            failures += assert_test(True, "Invalid country code raises InvalidHolidayCountryCodeError")
+
+    with patch("app.chat.holiday_service.requests.get", side_effect=requests.RequestException("network down")):
+        try:
+            get_daily_activity_with_holidays_payload(country_code="US")
+            failures += assert_test(False, "Unavailable API should raise error")
+        except HolidayAPIUnavailableError:
+            failures += assert_test(True, "Unavailable API raises HolidayAPIUnavailableError")
+
+    return failures
+
+
 def main():
     parser = argparse.ArgumentParser(description="MEMORIA Feature Tests")
     parser.add_argument("--test-users", action="store_true", help="Run user service tests")
@@ -476,6 +534,7 @@ def main():
     parser.add_argument("--test-api", action="store_true", help="Run API payload tests")
     parser.add_argument("--test-models", action="store_true", help="Run model method tests")
     parser.add_argument("--test-edge", action="store_true", help="Run edge case tests")
+    parser.add_argument("--test-holidays", action="store_true", help="Run holiday merge service tests")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -489,7 +548,7 @@ def main():
     has_specific = any([
         args.test_users, args.test_sessions, args.test_memory,
         args.test_analytics, args.test_charts, args.test_api,
-        args.test_models, args.test_edge,
+        args.test_models, args.test_edge, args.test_holidays,
     ])
 
     failures = 0
@@ -510,6 +569,8 @@ def main():
         failures += test_model_methods(data)
     if not has_specific or args.test_edge:
         failures += test_edge_cases(data)
+    if not has_specific or args.test_holidays:
+        failures += test_holiday_merge_service(data)
 
     print("\n" + "=" * 60)
     if failures > 0:
