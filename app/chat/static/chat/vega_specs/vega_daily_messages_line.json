@@ -1,0 +1,35 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Daily Messages",
+  "description": "Line chart of daily message counts.",
+  "width": 780,
+  "height": 360,
+  "data": {
+    "url": "/chat/api/active-users/",
+    "format": {
+      "type": "json",
+      "property": "results"
+    }
+  },
+  "mark": {
+    "type": "line",
+    "point": true,
+    "tooltip": true
+  },
+  "encoding": {
+    "x": {
+      "field": "date",
+      "type": "temporal",
+      "timeUnit": "yearmonthdate",
+      "title": "Date"
+    },
+    "y": {
+      "field": "message_count",
+      "type": "quantitative",
+      "title": "Messages",
+      "scale": {
+        "domainMin": 0
+      }
+    }
+  }
+}

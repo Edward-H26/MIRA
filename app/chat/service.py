@@ -1,5 +1,6 @@
 import io
 import re
+from datetime import timedelta
 
 import matplotlib
 matplotlib.use("Agg")
@@ -470,7 +471,7 @@ def get_api_messages_payload(user, session_id, role_filter=""):
 
 
 def get_api_daily_active_users_payload():
-    daily = (
+    daily = list(
         Message.objects
         .annotate(day=TruncDate("created_at"))
         .values("day")
@@ -481,12 +482,30 @@ def get_api_daily_active_users_payload():
         .order_by("day")
     )
 
-    results = [
-        {
-            "date": row["day"].isoformat(),
+    if not daily:
+        return {"count": 0, "results": []}
+
+    daily_map = {
+        row["day"]: {
             "active_users": row["active_users"],
             "message_count": row["message_count"],
         }
         for row in daily
-    ]
+    }
+
+    current_day = min(daily_map.keys())
+    end_day = max(daily_map.keys())
+    results = []
+
+    while current_day <= end_day:
+        point = daily_map.get(current_day, {"active_users": 0, "message_count": 0})
+        results.append(
+            {
+                "date": current_day.isoformat(),
+                "active_users": point["active_users"],
+                "message_count": point["message_count"],
+            }
+        )
+        current_day += timedelta(days=1)
+
     return {"count": len(results), "results": results}

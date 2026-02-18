@@ -140,3 +140,13 @@ def activity_chart_png(request):
     return HttpResponse(get_activity_chart_png(request.user), content_type="image/png")
 
 
+@require_http_methods(["GET"])
+def vega_daily_users_chart_view(request):
+    return render(request, "chat/vega_daily_users.html")
+
+
+@require_http_methods(["GET"])
+def vega_daily_messages_chart_view(request):
+    return render(request, "chat/vega_daily_messages.html")
+
+

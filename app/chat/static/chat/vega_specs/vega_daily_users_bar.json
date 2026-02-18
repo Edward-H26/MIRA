@@ -1,0 +1,31 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "title": "Daily Active Users",
+  "description": "Bar chart of daily active users based on messages.",
+  "width": 780,
+  "height": 360,
+  "data": {
+    "url": "/chat/api/active-users/",
+    "format": {
+      "type": "json",
+      "property": "results"
+    }
+  },
+  "mark": {
+    "type": "bar",
+    "tooltip": true
+  },
+  "encoding": {
+    "x": {
+      "field": "date",
+      "type": "temporal",
+      "timeUnit": "yearmonthdate",
+      "title": "Date"
+    },
+    "y": {
+      "field": "active_users",
+      "type": "quantitative",
+      "title": "Active Users"
+    }
+  }
+}

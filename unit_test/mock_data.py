@@ -26,6 +26,45 @@ def _backdate_session(session, days_ago):
     Session.objects.filter(pk=session.pk).update(created_at=ts, updated_at=ts)
 
 
+def _backdate_message(message, days_ago, minute_offset=0):
+    """Backdate a message created_at to align with the target day."""
+    base_ts = timezone.now() - timedelta(days=days_ago, hours=12)
+    ts = base_ts + timedelta(minutes=minute_offset)
+    Message.objects.filter(pk=message.pk).update(created_at=ts)
+
+
+def _create_backdated_conversation(
+    user_profile,
+    title,
+    days_ago,
+    user_prompt,
+    assistant_reply,
+    user_followup=None,
+):
+    """
+    Create one session with 2-3 messages (always includes assistant reply),
+    then backdate both session and messages to the same day.
+    """
+    session = Session.objects.create(user=user_profile, title=title)
+    _backdate_session(session, days_ago=days_ago)
+
+    created_messages = []
+    m1 = Message.objects.create(session=session, role=Role.USER, content=user_prompt)
+    _backdate_message(m1, days_ago=days_ago, minute_offset=0)
+    created_messages.append(m1)
+
+    m2 = Message.objects.create(session=session, role=Role.ASSISTANT, content=assistant_reply)
+    _backdate_message(m2, days_ago=days_ago, minute_offset=2)
+    created_messages.append(m2)
+
+    if user_followup:
+        m3 = Message.objects.create(session=session, role=Role.USER, content=user_followup)
+        _backdate_message(m3, days_ago=days_ago, minute_offset=4)
+        created_messages.append(m3)
+
+    return session, created_messages
+
+
 TEST_USERNAMES = [
     "maria_garcia", "james_chen", "sarah_johnson", "alex_kumar",
     "emma_wilson", "test_edge_empty", "test_edge_maxlen", "test_edge_special",
@@ -163,97 +202,74 @@ def create_all_test_data():
         bullets.append(bullet)
     print(f"    Created {len(bullets)} MemoryBullets across {len(memories)} memories")
 
-    print("\n  Step 5: Creating 12 Sessions and 36 Messages")
+    print("\n  Step 5: Creating daily Sessions and Messages (2-3 per conversation)")
     sessions = []
     messages = []
 
-    s1 = Session.objects.create(user=maria, title="Project Planning Discussion")
-    _backdate_session(s1, days_ago=25)
-    sessions.append(s1)
-    messages.append(Message.objects.create(session=s1, role=Role.USER, content="Can you help me plan my new project?"))
-    messages.append(Message.objects.create(session=s1, role=Role.ASSISTANT, content="Of course! What kind of project are you working on?"))
-    messages.append(Message.objects.create(session=s1, role=Role.USER, content="A web application for task management."))
-
-    s2 = Session.objects.create(user=maria, title="Architecture Review")
-    _backdate_session(s2, days_ago=20)
-    sessions.append(s2)
-    messages.append(Message.objects.create(session=s2, role=Role.SYSTEM, content="Session started with architecture review context."))
-    messages.append(Message.objects.create(session=s2, role=Role.USER, content="What patterns should I use for the backend?"))
-    messages.append(Message.objects.create(session=s2, role=Role.ASSISTANT, content="I recommend a service layer architecture."))
-    messages.append(Message.objects.create(session=s2, role=Role.USER, content="Can you elaborate?"))
-    messages.append(Message.objects.create(session=s2, role=Role.ASSISTANT, content="Sure, let me break it down."))
-
-    s3 = Session.objects.create(user=maria, title="Quick Question")
-    _backdate_session(s3, days_ago=14)
-    sessions.append(s3)
-    messages.append(Message.objects.create(session=s3, role=Role.USER, content="What is the time complexity of binary search?"))
-
-    s4 = Session.objects.create(user=maria, title="")
-    _backdate_session(s4, days_ago=5)
-    sessions.append(s4)
-
-    s5 = Session.objects.create(user=james, title="Code Review Help")
-    _backdate_session(s5, days_ago=22)
-    sessions.append(s5)
-    messages.append(Message.objects.create(session=s5, role=Role.USER, content="I need help reviewing this Python function."))
-    messages.append(Message.objects.create(session=s5, role=Role.ASSISTANT, content="Sure, please share the code."))
-
-    s6 = Session.objects.create(user=james, title="Python Debugging")
-    _backdate_session(s6, days_ago=15)
-    sessions.append(s6)
-    messages.append(Message.objects.create(session=s6, role=Role.USER, content="My script crashes with a TypeError."))
-    messages.append(Message.objects.create(session=s6, role=Role.ASSISTANT, content="Can you share the traceback?"))
-    messages.append(Message.objects.create(session=s6, role=Role.USER, content="Here it is..."))
-    messages.append(Message.objects.create(session=s6, role=Role.ASSISTANT, content="The issue is a type mismatch on line 42."))
-
-    s7 = Session.objects.create(user=james, title="Learning Resources")
-    _backdate_session(s7, days_ago=7)
-    sessions.append(s7)
-    messages.append(Message.objects.create(session=s7, role=Role.SYSTEM, content="Context: Learning path discussion."))
-    messages.append(Message.objects.create(session=s7, role=Role.USER, content="What resources do you recommend for Django?"))
-    messages.append(Message.objects.create(session=s7, role=Role.ASSISTANT, content="I recommend the official Django documentation."))
-
-    s8 = Session.objects.create(user=sarah, title="Career Planning")
-    _backdate_session(s8, days_ago=18)
-    sessions.append(s8)
-    career_messages = [
-        (Role.USER, "I'm considering a career change."),
-        (Role.ASSISTANT, "What field are you interested in?"),
-        (Role.USER, "Data science seems promising."),
-        (Role.ASSISTANT, "That's a growing field. What's your current background?"),
-        (Role.USER, "I have a CS degree and 3 years of backend development."),
-        (Role.ASSISTANT, "You have a strong foundation."),
-        (Role.USER, "What skills should I focus on?"),
-        (Role.ASSISTANT, "Python, statistics, and machine learning fundamentals."),
-        (Role.USER, "Any course recommendations?"),
-        (Role.ASSISTANT, "I recommend starting with Andrew Ng's ML course."),
+    # Keep the first five deterministic for existing tests that index into data["sessions"].
+    seeded = [
+        (maria, "Project Planning Discussion", 29, "Can you help me plan my new project?", "Of course. What are your goals?", "A web app for task management."),
+        (maria, "Architecture Review", 28, "What backend pattern should I use?", "A service-layer approach works well here.", None),
+        (maria, "Quick Question", 27, "What is binary search time complexity?", "It is O(log n).", None),
+        (maria, "", 26, "Can we keep this untitled chat?", "Yes, untitled chats are supported.", None),
+        (james, "Code Review Help", 25, "Can you review this Python function?", "Sure, share the code and expected behavior.", "I also want naming feedback."),
     ]
-    for role, content in career_messages:
-        messages.append(Message.objects.create(session=s8, role=role, content=content))
+    for profile, title, days_ago, user_prompt, assistant_reply, followup in seeded:
+        s, created_msgs = _create_backdated_conversation(
+            user_profile=profile,
+            title=title,
+            days_ago=days_ago,
+            user_prompt=user_prompt,
+            assistant_reply=assistant_reply,
+            user_followup=followup,
+        )
+        sessions.append(s)
+        messages.extend(created_msgs)
 
-    s9 = Session.objects.create(user=sarah, title="Weekend Plans")
-    _backdate_session(s9, days_ago=3)
-    sessions.append(s9)
-    messages.append(Message.objects.create(session=s9, role=Role.USER, content="Any suggestions for hiking trails?"))
-    messages.append(Message.objects.create(session=s9, role=Role.ASSISTANT, content="I recommend the Pacific Crest Trail section near you."))
+    templates = [
+        ("Python Debugging", "My script crashes with a TypeError.", "Please share the traceback.", "Here is the traceback snippet."),
+        ("Learning Resources", "What resources are best for Django?", "The official docs and tutorial series are a great start.", None),
+        ("Career Planning", "I am planning my next career step.", "Let's map your current skills to target roles.", "Can you suggest a 3-month plan?"),
+        ("Weekend Plans", "Any good hiking suggestions nearby?", "Try a moderate trail with early morning start.", None),
+        ("Team Standup Notes", "Today I worked on API endpoints.", "Great progress. Any blockers?", None),
+        ("Feature Prioritization", "How should we prioritize backlog items?", "Use impact vs effort scoring with clear owners.", "Can you draft a simple rubric?"),
+        ("Data Modeling", "Should we denormalize this table?", "Only if query hotspots justify it.", None),
+        ("Deployment Checklist", "What should I verify before deploy?", "Migrations, env vars, static files, and health checks.", None),
+        ("Prompt Refinement", "How can I improve this prompt?", "Make the task, constraints, and output format explicit.", "Can you give an example rewrite?"),
+        ("Cafe Discussion and Review", "Content with special characters and symbols", "Noted. I can preserve special formatting safely.", None),
+    ]
+    active_profiles = [maria, james, sarah, alex, emma, edge_maxlen, edge_special]
 
-    s10 = Session.objects.create(user=emma, title="Team Standup Notes")
-    _backdate_session(s10, days_ago=10)
-    sessions.append(s10)
-    messages.append(Message.objects.create(session=s10, role=Role.USER, content="Today I worked on the API endpoints."))
-    messages.append(Message.objects.create(session=s10, role=Role.ASSISTANT, content="Great progress! Any blockers?"))
+    # Build a natural daily pattern for the last 25 days (days_ago: 24 -> 0), at least 1 session/day.
+    for days_ago in range(24, -1, -1):
+        day_date = (timezone.now() - timedelta(days=days_ago)).date()
+        daily_sessions = 1 if day_date.weekday() >= 5 else 2  # weekends lighter
+        if day_date.day % 9 == 0:
+            daily_sessions += 1  # occasional spikes
 
-    s11 = Session.objects.create(user=edge_maxlen, title="A" * 200)
-    _backdate_session(s11, days_ago=2)
-    sessions.append(s11)
-    messages.append(Message.objects.create(session=s11, role=Role.USER, content="Testing maximum length content."))
-    messages.append(Message.objects.create(session=s11, role=Role.ASSISTANT, content="Acknowledged."))
+        for idx in range(daily_sessions):
+            profile = active_profiles[(days_ago + idx) % len(active_profiles)]
+            title, user_prompt, assistant_reply, followup = templates[(days_ago * 3 + idx) % len(templates)]
 
-    s12 = Session.objects.create(user=edge_special, title="Cafe Discussion and Review")
-    _backdate_session(s12, days_ago=1)
-    sessions.append(s12)
-    messages.append(Message.objects.create(session=s12, role=Role.USER, content="Content with special characters and symbols"))
-    messages.append(Message.objects.create(session=s12, role=Role.ASSISTANT, content="Noted the special formatting."))
+            # Keep edge case coverage for max title length naturally.
+            if profile == edge_maxlen and idx == 0 and days_ago % 8 == 0:
+                session_title = "A" * 200
+            else:
+                session_title = title
+
+            # 2-3 messages per conversation, including assistant.
+            include_followup = followup if (days_ago + idx) % 3 == 0 else None
+
+            s, created_msgs = _create_backdated_conversation(
+                user_profile=profile,
+                title=session_title,
+                days_ago=days_ago,
+                user_prompt=user_prompt,
+                assistant_reply=assistant_reply,
+                user_followup=include_followup,
+            )
+            sessions.append(s)
+            messages.extend(created_msgs)
 
     print(f"    Created {len(sessions)} sessions and {len(messages)} messages")
 
@@ -324,39 +340,35 @@ def create_all_test_data():
 
         admin_sessions = []
         admin_messages = []
+        admin_templates = [
+            ("Project Planning Discussion", "Can you help me plan my new project?", "Of course. What type of project is it?", "A web app for task management."),
+            ("Architecture Review", "What pattern should I use for backend modules?", "A service layer with clear boundaries is solid.", None),
+            ("Python Debugging", "My script fails with a TypeError.", "Please share traceback and sample input.", "Here is a minimal repro."),
+            ("Learning Resources", "Best resources for Django?", "Start with official docs and build one mini-project.", None),
+            ("Code Review Help", "Can you review this function?", "Sure, share it with expected behavior.", None),
+            ("Release Notes Draft", "Help me summarize this sprint.", "Use a structure: shipped, fixed, known issues.", None),
+        ]
 
-        as1 = Session.objects.create(user=admin_profile, title="Project Planning Discussion")
-        _backdate_session(as1, days_ago=28)
-        admin_sessions.append(as1)
-        admin_messages.append(Message.objects.create(session=as1, role=Role.USER, content="Can you help me plan my new project?"))
-        admin_messages.append(Message.objects.create(session=as1, role=Role.ASSISTANT, content="Of course! What kind of project are you working on?"))
-        admin_messages.append(Message.objects.create(session=as1, role=Role.USER, content="A web application for task management."))
+        # Admin gets natural daily activity for last 14 days.
+        for days_ago in range(13, -1, -1):
+            day_date = (timezone.now() - timedelta(days=days_ago)).date()
+            daily_sessions = 1 if day_date.weekday() >= 5 else 2
+            if day_date.day % 10 == 0:
+                daily_sessions += 1
 
-        as2 = Session.objects.create(user=admin_profile, title="Architecture Review")
-        _backdate_session(as2, days_ago=21)
-        admin_sessions.append(as2)
-        admin_messages.append(Message.objects.create(session=as2, role=Role.USER, content="What patterns should I use for the backend?"))
-        admin_messages.append(Message.objects.create(session=as2, role=Role.ASSISTANT, content="I recommend a service layer architecture with clear separation of concerns."))
-
-        as3 = Session.objects.create(user=admin_profile, title="Python Debugging")
-        _backdate_session(as3, days_ago=12)
-        admin_sessions.append(as3)
-        admin_messages.append(Message.objects.create(session=as3, role=Role.USER, content="My script crashes with a TypeError."))
-        admin_messages.append(Message.objects.create(session=as3, role=Role.ASSISTANT, content="Can you share the traceback?"))
-        admin_messages.append(Message.objects.create(session=as3, role=Role.USER, content="Here it is..."))
-        admin_messages.append(Message.objects.create(session=as3, role=Role.ASSISTANT, content="The issue is a type mismatch on line 42."))
-
-        as4 = Session.objects.create(user=admin_profile, title="Learning Resources")
-        _backdate_session(as4, days_ago=6)
-        admin_sessions.append(as4)
-        admin_messages.append(Message.objects.create(session=as4, role=Role.USER, content="What resources do you recommend for Django?"))
-        admin_messages.append(Message.objects.create(session=as4, role=Role.ASSISTANT, content="I recommend the official Django documentation and the Django Girls tutorial."))
-
-        as5 = Session.objects.create(user=admin_profile, title="Code Review Help")
-        _backdate_session(as5, days_ago=6)
-        admin_sessions.append(as5)
-        admin_messages.append(Message.objects.create(session=as5, role=Role.USER, content="Can you review this function?"))
-        admin_messages.append(Message.objects.create(session=as5, role=Role.ASSISTANT, content="Sure, please share the code."))
+            for idx in range(daily_sessions):
+                title, user_prompt, assistant_reply, followup = admin_templates[(days_ago + idx) % len(admin_templates)]
+                include_followup = followup if (days_ago + idx) % 2 == 0 else None
+                s, created_msgs = _create_backdated_conversation(
+                    user_profile=admin_profile,
+                    title=title,
+                    days_ago=days_ago,
+                    user_prompt=user_prompt,
+                    assistant_reply=assistant_reply,
+                    user_followup=include_followup,
+                )
+                admin_sessions.append(s)
+                admin_messages.extend(created_msgs)
 
         admin_mem = Memory.objects.create(user=admin_profile, access_clock=10)
         admin_bullets = [
