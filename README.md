@@ -235,14 +235,16 @@ MEMORIA exposes JSON APIs for internal frontend use and future client integratio
 Detailed API documentation:
 - [API Overview](docs/06_api/api_overview.md)
 
-| Endpoint | Method | Description | Filters |
-|---|---|---|---|
-| `/chat/api/memories/` | GET | Memory bullets | `?q=`, `?type=`, `?topic=`, `?strength_min=` |
-| `/chat/api/analytics/` | GET | Aggregated analytics summary | None |
-| `/chat/api/sessions/` | GET | User sessions | `?q=` |
-| `/chat/api/sessions/<id>/messages/` | GET | Messages for a session | `?role=` |
+| Endpoint | Method | Auth | Description | Filters |
+|---|---|---|---|---|
+| `/chat/api/memories/` | GET | Yes | Memory bullets | `?q=`, `?type=`, `?topic=`, `?strength_min=` |
+| `/chat/api/analytics/` | GET | Yes | Aggregated analytics summary | None |
+| `/chat/api/sessions/` | GET | Yes | User sessions | `?q=` |
+| `/chat/api/sessions/<id>/messages/` | GET | Yes | Messages for a session | `?role=` |
+| `/chat/api/active-users/` | GET | No | Daily active user counts (public) | None |
+| `/chat/api/active-users/holidays/` | GET | No | Daily activity with holiday annotations (public) | `?country=` |
 
-The sessions API powers the sidebar search modal (Ctrl+K).
+The sessions API powers the sidebar search modal (Ctrl+K). The public active-users endpoints provide chart-ready data consumed by Vega-Lite visualizations and are accessible without authentication for cross-site integration.
 
 ---
 
@@ -296,13 +298,22 @@ In addition to the 8 test users, the script seeds demo data for the existing adm
 
 ---
 
-## Week 5 Features
+## Updates
 
-Features added in Week 5:
 - **Comprehensive test infrastructure** with shared mock data module
 - **Database unit tests** expanded with model method validation, extended uniqueness checks, and failure counter with exit codes
 - **Feature unit tests** covering all 20 service functions, 5 user service functions, 4 API payload builders, and 3 chart generators
 - **Edge case testing** for empty users, boundary values, and non-numeric filter parameters
+- **Public daily active users API** at `/chat/api/active-users/` with gap-filled date ranges for continuous charting
+- **External Holiday API integration** (Nager.at) at `/chat/api/active-users/holidays/?country=` with error handling, country validation, and comparative analytics (avg users on holidays vs non-holidays)
+- **Vega-Lite bar chart** (daily active users) at `/chat/charts/active-users/` and **line chart** (daily messages) at `/chat/charts/messages/`, both using `data.url` from the public API
+- **CSV and JSON export** for sessions and memory bullets with timestamped filenames (`sessions_YYYY-MM-DD_HH-MM.csv`), metadata headers (`generated_at`, `record_count`), and `Content-Disposition` for browser download
+- **Analytics reports page** at `/chat/analytics/` with grouped summaries (sessions by day/week/month, memories by type/topic/month), totals lines, `{% empty %}` handling, and download buttons with format picker (CSV/JSON)
+- **UUID-based avatar routing** at `/users/avatar/<uuid>/` with authentication, authorization (owner or staff), file validation (PNG/JPG only), and fallback to default avatar
+- **Static files setup** with `STATIC_URL`, `STATICFILES_DIRS`, `STATIC_ROOT` in `settings/base.py`; `{% load static %}` and `{% static %}` in base template; cache busting with `{% now 'U' %}`
+- **Mock data redesigned** for realistic date coverage with 50 dynamic daily conversations across 25 days, weekday/weekend patterns, and natural activity spikes
+- **URL organization** separated into `page_urlpatterns` and `api_urlpatterns` in chat URLs
+- **Holiday service unit tests** with mocked API responses for valid/invalid country codes and network errors
 
 ---
 
