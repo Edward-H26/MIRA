@@ -1,14 +1,9 @@
-# Paste in and as: illinois/settings/production.py
-# We will first import everything from base.py (our new settings.py file that we renamed to base.py)
-#==================================================================================
 from .base import *
 
 DEBUG = True
 
-# Replace it with your name:
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Database for the development server
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
