@@ -165,30 +165,24 @@ def _build_export_filename(prefix, extension):
     return f'{prefix}_{timestamp}.{extension}'
 
 
-@login_required(login_url="/")
-@require_http_methods(["GET"])
-def export_sessions_report(request):
-    export_format = (request.GET.get("format", "csv") or "csv").strip().lower()
-    query = (request.GET.get("q", "") or "").strip()
-    rows = get_session_report_export_rows(request.user, q=query)
-
+def _export_rows_response(rows, export_format, filename_prefix, csv_headers, csv_field_order, json_key):
     if export_format == "csv":
         response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename("sessions", "csv")}"'
+        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename(filename_prefix, "csv")}"'
         writer = csv.writer(response)
-        writer.writerow(["title", "message_count", "created_at"])
+        writer.writerow(csv_headers)
         for row in rows:
-            writer.writerow([row["title"], row["message_count"], row["created_at"]])
+            writer.writerow([row[field] for field in csv_field_order])
         return response
 
     if export_format == "json":
         payload = {
             "generated_at": timezone.now().isoformat(),
             "record_count": len(rows),
-            "sessions": rows,
+            json_key: rows,
         }
         response = JsonResponse(payload, json_dumps_params={"indent": 2})
-        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename("sessions", "json")}"'
+        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename(filename_prefix, "json")}"'
         return response
 
     return JsonResponse(
@@ -203,37 +197,33 @@ def export_sessions_report(request):
 
 @login_required(login_url="/")
 @require_http_methods(["GET"])
+def export_sessions_report(request):
+    export_format = (request.GET.get("format", "csv") or "csv").strip().lower()
+    query = (request.GET.get("q", "") or "").strip()
+    rows = get_session_report_export_rows(request.user, q=query)
+    return _export_rows_response(
+        rows=rows,
+        export_format=export_format,
+        filename_prefix="sessions",
+        csv_headers=["title", "message_count", "created_at"],
+        csv_field_order=["title", "message_count", "created_at"],
+        json_key="sessions",
+    )
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
 def export_memory_bullets_report(request):
     export_format = (request.GET.get("format", "csv") or "csv").strip().lower()
     query = (request.GET.get("q", "") or "").strip()
     rows = get_memory_bullet_report_export_rows(request.user, q=query)
-
-    if export_format == "csv":
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename("memory_bullets", "csv")}"'
-        writer = csv.writer(response)
-        writer.writerow(["content", "memory_type", "created_at"])
-        for row in rows:
-            writer.writerow([row["content"], row["memory_type"], row["created_at"]])
-        return response
-
-    if export_format == "json":
-        payload = {
-            "generated_at": timezone.now().isoformat(),
-            "record_count": len(rows),
-            "memory_bullets": rows,
-        }
-        response = JsonResponse(payload, json_dumps_params={"indent": 2})
-        response["Content-Disposition"] = f'attachment; filename="{_build_export_filename("memory_bullets", "json")}"'
-        return response
-
-    return JsonResponse(
-        {
-            "error": "invalid_format",
-            "message": "format must be csv or json",
-        },
-        status=400,
-        json_dumps_params={"indent": 2},
+    return _export_rows_response(
+        rows=rows,
+        export_format=export_format,
+        filename_prefix="memory_bullets",
+        csv_headers=["content", "memory_type", "created_at"],
+        csv_field_order=["content", "memory_type", "created_at"],
+        json_key="memory_bullets",
     )
 
 

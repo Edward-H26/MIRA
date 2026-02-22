@@ -7,11 +7,24 @@ from django.http import Http404
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 from pathlib import Path
 
 from . import services
 from .models import User as Profile
+
+
+def _get_safe_redirect_url(request, fallback="/"):
+    next_url = (request.POST.get("next") or "").strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return fallback
+
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -30,7 +43,7 @@ def login_view(request):
             {"login_error": login_error, "username": username},
             status=400,
         )
-    next_url = request.POST.get("next") or "/"
+    next_url = _get_safe_redirect_url(request, fallback="/")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"ok": True, "redirect_url": next_url})
     return redirect(next_url)
@@ -39,7 +52,7 @@ def login_view(request):
 @require_http_methods(["POST"])
 def logout_view(request):
     logout(request)
-    next_url = request.POST.get("next") or "/"
+    next_url = _get_safe_redirect_url(request, fallback="/")
     return redirect(next_url)
 
 
@@ -67,7 +80,7 @@ def register_view(request):
             },
             status=400,
         )
-    next_url = request.POST.get("next") or "/"
+    next_url = _get_safe_redirect_url(request, fallback="/")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"ok": True, "redirect_url": next_url})
     return redirect(next_url)

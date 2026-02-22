@@ -50,3 +50,6 @@ htmlcov/
 
 # Node.js
 node_modules/
+
+# Codex
+AGENTS.md

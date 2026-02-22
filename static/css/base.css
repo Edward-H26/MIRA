@@ -428,6 +428,27 @@ form button {
 #avatar-menu form.menu-item-form {
     margin: 0;
 }
+
+.navbar-back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+    color: #6b6b6b;
+    font-family: Inter, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.navbar-back-home-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+}
+
 .conversation-bar {
     display: flex;
     align-items: center;

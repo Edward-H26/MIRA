@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template import loader
 
-from app.chat.service import create_home_session_for_user, get_home_context_for_user
+from .services import create_home_session_for_user, get_home_context_for_user
 
 
 def home(request):

@@ -8,7 +8,26 @@ function getCSRFToken() {
     return ""
 }
 
+function getAppRoutes() {
+    const defaults = {
+        home: "/home/",
+        chatMemory: "/chat/memory/",
+        chatAnalytics: "/chat/analytics/",
+        chatSessionsApi: "/chat/api/sessions/",
+        chatConversationDetailTemplate: "/chat/c/0/",
+        chatSessionRenameTemplate: "/chat/c/0/rename/",
+        chatSessionDeleteTemplate: "/chat/c/0/delete/",
+        chatMemoryDetailTemplate: "/chat/m/0/",
+    }
+    return { ...defaults, ...(window.APP_ROUTES || {}) }
+}
+
+function routeFromTemplate(template, id) {
+    return template.replace("/0/", `/${id}/`)
+}
+
 function initSidebar() {
+    const routes = getAppRoutes()
     const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed"
     const sidebar = document.getElementById("sidebar")
     const sidebarOverlay = document.getElementById("sidebar-overlay")
@@ -162,7 +181,7 @@ function initSidebar() {
             try {
                 const formData = new FormData()
                 formData.append("title", newTitle)
-                await fetch(`/chat/c/${id}/rename/`, {
+                await fetch(routeFromTemplate(routes.chatSessionRenameTemplate, id), {
                     method: "POST",
                     headers: { "X-CSRFToken": getCSRFToken() },
                     body: formData
@@ -191,21 +210,23 @@ function initSidebar() {
         if (!confirm("Are you sure you want to delete this conversation?")) return
         const item = document.querySelector(`.conversation-item[data-id="${id}"]`)
         if (item) item.remove()
-        fetch(`/chat/c/${id}/delete/`, {
+        fetch(routeFromTemplate(routes.chatSessionDeleteTemplate, id), {
             method: "POST",
             headers: { "X-CSRFToken": getCSRFToken() }
         }).then(res => {
             if (res.ok) {
-                const match = window.location.pathname.match(/\/chat\/c\/(\d+)\//)
+                const conversationPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+                const pattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
+                const match = window.location.pathname.match(pattern)
                 if (match && match[1] === String(id)) {
-                    window.location.href = "/home/"
+                    window.location.href = routes.home
                 }
             }
         }).catch(() => {})
     }
 
     function createNewChat() {
-        window.location.href = "/home/"
+        window.location.href = routes.home
     }
 
     function setActiveNav() {
@@ -213,11 +234,16 @@ function initSidebar() {
         const path = window.location.pathname
         let activeKey = ""
 
-        if (path === "/home/" || path === "/home") {
+        const homeNoSlash = routes.home.endsWith("/") ? routes.home.slice(0, -1) : routes.home
+        const memoryPrefix = routes.chatMemory
+        const memoryDetailPrefix = routes.chatMemoryDetailTemplate.replace("0/", "")
+        const analyticsPrefix = routes.chatAnalytics
+
+        if (path === routes.home || path === homeNoSlash) {
             activeKey = "new-chat"
-        } else if (path.startsWith("/chat/memory") || path.startsWith("/chat/m/")) {
+        } else if (path.startsWith(memoryPrefix) || path.startsWith(memoryDetailPrefix)) {
             activeKey = "memory"
-        } else if (path.startsWith("/chat/analytics")) {
+        } else if (path.startsWith(analyticsPrefix)) {
             activeKey = "analytics"
         }
 
@@ -226,7 +252,9 @@ function initSidebar() {
             item.classList.toggle("is-active", isActive)
         })
 
-        const conversationMatch = path.match(/\/chat\/c\/(\d+)\//)
+        const conversationPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+        const conversationPattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
+        const conversationMatch = path.match(conversationPattern)
         if (conversationMatch) {
             selectConversation(conversationMatch[1], false)
         }
@@ -313,6 +341,7 @@ function initSidebar() {
 }
 
 function initSearchModal() {
+    const routes = getAppRoutes()
     const modal = document.getElementById("search-modal")
     const input = document.getElementById("search-modal-input")
     const resultsEl = document.getElementById("search-modal-results")
@@ -356,7 +385,7 @@ function initSearchModal() {
             return
         }
         debounceTimer = setTimeout(() => {
-            fetch(`/chat/api/sessions/?q=${encodeURIComponent(q)}`)
+            fetch(`${routes.chatSessionsApi}?q=${encodeURIComponent(q)}`)
                 .then(r => r.json())
                 .then(data => {
                     resultsEl.innerHTML = ""

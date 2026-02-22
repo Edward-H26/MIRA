@@ -15,7 +15,7 @@ import math
 
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
-from app.users.services import get_or_create_profile_for_user
+from app.users.models import User as Profile
 
 PROGRESSIVE_COLORS = ["#575BEF", "#6F82FF", "#8DA0FF", "#AEBBFF", "#D6DDFF"]
 SEGMENT_COLORS = ["#9698FF", "#664FA1", "#FFC5D6", "#DAC6FF", "#B4EDE4"]
@@ -23,6 +23,11 @@ CHART_BG = "#F7F8FF"
 CHART_GRID = "#DCE1FF"
 CHART_TEXT = "#2F3A4A"
 CHART_MUTED = "#6A7290"
+
+
+def get_or_create_profile_for_user(user):
+    profile, _ = Profile.objects.get_or_create(user=user)
+    return profile
 
 
 def _get_session_queryset_for_user(user):
@@ -339,7 +344,12 @@ def get_analytics_dashboard_context_with_reports(user, session_group="month", me
 def get_session_report_export_rows(user, q=""):
     profile = get_or_create_profile_for_user(user)
     normalized_q = (q or "").strip()
-    sessions_qs = Session.objects.filter(user=profile).order_by("-created_at")
+    sessions_qs = (
+        Session.objects
+        .filter(user=profile)
+        .annotate(message_count=Count("messages"))
+        .order_by("-created_at")
+    )
     if normalized_q:
         sessions_qs = sessions_qs.filter(title__icontains=normalized_q)
 
@@ -347,7 +357,7 @@ def get_session_report_export_rows(user, q=""):
         {
             "title": s.title,
             "created_at": s.created_at.isoformat(),
-            "message_count": s.messages.count(),
+            "message_count": s.message_count,
         }
         for s in sessions_qs
     ]
