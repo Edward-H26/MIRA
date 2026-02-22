@@ -346,11 +346,34 @@ function initSearchModal() {
     const input = document.getElementById("search-modal-input")
     const resultsEl = document.getElementById("search-modal-results")
     const emptyEl = document.getElementById("search-modal-empty")
+    const appShell = document.querySelector(".bg-bg-surface")
     if (!modal || !input) return
 
     let debounceTimer = null
+    let restoreInert = null
+
+    function lockBackground() {
+        document.documentElement.classList.add("search-modal-open")
+        document.body.classList.add("search-modal-open")
+        if (appShell && appShell !== modal) {
+            restoreInert = appShell.hasAttribute("inert") ? null : appShell
+            appShell.setAttribute("inert", "")
+        }
+    }
+
+    function unlockBackground() {
+        document.documentElement.classList.remove("search-modal-open")
+        document.body.classList.remove("search-modal-open")
+        if (restoreInert) {
+            restoreInert.removeAttribute("inert")
+            restoreInert = null
+        } else if (appShell && appShell.hasAttribute("inert")) {
+            appShell.removeAttribute("inert")
+        }
+    }
 
     function open() {
+        lockBackground()
         modal.classList.remove("hidden")
         input.value = ""
         resultsEl.innerHTML = ""
@@ -363,6 +386,7 @@ function initSearchModal() {
         input.value = ""
         resultsEl.innerHTML = ""
         emptyEl.classList.add("hidden")
+        unlockBackground()
     }
 
     modal.addEventListener("click", (e) => {

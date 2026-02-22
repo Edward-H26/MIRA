@@ -475,3 +475,13 @@ form button {
     padding: 2px 6px;
 }
 
+html.search-modal-open,
+body.search-modal-open {
+    overflow: hidden;
+}
+
+body.search-modal-open #main-content,
+body.search-modal-open #sidebar .sidebar-content {
+    overflow: hidden !important;
+}
+
