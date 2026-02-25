@@ -5,7 +5,7 @@ DEBUG = False
 ALLOWED_HOSTS = ['']
 CSRF_TRUSTED_ORIGINS = [""]
 
-CORS_ALLOW_ORIGINS = ["https://vega.github.io"]
+CORS_ALLOWED_ORIGINS = ["https://vega.github.io"]
 
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
