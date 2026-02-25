@@ -2,8 +2,23 @@ import os
 import sys
 import django
 
+
+def _pop_settings_arg(argv):
+    for index, arg in enumerate(argv):
+        if arg.startswith("--settings="):
+            value = arg.split("=", 1)[1].strip()
+            del argv[index]
+            return value
+        if arg == "--settings" and index + 1 < len(argv):
+            value = argv[index + 1].strip()
+            del argv[index:index + 2]
+            return value
+    return None
+
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.development")
+settings_module = _pop_settings_arg(sys.argv) or os.environ.get("DJANGO_SETTINGS_MODULE") or "memoria.settings.dev"
+os.environ["DJANGO_SETTINGS_MODULE"] = settings_module
 django.setup()
 
 from datetime import date, timedelta
