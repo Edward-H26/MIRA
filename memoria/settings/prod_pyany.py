@@ -6,6 +6,8 @@ ALLOWED_HOSTS = ["<your-username>.pythonanywhere.com"]
 
 CSRF_TRUSTED_ORIGINS = ["https://<your-username>.pythonanywhere.com"]
 
+CORS_ALLOW_ORIGINS = ["https://vega.github.io"]
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
