@@ -1,5 +1,5 @@
 from app.chat.models import Memory, Session
-from app.users.models import User as Profile
+from app.users.models import UserProfile as Profile
 
 
 def _get_or_create_profile_for_user(user):

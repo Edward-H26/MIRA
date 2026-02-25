@@ -12,7 +12,7 @@ class Payment(models.Model):
     Why it exists: Record payment attempts and outcomes for billing
     """
     # The user who made the payment; cascade to remove payments if the user is deleted
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    user = models.ForeignKey("users.UserProfile", on_delete=models.CASCADE)
     # Related subscription for this payment; keep payment history if subscription is removed
     subscription = models.ForeignKey("Subscription", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     # Plan being paid for; keep payment history if the plan is removed

@@ -216,7 +216,7 @@
                             {% endif %}
                         </div>
                             <div class="menu-header-name">
-                                {{ user.username|default:"User" }}
+                                {{ user.profile.display_name|default:user.username|default:"User" }}
                             </div>
                         </div>
                         <div class="py-1">

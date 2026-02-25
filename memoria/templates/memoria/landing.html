@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Memoria | Landing</title>
     <link rel="stylesheet" href="{% static 'memoria/landing.css' %}">
-    <link rel="stylesheet" href="{% static 'memoria/landing-overrides.css' %}">
-    <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}">
+    <link rel="stylesheet" href="{% static 'memoria/landing-overrides.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}?v={% now 'U' %}">
   </head>
   <body>
     <div class="min-h-screen relative overflow-x-hidden">
@@ -20,15 +20,13 @@
       </div>
 
       <div class="relative z-10">
-        <nav class="relative z-20 flex items-center justify-between p-[20px] md:px-10 lg:px-20 px-[30px] py-[20px]">
-          <div class="h-[59px] w-[42.759px] shrink-0">
-            <svg class="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 42.7586 59">
-              <g>
-                <path d="M19.5782 39.2106C19.5782 44.6169 15.1955 48.9997 9.78913 48.9997C4.38277 48.9997 5.06118e-05 44.6169 5.06118e-05 39.2106C5.06118e-05 33.8042 4.38277 29.4215 9.78913 29.4215C15.1955 29.4215 19.5782 33.8042 19.5782 39.2106Z" fill="#4063FE"></path>
-                <path d="M31.4817 19.789C31.4817 25.1954 27.0989 29.5781 21.6926 29.5781C16.2862 29.5781 11.9035 25.1954 11.9035 19.789C11.9035 14.3827 16.2862 9.99996 21.6926 9.99996C27.0989 9.99996 31.4817 14.3827 31.4817 19.789Z" fill="#4063FE"></path>
-                <path d="M42.7585 39.2106C42.7585 44.6169 38.3758 48.9997 32.9695 48.9997C27.5631 48.9997 23.1804 44.6169 23.1804 39.2106C23.1804 33.8042 27.5631 29.4215 32.9695 29.4215C38.3758 29.4215 42.7585 33.8042 42.7585 39.2106Z" fill="#4063FE"></path>
-              </g>
-            </svg>
+        <nav class="landing-nav relative z-20 flex items-center justify-between">
+          <div class="h-10 w-[43px] shrink-0">
+            <img
+              src="{% static 'images/logo.svg' %}"
+              alt="Memoria logo"
+              class="block size-full"
+            >
           </div>
 
           {% if user.is_authenticated %}
@@ -36,7 +34,7 @@
               Open app
             </a>
           {% else %}
-            <button type="button" id="open-login" class="bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
+            <button type="button" id="open-login" class="landing-clickable bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
               Sign in
             </button>
           {% endif %}
@@ -57,7 +55,7 @@
                   Go to your workspace
                 </a>
               {% else %}
-                <button type="button" id="open-register" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                <button type="button" id="open-register" class="landing-clickable bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                   Get started for free
                 </button>
               {% endif %}
@@ -122,7 +120,7 @@
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3 flex items-center justify-between">
                   <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
-                  <button class="text-xs text-[#4063FE] hover:underline" type="button">View all</button>
+                      <button class="landing-clickable text-xs text-[#4063FE] hover:underline" type="button">View all</button>
                 </div>
                 <div class="space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
@@ -138,23 +136,23 @@
                   <div class="space-y-2 ml-4">
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Project: E-commerce redesign</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Tech stack: React + TypeScript</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Deadline: Q1 2026</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Target: Mobile-first approach</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Team size: 5 developers</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                   </div>
                   <div class="text-xs text-[#727272] italic pl-4">
@@ -321,7 +319,7 @@
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3 flex items-center justify-between">
                   <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
-                  <button class="text-xs text-[#4063FE] hover:underline" type="button">View all</button>
+                  <button class="landing-clickable text-xs text-[#4063FE] hover:underline" type="button">View all</button>
                 </div>
                 <div class="space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
@@ -337,15 +335,15 @@
                   <div class="space-y-2 ml-4">
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Project: E-commerce redesign</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Tech stack: React + TypeScript</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                     <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Deadline: Q1 2026</span>
-                      <button class="text-[#4063FE]" type="button">x</button>
+                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
                     </div>
                   </div>
                   <div class="text-xs text-[#727272] italic pl-4">
@@ -450,7 +448,7 @@
                 Go to your workspace
               </a>
             {% else %}
-              <button type="button" id="open-register-bottom" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+              <button type="button" id="open-register-bottom" class="landing-clickable bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                 Get started for free
               </button>
             {% endif %}
@@ -470,15 +468,27 @@
 
     {% if not user.is_authenticated %}
       <script>
-        const transferUsernameValue = (fromRoot, toRoot) => {
+        const transferSharedValue = (fromRoot, toRoot, fieldName) => {
           if (!fromRoot || !toRoot) return;
-          const fromInput = fromRoot.querySelector('input[name="username"]');
-          const toInput = toRoot.querySelector('input[name="username"]');
+          const fromInput = fromRoot.querySelector(`input[name="${fieldName}"]`);
+          const toInput = toRoot.querySelector(`input[name="${fieldName}"]`);
           if (!fromInput || !toInput) return;
           const value = fromInput.value.trim();
           if (value) {
             toInput.value = value;
           }
+        };
+
+        const loadModalContent = async (modal, content, closeId, url, force = false) => {
+          if (!force && content.dataset.loaded) {
+            return;
+          }
+          const response = await fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          });
+          content.innerHTML = await response.text();
+          bindModalForm(modal, content, closeId);
+          content.dataset.loaded = "true";
         };
 
         const bindModalForm = (modal, content, closeId) => {
@@ -494,15 +504,15 @@
               if (!registerModal || !registerContent) {
                 return;
               }
-              if (!registerContent.dataset.loaded) {
-                const response = await fetch("{% url 'users:register' %}", {
-                  headers: { "X-Requested-With": "XMLHttpRequest" },
-                });
-                registerContent.innerHTML = await response.text();
-                bindModalForm(registerModal, registerContent, "close-register");
-                registerContent.dataset.loaded = "true";
-              }
-              transferUsernameValue(content, registerContent);
+              await loadModalContent(
+                registerModal,
+                registerContent,
+                "close-register",
+                "{% url 'users:register' %}",
+                true
+              );
+              transferSharedValue(content, registerContent, "username");
+              transferSharedValue(content, registerContent, "email");
               modal.close();
               registerModal.showModal();
             });
@@ -515,15 +525,15 @@
               if (!loginModal || !loginContent) {
                 return;
               }
-              if (!loginContent.dataset.loaded) {
-                const response = await fetch("{% url 'users:login' %}", {
-                  headers: { "X-Requested-With": "XMLHttpRequest" },
-                });
-                loginContent.innerHTML = await response.text();
-                bindModalForm(loginModal, loginContent, "close-login");
-                loginContent.dataset.loaded = "true";
-              }
-              transferUsernameValue(content, loginContent);
+              await loadModalContent(
+                loginModal,
+                loginContent,
+                "close-login",
+                "{% url 'users:login' %}",
+                true
+              );
+              transferSharedValue(content, loginContent, "username");
+              transferSharedValue(content, loginContent, "email");
               modal.close();
               loginModal.showModal();
             });
@@ -570,14 +580,7 @@
           }
           ensureBackdropClose(modal);
           openBtn.addEventListener("click", async () => {
-            if (!content.dataset.loaded) {
-              const response = await fetch(url, {
-                headers: { "X-Requested-With": "XMLHttpRequest" },
-              });
-              content.innerHTML = await response.text();
-              bindModalForm(modal, content, closeId);
-              content.dataset.loaded = "true";
-            }
+            await loadModalContent(modal, content, closeId, url);
             modal.showModal();
           });
         };

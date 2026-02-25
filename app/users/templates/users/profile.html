@@ -16,7 +16,7 @@
         {% csrf_token %}
         <input id="profile_img" name="profile_img" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" class="profile-file-input">
 
-        <section class="profile-card">
+        <section class="profile-card profile-card-info">
           <h2 class="profile-card-title">Account Information</h2>
           <div class="profile-avatar-row">
             <label class="profile-avatar" for="profile_img" aria-label="Upload avatar">
@@ -32,8 +32,8 @@
           </div>
           <div class="profile-grid">
             <div class="profile-field-narrow">
-              <label class="profile-label" for="username">User name</label>
-              <input id="username" name="username" type="text" value="{{ username }}" readonly tabindex="-1" class="profile-input profile-input-disabled">
+              <label class="profile-label" for="display_name">Display name</label>
+              <input id="display_name" name="display_name" type="text" value="{{ display_name }}" class="profile-input" maxlength="80" required>
             </div>
           </div>
           <button type="submit" name="save_account" value="1" class="profile-primary-button">Save changes</button>
@@ -45,32 +45,40 @@
           {% endif %}
         </section>
 
-        <section class="profile-card">
+        <section class="profile-card profile-card-account">
           <h2 class="profile-card-title">Security</h2>
           <div class="profile-security">
             <div class="profile-security-row">
-              <div>
-                <label class="profile-label">Password</label>
-                <div class="profile-password-field">
-                  <span class="profile-password-text">••••••••••••</span>
+              <div class="profile-email-field">
+                <label class="profile-label" for="username_security">Username</label>
+                <div class="profile-email-input-row">
+                  <input id="username_security" class="profile-input profile-input-disabled" type="text" value="{{ username }}" readonly tabindex="-1">
                 </div>
-              </div>
-              <div class="security-action">
-                <span id="password-update-message" class="profile-inline-success hidden">Your password has been updated.</span>
-                <button class="profile-secondary-button" type="button" id="open-password-modal">Change your password</button>
               </div>
             </div>
             <div class="profile-security-row">
               <div class="profile-email-field">
                 <label class="profile-label" for="email">Email</label>
                 <div class="profile-email-input-row">
-                  <input id="email" name="email" class="profile-input" type="email" value="{{ email }}">
-                  {% if email_success and request.POST.save_email %}
-                    <span class="profile-inline-success">Your email has been updated.</span>
-                  {% endif %}
+                  <input id="email" name="email" class="profile-input profile-input-disabled" type="email" value="{{ email }}" readonly tabindex="-1">
                 </div>
               </div>
-              <button class="profile-secondary-button" type="submit" name="save_email" value="1">Change your Email adress</button>
+            </div>
+            <div class="profile-security-row">
+              <div>
+                <label class="profile-label">Password</label>
+                <div class="profile-password-field">
+                  <span class="profile-password-text">..............</span>
+                </div>
+              </div>
+              <div class="security-action">
+                <span id="password-update-message" class="profile-inline-success hidden">Your password has been updated.</span>
+                {% if has_usable_password %}
+                  <button class="profile-secondary-button" type="button" id="open-password-modal">Change your password</button>
+                {% else %}
+                  <button class="profile-secondary-button" type="button" id="open-password-modal">Set password for email login</button>
+                {% endif %}
+              </div>
             </div>
           </div>
         </section>
@@ -108,6 +116,13 @@
       const message = document.getElementById("password-update-message");
       if (!modal || !content || !openBtn) return;
 
+      const loadPasswordForm = async () => {
+        const response = await fetch("{% url 'users:password_change' %}", {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+        content.innerHTML = await response.text();
+      };
+
       const bindModal = () => {
         const closeBtn = content.querySelector("#close-password-modal");
         if (closeBtn) {
@@ -127,6 +142,9 @@
             if (message) {
               message.classList.remove("hidden");
             }
+            openBtn.textContent = "Change your password";
+            await loadPasswordForm();
+            bindModal();
             modal.close();
             return;
           }
@@ -136,18 +154,11 @@
         });
       };
 
-      openBtn.addEventListener("click", () => {
+      openBtn.addEventListener("click", async () => {
         if (message) {
           message.classList.add("hidden");
         }
-        const form = content.querySelector("form");
-        if (form) {
-          form.reset();
-          const error = content.querySelector(".auth-error");
-          if (error) {
-            error.remove();
-          }
-        }
+        await loadPasswordForm();
         bindModal();
         modal.showModal();
       });

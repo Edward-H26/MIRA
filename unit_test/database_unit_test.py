@@ -13,7 +13,7 @@ from django.db.models import ProtectedError
 from django.utils import timezone
 from datetime import date, timedelta
 
-from app.users.models import User
+from app.users.models import UserProfile
 from app.chat.models import Session, Message, Memory, MemoryBullet
 from app.chat.models.message import Role
 from app.chat.models.memory_bullet import MemoryType
@@ -39,7 +39,7 @@ def assert_test(condition, name):
 
 
 def get_test_data():
-    profiles = list(User.objects.filter(user__username__in=TEST_USERNAMES).order_by("id"))
+    profiles = list(UserProfile.objects.filter(user__username__in=TEST_USERNAMES).order_by("id"))
     if len(profiles) < 8:
         return None
 
@@ -294,7 +294,7 @@ def test_on_delete_behaviors(data):
 
     emma_auth_user.delete()
 
-    remaining_profiles = User.objects.filter(id=emma_profile_id).count()
+    remaining_profiles = UserProfile.objects.filter(id=emma_profile_id).count()
     remaining_memories = Memory.objects.filter(user_id=emma_profile_id).count()
     remaining_bullets = MemoryBullet.objects.filter(memory__user_id=emma_profile_id).count()
     remaining_sessions = Session.objects.filter(user_id=emma_profile_id).count()
@@ -315,7 +315,7 @@ def print_summary():
     print("=" * 60)
 
     print(f"  AuthUser records:     {AuthUser.objects.filter(username__in=TEST_USERNAMES).count()}")
-    print(f"  User profiles:        {User.objects.filter(user__username__in=TEST_USERNAMES).count()}")
+    print(f"  User profiles:        {UserProfile.objects.filter(user__username__in=TEST_USERNAMES).count()}")
     print(f"  Memory records:       {Memory.objects.count()}")
     print(f"  MemoryBullet records: {MemoryBullet.objects.count()}")
     print(f"  Session records:      {Session.objects.count()}")

@@ -68,7 +68,8 @@
     border: 0;
 }
 .profile-success {
-    margin: 0 0 10px;
+    margin: 0;
+    line-height: 1.2;
     font-size: 12px;
     color: #6d6d6d;
 }
@@ -79,6 +80,15 @@
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
     margin-bottom: 16px;
     color: #1b1b1b;
+}
+
+.profile-card.profile-card-account {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+}
+
+.profile-card.profile-card-info .profile-success {
+    margin-top: 12px;
 }
 .profile-card-title {
     font-size: 16px;

@@ -12,7 +12,7 @@ from django.views.decorators.http import require_http_methods
 from pathlib import Path
 
 from . import services
-from .models import User as Profile
+from .models import UserProfile
 
 
 def _get_safe_redirect_url(request, fallback="/"):
@@ -30,17 +30,33 @@ def _get_safe_redirect_url(request, fallback="/"):
 def login_view(request):
     if request.method == "GET":
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return render(request, "users/login_form.html")
+            return render(
+                request,
+                "users/login_form.html",
+                {
+                    "email": "",
+                    "email_error": "",
+                    "password_error": "",
+                    "login_error": "",
+                },
+            )
         return redirect("memoria:home")
-    username = request.POST.get("username", "").strip()
+    email = request.POST.get("email", "").strip()
     password = request.POST.get("password", "")
-    user, errors = services.authenticate_and_login(request, username, password)
+    user, errors = services.authenticate_and_login(request, email, password)
     if errors:
         login_error = errors.get("login", "")
+        email_error = errors.get("email", "")
+        password_error = errors.get("password", "")
         return render(
             request,
             "users/login_form.html",
-            {"login_error": login_error, "username": username},
+            {
+                "login_error": login_error,
+                "email_error": email_error,
+                "password_error": password_error,
+                "email": email,
+            },
             status=400,
         )
     next_url = _get_safe_redirect_url(request, fallback="/")
@@ -63,9 +79,10 @@ def register_view(request):
             return render(request, "users/register_form.html")
         return redirect("memoria:home")
     username = request.POST.get("username", "").strip()
+    email = request.POST.get("email", "").strip()
     password1 = request.POST.get("password1", "")
     password2 = request.POST.get("password2", "")
-    user, errors = services.register_and_login(request, username, password1, password2)
+    user, errors = services.register_and_login(request, username, email, password1, password2)
     if errors:
         password_mismatch = errors.get("password2") == "Passwords do not match."
         return render(
@@ -73,7 +90,9 @@ def register_view(request):
             "users/register_form.html",
             {
                 "username": username,
+                "email": email,
                 "username_error": errors.get("username", ""),
+                "email_error": errors.get("email", ""),
                 "password1_error": errors.get("password1", ""),
                 "password2_error": errors.get("password2", ""),
                 "password_mismatch": password_mismatch,
@@ -90,16 +109,20 @@ def register_view(request):
 @require_http_methods(["GET", "POST"])
 def profile_view(request):
     profile = services.get_or_create_profile_for_user(request.user)
+    has_usable_password = request.user.has_usable_password()
     if request.method == "POST":
-        email_success = False
         account_success = False
         account_error = ""
-        email = request.POST.get("email", "").strip()
-        if request.POST.get("save_email"):
-            if request.user.email != email:
-                request.user.email = email
-                request.user.save(update_fields=["email"])
-            email_success = True
+        display_name = (request.POST.get("display_name") or "").strip()
+        if request.POST.get("save_account"):
+            if not display_name:
+                account_error = "Display name is required."
+            elif len(display_name) > 80:
+                account_error = "Display name must be 80 characters or fewer."
+            elif display_name != profile.display_name:
+                profile.display_name = display_name
+                profile.save(update_fields=["display_name"])
+                account_success = True
         profile_img = request.FILES.get("profile_img")
         if profile_img and request.POST.get("save_account"):
             extension = Path(profile_img.name).suffix.lower()
@@ -119,10 +142,11 @@ def profile_view(request):
             {
                 "profile": profile,
                 "username": request.user.username,
+                "display_name": profile.display_name,
                 "email": request.user.email,
                 "success": account_success,
                 "account_error": account_error,
-                "email_success": email_success,
+                "has_usable_password": has_usable_password,
             },
         )
     return render(
@@ -131,7 +155,9 @@ def profile_view(request):
         {
             "profile": profile,
             "username": request.user.username,
+            "display_name": profile.display_name,
             "email": request.user.email,
+            "has_usable_password": has_usable_password,
         },
     )
 
@@ -139,7 +165,7 @@ def profile_view(request):
 @login_required(login_url="/")
 @require_http_methods(["GET"])
 def avatar_view(request, uuid):
-    profile = get_object_or_404(Profile, uuid=uuid)
+    profile = get_object_or_404(UserProfile, uuid=uuid)
     if request.user.id != profile.user_id and not request.user.is_staff:
         raise Http404()
     if not profile.profile_img:
@@ -162,15 +188,22 @@ def avatar_view(request, uuid):
 def change_password_view(request):
     if request.method == "GET":
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return render(request, "users/password_change_form.html")
+            return render(
+                request,
+                "users/password_change_form.html",
+                {"has_usable_password": request.user.has_usable_password()},
+            )
         return redirect("users:profile")
     current_password = request.POST.get("current_password", "")
     new_password = request.POST.get("new_password", "")
     confirm_password = request.POST.get("confirm_password", "")
     error = ""
-    if not current_password or not new_password or not confirm_password:
+    needs_current_password = request.user.has_usable_password()
+    if not new_password or not confirm_password:
         error = "Please fill out all password fields."
-    elif not request.user.check_password(current_password):
+    elif needs_current_password and not current_password:
+        error = "Please fill out all password fields."
+    elif needs_current_password and not request.user.check_password(current_password):
         error = "Current password is incorrect."
     elif new_password != confirm_password:
         error = "New passwords do not match."
@@ -178,7 +211,10 @@ def change_password_view(request):
         return render(
             request,
             "users/password_change_form.html",
-            {"error": error},
+            {
+                "error": error,
+                "has_usable_password": needs_current_password,
+            },
             status=400,
         )
     request.user.set_password(new_password)

@@ -61,23 +61,23 @@ def test_user_services(data):
     failures = 0
 
     print("\n  --- validate_registration ---")
-    result = validate_registration("brand_new_user", "pass123", "pass123")
+    result = validate_registration("brand_new_user", "brand_new_user@example.com", "pass123", "pass123")
     failures += assert_test(result is None, "Valid registration returns None")
 
-    result = validate_registration("", "pass123", "pass123")
+    result = validate_registration("", "missing_username@example.com", "pass123", "pass123")
     failures += assert_test(result is not None and "username" in result, "Empty username returns error")
 
-    result = validate_registration("maria_garcia", "pass123", "pass123")
+    result = validate_registration("maria_garcia", "maria_new@example.com", "pass123", "pass123")
     failures += assert_test(result is not None and "username" in result, "Existing username returns error")
 
-    result = validate_registration("newuser", "pass1", "pass2")
+    result = validate_registration("newuser", "newuser@example.com", "pass1", "pass2")
     failures += assert_test(result is not None and "password2" in result, "Mismatched passwords returns error")
 
-    result = validate_registration("newuser", "", "")
+    result = validate_registration("newuser", "newuser@example.com", "", "")
     failures += assert_test(result is not None and "password1" in result, "Empty password returns error")
 
     print("\n  --- create_user_with_profile ---")
-    new_user = create_user_with_profile("test_create_tmp", "pass123")
+    new_user = create_user_with_profile("test_create_tmp", "test_create_tmp@example.com", "pass123")
     profile_exists = hasattr(new_user, "profile") and new_user.profile is not None
     failures += assert_test(
         new_user is not None and profile_exists,

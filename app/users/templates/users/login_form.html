@@ -1,20 +1,28 @@
-<form method="post" action="{% url 'users:login' %}" class="auth-card">
+{% load static socialaccount %}
+<form method="post" action="{% url 'users:login' %}" class="auth-card" novalidate>
   {% csrf_token %}
   <h2 class="auth-title">Sign in to Memoria</h2>
+  <a class="auth-social-submit" href="{% provider_login_url 'google' process='login' %}">
+    <img class="auth-social-icon" src="{% static 'images/google.svg' %}" alt="" aria-hidden="true">
+    Continue with Google
+  </a>
+  <div class="auth-divider" role="presentation">
+    <span>Or</span>
+  </div>
   <label class="auth-field">
-    <span class="auth-label{% if login_error %} auth-label-error{% endif %}">Username</span>
-    <input class="auth-input{% if login_error %} auth-input-error{% endif %}" type="text" name="username" placeholder="username" value="{{ username|default:'' }}" required>
-    <p class="auth-error auth-error-slot{% if not login_error %} auth-error-hidden{% endif %}"></p>
+    <span class="auth-label{% if email_error %} auth-label-error{% endif %}">Email</span>
+    <input class="auth-input{% if email_error %} auth-input-error{% endif %}" type="email" name="email" placeholder="email@example.com" value="{{ email|default:'' }}" required>
+    <p class="auth-error auth-error-slot{% if not email_error %} auth-error-hidden{% endif %}">{{ email_error|default:'' }}</p>
   </label>
   <label class="auth-field">
-    <span class="auth-label{% if login_error %} auth-label-error{% endif %}">Password</span>
-    <span class="auth-input-wrap{% if login_error %} auth-input-wrap-error{% endif %}">
+    <span class="auth-label{% if password_error or login_error %} auth-label-error{% endif %}">Password</span>
+    <span class="auth-input-wrap{% if password_error or login_error %} auth-input-wrap-error{% endif %}">
       <input class="auth-input" type="password" name="password" required>
     </span>
-    <p class="auth-error auth-error-slot{% if not login_error %} auth-error-hidden{% endif %}">{{ login_error|default:'' }}</p>
+    <p class="auth-error auth-error-slot{% if not password_error and not login_error %} auth-error-hidden{% endif %}">{{ password_error|default:login_error|default:'' }}</p>
   </label>
   <input type="hidden" name="next" value="/home/">
-  <button class="auth-submit" type="submit">Sign in</button>
+  <button class="auth-submit auth-form-submit" type="submit">Sign in</button>
   <p class="auth-footer">
     Need an account?
     <button type="button" class="auth-link" id="open-register-inline">Sign up</button>

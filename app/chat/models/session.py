@@ -9,7 +9,7 @@ class Session(models.Model):
     Why it exists: Group messages into a single conversation context
     """
     # The user who owns this chat session; cascade to remove sessions if the user is deleted
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="chat_session")
+    user = models.ForeignKey("users.UserProfile", on_delete=models.CASCADE, related_name="chat_session")
     # Session title displayed in the UI
     title = models.CharField(max_length=200, blank=True, default="")
     # Timestamp when the session was created

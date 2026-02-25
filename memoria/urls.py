@@ -25,6 +25,7 @@ urlpatterns = [
     path("", include("app.memoria.urls", namespace="memoria")),
     path("users/", include("app.users.urls", namespace="users")),
     path("chat/", include("app.chat.urls", namespace="chat")),
+    path("accounts/", include("allauth.urls")),
 ]
 
 handler404 = "app.memoria.views.not_found_view"

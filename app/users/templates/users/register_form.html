@@ -1,10 +1,23 @@
-<form method="post" action="{% url 'users:register' %}" class="auth-card">
+{% load static socialaccount %}
+<form method="post" action="{% url 'users:register' %}" class="auth-card" novalidate>
   {% csrf_token %}
   <h2 class="auth-title">Create an account</h2>
+  <a class="auth-social-submit" href="{% provider_login_url 'google' process='login' %}">
+    <img class="auth-social-icon" src="{% static 'images/google.svg' %}" alt="" aria-hidden="true">
+    Continue with Google
+  </a>
+  <div class="auth-divider" role="presentation">
+    <span>Or</span>
+  </div>
   <label class="auth-field">
     <span class="auth-label{% if username_error %} auth-label-error{% endif %}">Username</span>
     <input class="auth-input{% if username_error %} auth-input-error{% endif %}" type="text" name="username" placeholder="username" value="{{ username|default:'' }}" required>
     <p class="auth-error auth-error-slot{% if not username_error %} auth-error-hidden{% endif %}">{{ username_error|default:'' }}</p>
+  </label>
+  <label class="auth-field">
+    <span class="auth-label{% if email_error %} auth-label-error{% endif %}">Email</span>
+    <input class="auth-input{% if email_error %} auth-input-error{% endif %}" type="email" name="email" placeholder="email@example.com" value="{{ email|default:'' }}" required>
+    <p class="auth-error auth-error-slot{% if not email_error %} auth-error-hidden{% endif %}">{{ email_error|default:'' }}</p>
   </label>
   <label class="auth-field">
     <span class="auth-label{% if password1_error or password_mismatch %} auth-label-error{% endif %}">Password</span>
@@ -17,7 +30,7 @@
     <p class="auth-error auth-error-slot{% if not password2_error %} auth-error-hidden{% endif %}">{{ password2_error|default:'' }}</p>
   </label>
   <input type="hidden" name="next" value="/home/">
-  <button class="auth-submit" type="submit">Sign up</button>
+  <button class="auth-submit auth-form-submit" type="submit">Sign up</button>
   <p class="auth-footer">
     Already have an account?
     <button type="button" class="auth-link" id="open-login-inline">Sign in</button>

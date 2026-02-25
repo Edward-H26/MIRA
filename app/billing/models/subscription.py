@@ -11,7 +11,7 @@ class Subscription(models.Model):
     Why it exists: Track entitlement, status, and billing periods per user
     """
     # The user who owns this subscription; cascade to remove subscriptions if the user is deleted
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    user = models.ForeignKey("users.UserProfile", on_delete=models.CASCADE)
     # The plan this subscription is for; prevent deleting plans that have active subscriptions
     plan = models.ForeignKey("Plan", on_delete=models.PROTECT)
 

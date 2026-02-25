@@ -7,7 +7,7 @@ class Memory(models.Model):
     Why it exists: Persist long-term memory items for personalization
     """
     # The user this memory belongs to; cascade to avoid orphaned memories
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    user = models.ForeignKey("users.UserProfile", on_delete=models.CASCADE)
     # Number of access events processed since the component was last retrieved
     access_clock = models.IntegerField()
     # Timestamp when the memory record was created

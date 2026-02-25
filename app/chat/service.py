@@ -15,7 +15,7 @@ import math
 
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
-from app.users.models import User as Profile
+from app.users.models import UserProfile as Profile
 
 PROGRESSIVE_COLORS = ["#575BEF", "#6F82FF", "#8DA0FF", "#AEBBFF", "#D6DDFF"]
 SEGMENT_COLORS = ["#9698FF", "#664FA1", "#FFC5D6", "#DAC6FF", "#B4EDE4"]

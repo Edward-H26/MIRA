@@ -32,3 +32,23 @@ body {
 .landing-modal__content {
   padding: 36px 36px 32px;
 }
+
+.landing-nav {
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .landing-nav {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-nav {
+    padding: 2rem;
+  }
+}
+
+.landing-clickable {
+  cursor: pointer;
+}

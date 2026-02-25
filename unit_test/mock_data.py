@@ -10,7 +10,7 @@ from datetime import date, timedelta
 from django.contrib.auth.models import User as AuthUser
 from django.utils import timezone
 
-from app.users.models import User
+from app.users.models import UserProfile
 from app.chat.models import Session, Message, Memory, MemoryBullet
 from app.chat.models.message import Role
 from app.chat.models.memory_bullet import MemoryType
@@ -110,7 +110,7 @@ def cleanup_all_test_data():
     # Clean admin user's seeded chat data (keep the admin account itself)
     try:
         admin_auth = AuthUser.objects.get(username="tester")
-        admin_profile = User.objects.filter(user=admin_auth).first()
+        admin_profile = UserProfile.objects.filter(user=admin_auth).first()
         if admin_profile:
             s_count = Session.objects.filter(user=admin_profile).count()
             m_count = Memory.objects.filter(user=admin_profile).count()
@@ -137,7 +137,7 @@ def create_all_test_data():
             first_name=data["first_name"],
             last_name=data["last_name"],
         )
-        profile = User.objects.create(user=auth_user)
+        profile = UserProfile.objects.create(user=auth_user)
         profiles.append(profile)
         print(f"    Created: {data['username']}")
 
@@ -336,7 +336,7 @@ def create_all_test_data():
     print("\n  Step 8: Seeding admin 'tester' account with demo data")
     try:
         admin_auth = AuthUser.objects.get(username="tester")
-        admin_profile, _ = User.objects.get_or_create(user=admin_auth)
+        admin_profile, _ = UserProfile.objects.get_or_create(user=admin_auth)
 
         admin_sessions = []
         admin_messages = []
