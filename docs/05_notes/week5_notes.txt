@@ -70,16 +70,21 @@ Section 6: Creating APIs (Completed Item)
 
 How we are planning to create an API for this project:
 
-The project API is implemented under the `/chat/api/` route group in Django.  
-We use `JsonResponse` as the primary response format for data endpoints, and we keep both FBV and CBV patterns to demonstrate multiple Django API styles required by the assignment.
+The project API is implemented under the `/chat/api/` route group in Django.
+We use `JsonResponse` as the primary response format for data endpoints, and
+we keep both FBV and CBV patterns to demonstrate multiple Django API styles
+required by the assignment.
 
 Implementation approach:
 
   1. Route API URLs in `app/chat/urls.py` using clear resource-based paths.
   2. Implement API logic in `app/chat/api.py`.
-  3. Reuse query and aggregation logic from the service layer (`app/chat/service.py`) so API responses remain consistent with UI pages.
+  3. Reuse query and aggregation logic from the service layer
+     (`app/chat/service.py`) so API responses remain consistent with UI pages.
   4. Use query parameters for non-destructive filtering.
   5. Require authentication on user-private resources.
+  6. Expose public endpoints for platform-wide analytics and external
+     API integration.
 
 6.2 Data to Serve
 ------------------
@@ -105,21 +110,136 @@ What kind of data we are planning to serve:
      - grouped memory-type counts
      - average strength and feedback totals
 
+  5. Public daily active user data
+     - date, active_users (distinct count), message_count
+     - gap-filled date ranges for continuous charting
+
+  6. Holiday-enriched activity data
+     - daily active users merged with national holiday information
+     - comparative analytics (average activity on holidays vs non-holidays)
+
 6.3 Filtering and Response Types
 ---------------------------------
 
-Current filtering plan uses query parameters such as:
+Current filtering uses query parameters such as:
 
   - `q` for keyword matching
   - `type` for memory type
   - `topic` for memory topic
   - `strength_min` for minimum memory strength
   - `role` for message role filtering
+  - `country` for country code on the holiday endpoint
 
-Response-type plan:
+Response types:
 
-  - Use `JsonResponse` for normal API payloads.
-  - Keep one demo endpoint that can return HTML or plain text via `HttpResponse` to demonstrate MIME-type differences (`application/json` vs `text/html` vs `text/plain`).
+  - `JsonResponse` for all API payloads
+  - Public endpoints use `json_dumps_params={"indent": 2}` for
+    human-readable output
+  - Error responses include structured error codes (400 for invalid input,
+    503 for external API failures)
+
+6.4 Public API Endpoints
+-------------------------
+
+Two public endpoints are accessible without authentication:
+
+  GET /chat/api/active-users/
+    Returns daily active user counts across the platform.
+    Uses TruncDate aggregation with Count(distinct users) on Message records.
+    Gap-fills missing dates so charts display continuous time series.
+    Powers the Vega-Lite bar chart at /chat/charts/active-users/.
+
+  GET /chat/api/active-users/holidays/
+    Enriches daily activity data with national holiday information from the
+    external Nager.at Holiday API. Accepts a `?country=` parameter (ISO
+    country code, default "US"). Returns merged results with holiday flags
+    and comparative analytics (avg active users on holidays vs non-holidays).
+    Error responses: 400 for invalid country code, 503 for API unavailability.
+
+6.5 External API Integration (Nager.at Holiday API)
+-----------------------------------------------------
+
+The holiday endpoint demonstrates external API integration by combining data
+from a public API with internal analytics.
+
+External API details:
+
+  API name: Nager.at Public Holiday API
+  Base URL: https://date.nager.at/api/v3
+  Endpoints consumed:
+    - GET /AvailableCountries (list of supported country codes)
+    - GET /PublicHolidays/{year}/{countryCode} (holidays for a year/country)
+
+Implementation file: app/chat/holiday_service.py
+
+HTTP client pattern:
+
+  The _fetch_json() helper wraps requests.get() with:
+    - params={}
+    - timeout=5
+    - response.raise_for_status()
+
+  All external API calls are wrapped in try/except blocks catching
+  requests.RequestException. Failures are re-raised as custom exceptions:
+    - InvalidHolidayCountryCodeError (invalid country, carries available
+      regions list for the 400 response)
+    - HolidayAPIUnavailableError (network failure, timeout, or non-2xx
+      status, results in a 503 response)
+
+Data triangulation:
+
+  The main function get_daily_activity_with_holidays_payload() performs
+  the following steps:
+
+    1. Validates the country code against the external API's available
+       countries list.
+    2. Retrieves internal daily active user data from
+       get_api_daily_active_users_payload() (queries the Message model).
+    3. Extracts the years covered by the internal data.
+    4. Fetches public holidays for each year from the external API.
+    5. Builds a holiday_by_date lookup dictionary keyed by ISO date string.
+    6. Iterates through each daily result, enriching it with holiday info
+       (is_national_holiday, holiday_name, holiday_local_name).
+    7. Accumulates holiday vs non-holiday day counts and active user sums.
+    8. Computes average active users for holidays and non-holidays (rounded
+       to 2 decimal places).
+    9. Returns the combined payload with metadata, merged results, and
+       analytics section.
+
+  The external holiday data is never stored in the database. It is fetched,
+  merged, and returned within a single request lifecycle.
+
+6.6 Vega-Lite Charts
+----------------------
+
+Two interactive client-side charts consume the public API:
+
+  /chat/charts/active-users/
+    Renders a Vega-Lite bar chart showing daily active user counts.
+    The chart spec uses `data.url` pointing to /chat/api/active-users/
+    with `property: "results"` to extract the data array.
+
+  /chat/charts/messages/
+    Renders a Vega-Lite line chart showing daily message counts.
+    Uses the same API data source and extraction pattern.
+
+  Both chart pages extend base.html via Django template inheritance and
+  load the Vega-Lite JavaScript library from CDN.
+
+6.7 CSV/JSON Export
+--------------------
+
+Two authenticated endpoints provide downloadable reports:
+
+  GET /chat/analytics/export/sessions/?format=csv|json&q=
+    Exports session data (title, message_count, created_at) as CSV or JSON.
+    CSV includes column headers. JSON includes generated_at timestamp and
+    record_count metadata. Both use Content-Disposition: attachment with
+    timestamped filenames (sessions_YYYY-MM-DD_HH-MM.csv).
+
+  GET /chat/analytics/export/memory-bullets/?format=csv|json&q=
+    Exports memory bullet data (content, memory_type, created_at) in the
+    same CSV/JSON format with the same download pattern.
 
 ================================================================================
 
@@ -385,27 +505,35 @@ pattern in urls.py, and the template it renders (or JSON response for APIs).
             app/chat/api.py :: api_analytics_summary() [FBV]
             app/chat/api.py :: SessionAPIView [CBV: View]
             app/chat/api.py :: MessageAPIView [CBV: View]
-            app/chat/api.py :: api_demo_response() [FBV]
+            app/chat/api.py :: api_public_daily_active_users() [FBV]
+            app/chat/api.py :: api_public_daily_active_users_with_holidays() [FBV]
   Models:   chat.MemoryBullet, chat.Memory, chat.Session, chat.Message
   URLs:     app/chat/urls.py ::
               path("api/memories/", ..., name="api_memories")
               path("api/analytics/", ..., name="api_analytics")
               path("api/sessions/", ..., name="api_sessions")
               path("api/sessions/<int:session_id>/messages/", ..., name="api_messages")
-              path("api/demo/", ..., name="api_demo")
-  Templates: None (all return JsonResponse or HttpResponse)
+              path("api/active-users/", ..., name="api_active_users")
+              path("api/active-users/holidays/", ..., name="api_active_users_holidays")
+  Templates: None (all return JsonResponse)
 
   Flow: Each API view calls a corresponding service function
   (get_api_memory_bullets_payload, get_api_analytics_summary_payload,
-  get_api_sessions_payload, get_api_messages_payload) that queries the ORM,
-  serializes results into dicts, and returns them. All user-scoped endpoints
-  require login. Filtering via GET query parameters: ?q=, ?type=, ?topic=,
-  ?strength_min=, ?role=. The demo endpoint returns JsonResponse for
-  ?format=json, HttpResponse with text/html for ?format=html, and
-  HttpResponse with text/plain for ?format=text, demonstrating MIME type
-  differences.
+  get_api_sessions_payload, get_api_messages_payload,
+  get_api_daily_active_users_payload) that queries the ORM, serializes
+  results into dicts, and returns them. User-scoped endpoints require login.
+  Filtering via GET query parameters: ?q=, ?type=, ?topic=, ?strength_min=,
+  ?role=, ?country=.
 
-  FBV APIs: api_memory_bullets (4 filters), api_analytics_summary (no filters)
+  The holiday endpoint calls get_daily_activity_with_holidays_payload() from
+  holiday_service.py, which fetches external data from the Nager.at Holiday
+  API and merges it with internal daily activity data. Error handling uses
+  custom exceptions (InvalidHolidayCountryCodeError for 400,
+  HolidayAPIUnavailableError for 503).
+
+  FBV APIs: api_memory_bullets (4 filters), api_analytics_summary (no filters),
+            api_public_daily_active_users (no filters, public),
+            api_public_daily_active_users_with_holidays (?country= filter, public)
   CBV APIs: SessionAPIView (?q= filter), MessageAPIView (?role= filter)
 
 8.10 Session Management Unit
