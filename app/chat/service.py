@@ -243,8 +243,8 @@ def get_analytics_dashboard_context_with_reports(user, session_group="month", me
         .annotate(group_value=session_group_field)
         .values("group_value")
         .annotate(
-            session_count=Count("id"),
-            message_count=Count("messages__id"),
+            session_count=Count("id",distinct=True),
+            message_count=Count("messages__id",distinct=True),
         )
         .order_by("-group_value")
     )
