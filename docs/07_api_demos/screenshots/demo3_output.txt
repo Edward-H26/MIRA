@@ -1,0 +1,22 @@
+============================================================
+MEMORIA Public API: CSV Export
+============================================================
+API Endpoint:   https://miramemoria.com/chat/api/active-users/
+Records:        30
+Output File:    active_users_export.csv
+------------------------------------------------------------
+CSV created successfully with 30 rows.
+
+Preview (first 5 rows):
+date             active_users  message_count
+--------------------------------------------
+2026-01-29                  1              3
+2026-01-30                  1              2
+2026-01-31                  1              2
+2026-02-01                  1              2
+2026-02-02                  1              3
+
+Import instructions:
+  Excel:         Double-click the CSV file to open
+  Google Sheets: File > Import > Upload > select CSV
+============================================================

@@ -135,8 +135,9 @@ python manage.py runserver
 |-- memoria/                      # Project configuration
 |   |-- settings/                 # Environment-specific settings
 |   |   |-- base.py               # Shared settings (apps, middleware, templates, db)
-|   |   |-- development.py        # Dev overrides (DEBUG, ALLOWED_HOSTS)
-|   |   `-- production.py         # Prod overrides
+|   |   |-- dev.py                 # Dev overrides (DEBUG, ALLOWED_HOSTS)
+|   |   |-- prod_render.py        # Render production overrides
+|   |   `-- prod_pyany.py         # PythonAnywhere production overrides
 |   |-- templates/memoria/        # landing.html (standalone, project-level)
 |   |-- urls.py                   # Root URL conf (includes app URLs + handler404)
 |   |-- asgi.py
@@ -314,6 +315,15 @@ In addition to the 8 test users, the script seeds demo data for the existing adm
 - **Mock data redesigned** for realistic date coverage with 50 dynamic daily conversations across 25 days, weekday/weekend patterns, and natural activity spikes
 - **URL organization** separated into `page_urlpatterns` and `api_urlpatterns` in chat URLs
 - **Holiday service unit tests** with mocked API responses for valid/invalid country codes and network errors
+- **Google OAuth integration** via django-allauth with "Continue with Google" button on login and signup modals, avatar sync from Google profile, and display name extraction
+- **Internal authentication** with custom login/signup modal pages, logout via POST form, and `LOGIN_URL`, `LOGIN_REDIRECT_URL`, `LOGOUT_REDIRECT_URL` configured in settings
+- **Auth-dependent navigation** in base.html: Memory, Analytics, New Chat, and Search hidden for unauthenticated users; avatar menu only visible when logged in
+- **CORS headers** configured via django-cors-headers allowing `vega.github.io` to access public API endpoints for Vega-Lite editor integration
+- **Environment-specific settings** refactored into `dev.py`, `prod_render.py`, and `prod_pyany.py` with HTTPS enforcement, secure cookies, and WhiteNoise static file serving
+- **ALLOWED_HOSTS format fix** for Render production (removed erroneous `https://` scheme prefix)
+- **Duplicate middleware removal** (CommonMiddleware was listed twice in MIDDLEWARE)
+- **Three alternative API use demonstrations** in `docs/07_api_demos/` with Python scripts for aggregation, pandas statistical analysis, and CSV export for Excel/Google Sheets
+- **Vega-Lite submission spec** in `docs/07_api_demos/vega_lite_spec.txt` using absolute production URL for the Vega-Lite editor
 
 ---
 

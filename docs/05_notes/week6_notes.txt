@@ -1,0 +1,153 @@
+MEMORIA WEEK 6 PROGRESS NOTES
+
+These notes document the MEMORIA project's weekly progress for Week 6.
+This week focuses on A5 rubric compliance: authentication hardening,
+Google OAuth production readiness, public API demonstrations, and
+Vega-Lite submission preparation.
+
+================================================================================
+
+Section 1: Internal Django Authentication (A5 Part 1)
+=====================================================
+
+1.1 Custom login and signup pages
+    - Modal-based login at /users/login/ with Email + Password fields.
+    - Modal-based register at /users/register/ with Username, Email, Password,
+      and Confirm Password fields.
+    - Both forms load via AJAX into <dialog> modals on the landing page.
+    - Form switching: "Need an account? Sign up" and "Already have an account?
+      Sign in" links toggle between login and register modals.
+
+1.2 Logout functionality
+    - POST form in the avatar dropdown menu (base.html line 237).
+    - Uses Django's built-in logout() with CSRF token.
+
+1.3 Authentication settings configured
+    - LOGIN_URL = "/" (added to memoria/settings/base.py)
+    - LOGIN_REDIRECT_URL = "/home/"
+    - LOGOUT_REDIRECT_URL = "/"
+
+1.4 Protected sections
+    - All private views use @login_required(login_url="/") decorator.
+    - Protected APIs: /chat/api/memories/, /chat/api/analytics/,
+      /chat/api/sessions/, /chat/api/sessions/<id>/messages/
+    - Public APIs: /chat/api/active-users/, /chat/api/active-users/holidays/
+
+1.5 Auth-dependent navigation
+    - base.html wraps Memory, Analytics, New Chat, and Search links in
+      {% if user.is_authenticated %} blocks.
+    - Unauthenticated users see "Back to Home" link only.
+    - Avatar menu (Settings, Billing, Logout) only visible when logged in.
+
+================================================================================
+
+Section 2: Google OAuth Integration (A5 Part 2)
+================================================
+
+2.1 django-allauth installation
+    - allauth, allauth.account, allauth.socialaccount,
+      allauth.socialaccount.providers.google in INSTALLED_APPS.
+    - AccountMiddleware in MIDDLEWARE.
+    - AUTHENTICATION_BACKENDS includes allauth.account.auth_backends.
+
+2.2 Google Cloud credentials
+    - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.
+    - SOCIALACCOUNT_PROVIDERS configured for Google with profile+email scope.
+
+2.3 Redirect URIs
+    - Localhost redirect URI for development.
+    - Production domain redirect URI for Render deployment.
+
+2.4 "Continue with Google" button
+    - Present on both login_form.html and register_form.html.
+    - Uses {% provider_login_url 'google' process='login' %} template tag.
+    - Google SVG icon at static/images/google.svg.
+
+2.5 Signal handler (app/users/signals.py)
+    - sync_google_avatar_on_signup() triggers on allauth user_signed_up signal.
+    - Downloads Google profile picture and saves to UserProfile.profile_img.
+    - Extracts display_name from Google account data.
+    - Ensures unique username by appending suffix if needed.
+
+================================================================================
+
+Section 3: Public API + Vega-Lite + Alternative Uses (A5 Part 3)
+================================================================
+
+3.1 Public API endpoint
+    - GET /chat/api/active-users/ (no authentication required).
+    - Returns clean JSON: {"count": N, "results": [{"date", "active_users",
+      "message_count"}]}.
+    - Backed by Message model with TruncDate aggregation.
+    - Gap-fills missing dates for continuous time series.
+    - Deployed and accessible at https://miramemoria.com/chat/api/active-users/
+
+3.2 Vega-Lite visualization
+    - Bar chart spec: app/chat/static/chat/vega_specs/vega_daily_users_bar.json
+    - Line chart spec: app/chat/static/chat/vega_specs/vega_daily_messages_line.json
+    - Both use data.url referencing the public API endpoint.
+    - Field names match API response: "date", "active_users", "message_count".
+    - Chart pages at /chat/charts/active-users/ and /chat/charts/messages/.
+
+3.3 Vega-Lite submission file
+    - Created: docs/07_api_demos/vega_lite_spec.txt
+    - Contains full Vega-Lite JSON with absolute production URL.
+    - Can be pasted directly into the Vega-Lite editor at vega.github.io.
+
+3.4 Three alternative API use demonstrations
+    - Demo 1: Python aggregation script (docs/07_api_demos/demo1_python_aggregation.py)
+      Fetches API data, computes totals, averages, peak day, and busiest day.
+    - Demo 2: pandas analysis (docs/07_api_demos/demo2_pandas_analysis.py)
+      Creates DataFrame, computes descriptive statistics, correlation,
+      top days, and weekly summary.
+    - Demo 3: CSV export (docs/07_api_demos/demo3_csv_export.py)
+      Exports API data to CSV file for import into Excel or Google Sheets.
+    - All scripts accept --url parameter for testing against local or production.
+    - Screenshots captured for all three demonstrations.
+
+================================================================================
+
+Section 4: Bug Fixes Applied
+=============================
+
+4.1 LOGIN_URL not set (memoria/settings/base.py)
+    - Added LOGIN_URL = "/" to match @login_required(login_url="/") in views.
+
+4.2 Duplicate CommonMiddleware (memoria/settings/base.py)
+    - Removed duplicate "django.middleware.common.CommonMiddleware" from
+      MIDDLEWARE list (was listed at positions 56 and 60).
+
+4.3 ALLOWED_HOSTS format error (memoria/settings/prod_render.py)
+    - Changed from ["https://miramemoria.com", "https://www.miramemoria.com"]
+      to ["miramemoria.com", "www.miramemoria.com"].
+    - ALLOWED_HOSTS should contain plain domain names without scheme.
+    - CSRF_TRUSTED_ORIGINS correctly retains https:// prefix.
+
+4.4 README outdated settings references
+    - Updated development.py to dev.py.
+    - Updated production.py to prod_render.py.
+    - Added prod_pyany.py reference.
+
+================================================================================
+
+Section 5: CORS Configuration
+==============================
+
+- django-cors-headers installed and configured.
+- CorsMiddleware placed first in MIDDLEWARE list.
+- Production CORS_ALLOWED_ORIGINS: ["https://vega.github.io"]
+- Enables Vega-Lite editor to fetch data from public API endpoints.
+
+================================================================================
+
+Section 6: Production Deployment Notes
+=======================================
+
+- Deployed on Render at miramemoria.com.
+- WhiteNoise middleware for static file serving.
+- HTTPS enforcement with SECURE_PROXY_SSL_HEADER.
+- Secure cookies: SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE enabled.
+- Google OAuth configured for production domain.
+- Production database needs mock data seeding for Vega-Lite chart display.
+
+================================================================================

@@ -1,0 +1,24 @@
+============================================================
+MEMORIA Public API: Daily Active Users Aggregation
+============================================================
+API Endpoint:         https://miramemoria.com/chat/api/active-users/
+Total Days Covered:   30
+Days with Activity:   30
+------------------------------------------------------------
+Total Active Users:   66
+Total Messages:       171
+Avg Daily Users:      2.20
+Avg Daily Messages:   5.70
+------------------------------------------------------------
+Peak User Day:        2026-02-18 (4 users)
+Busiest Message Day:  2026-02-27 (12 messages)
+============================================================
+
+First 5 records:
+Date             Active Users   Messages
+----------------------------------------
+2026-01-29                  1          3
+2026-01-30                  1          2
+2026-01-31                  1          2
+2026-02-01                  1          2
+2026-02-02                  1          3
