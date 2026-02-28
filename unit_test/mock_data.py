@@ -349,54 +349,67 @@ def create_all_test_data():
     print(f"    Created {len(payments)} payments (SUCCEEDED, FAILED, PENDING, CANCELLED)")
 
     print("\n  Step 8: Seeding admin 'tester' account with demo data")
-    try:
-        admin_auth = AuthUser.objects.get(username="tester")
-        admin_profile, _ = UserProfile.objects.get_or_create(user=admin_auth)
+    admin_auth, created = AuthUser.objects.get_or_create(
+        username="tester",
+        defaults={
+            "email": "tester@example.com",
+            "is_staff": True,
+            "is_superuser": True,
+        }
+    )
+    if created:
+        admin_auth.set_password("uiuc12345")
+        admin_auth.save()
+        print("    Created admin 'tester' account (tester@example.com)")
+    else:
+        if not admin_auth.email:
+            admin_auth.email = "tester@example.com"
+            admin_auth.save()
+        print("    Found existing admin 'tester' account")
 
-        admin_sessions = []
-        admin_messages = []
-        admin_templates = [
-            ("Project Planning Discussion", "Can you help me plan my new project?", "Of course. What type of project is it?", "A web app for task management."),
-            ("Architecture Review", "What pattern should I use for backend modules?", "A service layer with clear boundaries is solid.", None),
-            ("Python Debugging", "My script fails with a TypeError.", "Please share traceback and sample input.", "Here is a minimal repro."),
-            ("Learning Resources", "Best resources for Django?", "Start with official docs and build one mini-project.", None),
-            ("Code Review Help", "Can you review this function?", "Sure, share it with expected behavior.", None),
-            ("Release Notes Draft", "Help me summarize this sprint.", "Use a structure: shipped, fixed, known issues.", None),
-        ]
+    admin_profile, _ = UserProfile.objects.get_or_create(user=admin_auth)
 
-        # Admin gets natural daily activity for last 14 days.
-        for days_ago in range(13, -1, -1):
-            day_date = (timezone.now() - timedelta(days=days_ago)).date()
-            daily_sessions = 1 if day_date.weekday() >= 5 else 2
-            if day_date.day % 10 == 0:
-                daily_sessions += 1
+    admin_sessions = []
+    admin_messages = []
+    admin_templates = [
+        ("Project Planning Discussion", "Can you help me plan my new project?", "Of course. What type of project is it?", "A web app for task management."),
+        ("Architecture Review", "What pattern should I use for backend modules?", "A service layer with clear boundaries is solid.", None),
+        ("Python Debugging", "My script fails with a TypeError.", "Please share traceback and sample input.", "Here is a minimal repro."),
+        ("Learning Resources", "Best resources for Django?", "Start with official docs and build one mini-project.", None),
+        ("Code Review Help", "Can you review this function?", "Sure, share it with expected behavior.", None),
+        ("Release Notes Draft", "Help me summarize this sprint.", "Use a structure: shipped, fixed, known issues.", None),
+    ]
 
-            for idx in range(daily_sessions):
-                title, user_prompt, assistant_reply, followup = admin_templates[(days_ago + idx) % len(admin_templates)]
-                include_followup = followup if (days_ago + idx) % 2 == 0 else None
-                s, created_msgs = _create_backdated_conversation(
-                    user_profile=admin_profile,
-                    title=title,
-                    days_ago=days_ago,
-                    user_prompt=user_prompt,
-                    assistant_reply=assistant_reply,
-                    user_followup=include_followup,
-                )
-                admin_sessions.append(s)
-                admin_messages.extend(created_msgs)
+    for days_ago in range(13, -1, -1):
+        day_date = (timezone.now() - timedelta(days=days_ago)).date()
+        daily_sessions = 1 if day_date.weekday() >= 5 else 2
+        if day_date.day % 10 == 0:
+            daily_sessions += 1
 
-        admin_mem = Memory.objects.create(user=admin_profile, access_clock=10)
-        admin_bullets = [
-            MemoryBullet.objects.create(memory=admin_mem, content="Prefers formal communication style", tags=["style"], memory_type=MemoryType.SEMANTIC, topic="Communication", ttl_days=365, strength=8, helpful_count=5),
-            MemoryBullet.objects.create(memory=admin_mem, content="Works as a software engineer", tags=["profession"], memory_type=MemoryType.SEMANTIC, topic="Career", ttl_days=365, strength=9, helpful_count=3, concept="software engineering"),
-            MemoryBullet.objects.create(memory=admin_mem, content="Uses Django and Python for backend development", tags=["skills"], memory_type=MemoryType.PROCEDURAL, topic="Technical Skills", ttl_days=180, strength=75, helpful_count=10, concept="Django"),
-            MemoryBullet.objects.create(memory=admin_mem, content="Had productive meeting on project timeline", tags=["work"], memory_type=MemoryType.EPISODIC, topic="Work Events", ttl_days=90, strength=50),
-            MemoryBullet.objects.create(memory=admin_mem, content="Prefers dark mode in all development tools", tags=["preferences"], memory_type=MemoryType.SEMANTIC, topic="Preferences", ttl_days=9999, strength=6),
-        ]
+        for idx in range(daily_sessions):
+            title, user_prompt, assistant_reply, followup = admin_templates[(days_ago + idx) % len(admin_templates)]
+            include_followup = followup if (days_ago + idx) % 2 == 0 else None
+            s, created_msgs = _create_backdated_conversation(
+                user_profile=admin_profile,
+                title=title,
+                days_ago=days_ago,
+                user_prompt=user_prompt,
+                assistant_reply=assistant_reply,
+                user_followup=include_followup,
+            )
+            admin_sessions.append(s)
+            admin_messages.extend(created_msgs)
 
-        print(f"    Created {len(admin_sessions)} sessions, {len(admin_messages)} messages, 1 memory, {len(admin_bullets)} bullets for admin 'tester'")
-    except AuthUser.DoesNotExist:
-        print("    Skipped: no 'tester' admin account found")
+    admin_mem = Memory.objects.create(user=admin_profile, access_clock=10)
+    admin_bullets = [
+        MemoryBullet.objects.create(memory=admin_mem, content="Prefers formal communication style", tags=["style"], memory_type=MemoryType.SEMANTIC, topic="Communication", ttl_days=365, strength=8, helpful_count=5),
+        MemoryBullet.objects.create(memory=admin_mem, content="Works as a software engineer", tags=["profession"], memory_type=MemoryType.SEMANTIC, topic="Career", ttl_days=365, strength=9, helpful_count=3, concept="software engineering"),
+        MemoryBullet.objects.create(memory=admin_mem, content="Uses Django and Python for backend development", tags=["skills"], memory_type=MemoryType.PROCEDURAL, topic="Technical Skills", ttl_days=180, strength=75, helpful_count=10, concept="Django"),
+        MemoryBullet.objects.create(memory=admin_mem, content="Had productive meeting on project timeline", tags=["work"], memory_type=MemoryType.EPISODIC, topic="Work Events", ttl_days=90, strength=50),
+        MemoryBullet.objects.create(memory=admin_mem, content="Prefers dark mode in all development tools", tags=["preferences"], memory_type=MemoryType.SEMANTIC, topic="Preferences", ttl_days=9999, strength=6),
+    ]
+
+    print(f"    Created {len(admin_sessions)} sessions, {len(admin_messages)} messages, 1 memory, {len(admin_bullets)} bullets for admin 'tester'")
 
     print("\n" + "=" * 60)
     print("TEST DATA CREATION COMPLETE")

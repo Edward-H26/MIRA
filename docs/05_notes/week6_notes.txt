@@ -107,7 +107,27 @@ Section 3: Public API + Vega-Lite + Alternative Uses (A5 Part 3)
 
 ================================================================================
 
-Section 4: Bug Fixes Applied
+Section 4: Test Account for Grading
+====================================
+
+The mock_data.py script now creates a test account automatically:
+
+    Username: tester
+    Email:    tester@example.com
+    Password: uiuc12345
+    Role:     Staff + Superuser
+
+This account is created via get_or_create in Step 8 of create_all_test_data().
+If the account already exists, its email is updated to tester@example.com.
+The account receives demo sessions, messages, memories, and memory bullets
+for a realistic experience when logging in on the production site.
+
+To seed on production (Render shell):
+    python unit_test/mock_data.py
+
+================================================================================
+
+Section 5: Bug Fixes Applied
 =============================
 
 4.1 LOGIN_URL not set (memoria/settings/base.py)
