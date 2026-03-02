@@ -9,6 +9,7 @@ venv/
 env/
 .venv/
 .env/
+myenv-django
 
 # IDE configurations
 .idea/
