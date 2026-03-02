@@ -54,3 +54,16 @@ urllib3==2.6.3
 wcwidth==0.2.14
 wheel==0.45.1
 whitenoise==6.8.2
+accelerate==1.12.0
+datasets==4.6.1
+openai==2.24.0
+pandas==3.0.1
+peft==0.18.1
+protobuf==7.34.0
+python-dotenv==1.2.2
+sentencepiece==0.2.1
+torch==2.10.0
+torchaudio==2.10.0
+torchvision==0.25.0
+transformers==5.2.0
+trl==0.29.0

@@ -53,6 +53,4 @@ htmlcov/
 # Node.js
 node_modules/
 
-# Codex
-AGENTS.md
-todo.md
+llm_test/llm_test/
