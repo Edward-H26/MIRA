@@ -55,3 +55,9 @@ htmlcov/
 node_modules/
 
 llm_test/llm_test/
+
+# Secret and Local File
+client_secret.json
+AGENTS.md
+todo.md
+
