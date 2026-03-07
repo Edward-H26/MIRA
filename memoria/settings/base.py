@@ -24,6 +24,11 @@ environ.Env.read_env(BASE_DIR / ".env")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 
+# API credentials
+GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY missing")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic import DetailView, ListView
 
 from .models import Memory, MemoryBullet
+from .models.message import Role
 from .service import (
     create_user_message_with_agent_reply,
     get_analytics_dashboard_context_with_reports,
@@ -76,10 +77,16 @@ class ConversationMessagesView(View):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if not content:
                 return JsonResponse({"error": "Empty message"}, status=400)
+            assistant_msg = (
+                session.messages.filter(role=Role.ASSISTANT)
+                .order_by("-created_at")
+                .first()
+            )
+            assistant_text = assistant_msg.content if assistant_msg else "Agent Response"
             return JsonResponse({
                 "messages": [
                     {"role": "user", "content": content},
-                    {"role": "assistant", "content": "Agent Response"},
+                    {"role": "assistant", "content": assistant_text},
                 ],
                 "session_id": session.pk,
             })
@@ -225,5 +232,4 @@ def export_memory_bullets_report(request):
         csv_field_order=["content", "memory_type", "created_at"],
         json_key="memory_bullets",
     )
-
 

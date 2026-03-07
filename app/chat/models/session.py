@@ -36,8 +36,14 @@ class Session(models.Model):
         session = cls.objects.create(user=user_profile, title=prompt[:200])
 
         from .message import Message, Role
+        try:
+            from app.services.gemini import generate_reply
+
+            ai_text = generate_reply(prompt)
+        except Exception:
+            ai_text = assistant_reply
         Message.objects.create(session=session, role=Role.USER, content=prompt)
-        Message.objects.create(session=session, role=Role.ASSISTANT, content=assistant_reply)
+        Message.objects.create(session=session, role=Role.ASSISTANT, content=ai_text)
 
         session.updated_at = timezone.now()
         session.save(update_fields=["updated_at"])

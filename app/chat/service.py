@@ -13,6 +13,7 @@ from django.utils import timezone
 
 import math
 
+from app.services.gemini import generate_reply
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
 from app.users.models import UserProfile as Profile
@@ -132,10 +133,15 @@ def create_user_message_with_agent_reply(session, content):
         role=Role.USER,
         content=trimmed,
     )
+    try:
+        ai_text = generate_reply(trimmed)
+    except Exception:
+        ai_text = "Sorry, I couldn't reach the AI service just now."
+
     Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
-        content="Agent Response",
+        content=ai_text,
     )
     session.updated_at = timezone.now()
     session.save(update_fields=["updated_at"])
