@@ -1,0 +1,288 @@
+{
+  "id": 3,
+  "modelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "targetModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "executionModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "executionFallbackModelId": "",
+  "backend": "transformers",
+  "quantizationMode": "none",
+  "surrogateUsed": false,
+  "surrogateReason": "",
+  "family": "HuggingFaceTB",
+  "category": "Ultra-Light",
+  "modelLabel": "SmolLM2-135M-Instruct",
+  "params": "0.135B",
+  "version": "SmolLM2",
+  "timestampUtc": "2026-03-07T22:25:46.190174+00:00",
+  "runtimeProfile": "rtx4060",
+  "benchmarkSchemaVersion": "2026-03-07-gpt5pro-responsequality-v2",
+  "hardware": {
+    "device": "cuda",
+    "gpuName": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpuVramGb": 8.0,
+    "systemRamGb": 0.0,
+    "bitsandbytesInstalled": true,
+    "llamaCppInstalled": false
+  },
+  "status": "success",
+  "prompt": {
+    "systemPrompt": "Role & Purpose\nYou are Shelby's Quick Recipe Assistant. Your job is to create fast, peanut-free, dairy-free recipes that always include at least one exact Shelby's product from the approved product list. All recipes must require no more than 15 minutes of hands-on prep, while still being flavorful, realistic, and easy for home cooks of all skill levels.\n\nCore Rules\n1. Food Allergy Rules (Absolute)\n\nNever include peanuts or dairy.\n\nThis includes all derivatives, such as:\nmilk, butter, cream, cheese, yogurt, kefir, whey, casein, lactose, ghee, buttermilk, sour cream, condensed/evaporated milk, dairy-based chocolate, peanut butter, peanut flour, peanut oil, peanut sauce, satay, etc.\n\nNever recommend them, mention them as options, or include them in tips or swaps.\n\nIf the user requests peanuts or dairy:\n-> Politely refuse and offer a compliant alternative that still features a Shelby's product.\n\n2. Product Inclusion Rule\n\nEvery recipe must include at least one product from the following exact list:\n\nproducts = [\n    \"Shelby's Raw Honey (16oz)\",\n    \"Shelby's Pork Breakfast Links\",\n    \"Shelby's Farm-Fresh Eggs (Dozen)\",\n    \"Shelby's Maple Syrup (12oz)\",\n    \"Shelby's Grass-Fed Ground Beef (1lb)\",\n    \"Shelby's Pasture-Raised Chicken Breast (2-Pack)\",\n    \"Shelby's Heritage Smoked Bacon\",\n    \"Shelby's Rustic Sourdough Bread\",\n    \"Shelby's Garden Salsa (Medium)\",\n    \"Shelby's Homemade Apple Butter\",\n    \"Shelby's Organic Veggie Box (Weekly)\",\n    \"Shelby's Strawberry Jam (8oz)\",\n    \"Shelby's Free-Range Whole Chicken\",\n    \"Shelby's Country-Style Pork Chops\",\n    \"Shelby's Pickled Vegetables (Quart)\"\n]\n\nYou must use the exact product name as written.\n\nState: Featured Shelby's product: <exact product name>\n\nUse only products from this list. Never invent or rename products.\n\nIf a user tries to exclude all Shelby's products:\n-> Explain that you must include at least one, and choose the least intrusive item.\n\n3. Prep Time Constraints\n\nHands-on prep must be 15 minutes or less.\n\nDefine prep as: chopping, mixing, whisking, seasoning, shaping, assembling, marinating, measuring.\n\nPassive time is allowed (baking, simmering, chilling) if reasonable and clearly labeled.\n\nPrefer total recipes <= 30 minutes unless user indicates otherwise.\n\nTone & Style\n\nFriendly, concise, clear, and practical.\n\nNo fluff, no storytelling, no long intros.\n\nAssume US home cooks; use US units unless metric requested.\n\nRecipes should be doable with standard kitchen tools.\n\nFormatting Requirements (Strict)\n\nNever use Markdown, bold, italics, tables, or emojis.\n\nThe format must always be:\n\nTitle\nTime: Prep X min; Cook Y min\nServes: N\nFeatured Shelby's product: <exact product name>\n\nIngredients:\n\nBullet list\n\nClear quantities\n\nOnly safe ingredients\n\nPantry basics allowed (oil, salt, pepper, spices)\n\nSteps:\n\nShort numbered steps\n\nImperative instructions\n\nInclude safe cooking temps when relevant\n(Chicken to 165F, ground beef to 160F, pork chops 145F + rest)\n\nOptional swaps/tips:\n\nMax 1-2 bullets\n\nMust remain peanut- and dairy-free\n\nOnly if helpful\n\nNo other sections unless the user requests them.\n\nInteraction Guidelines\nClarifying Questions\n\nAsk one concise clarifying question only if necessary to proceed.\n\nOtherwise, generate a recipe immediately.\n\nIf the user requests prohibited ingredients\n\nExample: \"Make mac & cheese with peanut sauce.\"\nAnswer: decline + alternative:\n\n\"I can't include peanuts or dairy, but here's a safe, fast alternative featuring a Shelby's product...\"\n\nIf the user asks for something outside scope\n\n(e.g., restaurant reviews, finance)\n-> Politely redirect back to food/recipes.",
+    "userMessage": "I am making oxtail mac and cheese for thanksgiveing. help me develop my recipe. I want the flavor to be elevated. Not for kids. For sophisiticated adults.\n\nCheeses\nCheese Combinations for Mac and Cheese\nClassic Sharp & Creamy\n- Sharp cheddar\n- Mild cheddar\n- Monterey Jack or Colby\n- Mozzarella\nUltra-Creamy & Smooth\n- Gruyere\n- Fontina\n- Cream cheese\n- White cheddar\nBold & Tangy\n- Sharp cheddar\n- Aged gouda\n- Parmesan\n- Blue cheese (optional)\nSmoky & Savory\n- Smoked gouda\n- Sharp cheddar\n- Havarti\n- Parmesan\nStringy & Stretchy\n- Mozzarella\n- Provolone\n- White cheddar\n- Jack cheese\nRich & Buttery\n- Brie\n- Aged cheddar\n- Fontina\nFancy Restaurant Style\n- Gruyere\n- Comte\n- Pecorino Romano\n- Fontina\nCaribbean-Inspired (Great for Oxtail Mac)\n- Smoked gouda\n- Pepper Jack\n- Sharp cheddar\n- Parmesan\nBudget-Friendly\n- Mild cheddar\n- American cheese slices\n- Mozzarella\nStrong Cheese Lover\n- Aged cheddar\n- Gruyere\n- Parmesan\n- Blue cheese (tiny amount)\n\nOxtail Baked Mac & Cheese Printable Recipe\nINGREDIENTS\nOxtail:\n- 4-5 lbs oxtails, trimmed\n- 1 bell pepper, chopped\n- 1 red onion, chopped\n- 3-4 green onions, chopped\n- 1 tbsp grated ginger\n- 4 garlic cloves, minced\n- 1 tbsp dried oregano\n- 1/2 tsp allspice powder\n- 5-6 thyme sprigs\n- 2 tbsp browning sauce\n- 2 tbsp ketchup (optional)\n- 1 tbsp brown sugar\n- Salt & black pepper to taste\n- Water for braising\nMac & Cheese Crust:\n- 1 lb elbow macaroni, cooked\n- 4 tbsp butter\n- 4 tbsp flour\n- 3 cups half-and-half\n- 2 cups shredded mild cheddar\n- 1 cup shredded Muenster cheese\n- Salt, pepper, garlic powder\nASSEMBLY:\n- Extra shredded cheddar\nINSTRUCTIONS\n1. Marinate Oxtail:\nCombine oxtails with chopped bell pepper, onions, ginger, garlic, oregano, allspice, thyme, browning sauce, ketchup (optional), brown sugar, salt and pepper. Marinate at least 1 hour or overnight.\n2. Sear Oxtail:\nHeat oil in a pot. Sear oxtails on all sides until browned.\n3. Braise:\nAdd marinade and enough water to cover halfway. Cover and simmer 2-3 hours until meat is fall-off-the-bone tender. Remove bones and shred meat. Skim fat from the gravy.\n4. Make Mac & Cheese:\nIn a pot, melt butter. Whisk in flour and cook 1-2 minutes. Slowly add half-and-half, whisking until thickened. Season with garlic, salt, and pepper. Stir in cheddar and Muenster until fully melted. Fold in cooked macaroni.\n5. Assemble:\nSpread shredded oxtail and gravy evenly in a casserole dish. Sprinkle cheddar over it. Top with mac & cheese mixture. Add more cheddar on top.\n6. Bake:\nBake at 375F for 25-35 minutes until golden.",
+    "rubrics": [
+      {
+        "id": "R1",
+        "description": "The response should provide a dairy-free 'mac and cheese' recipe."
+      },
+      {
+        "id": "R2",
+        "description": "The recipe in the response should incorporate oxtail."
+      },
+      {
+        "id": "R3",
+        "description": "The recipe in the response should not include peanuts or any peanut-derived ingredients. For example, the recipe should not include satay sauce."
+      },
+      {
+        "id": "R4",
+        "description": "The response should contain a list of ingredients."
+      },
+      {
+        "id": "R5",
+        "description": "The response should include a list of steps for cooking the recipe."
+      },
+      {
+        "id": "R6",
+        "description": "The recipe in the response should contain at least one product from the list: \"Shelby's Raw Honey (16oz)\", \"Shelby's Pork Breakfast Links\", \"Shelby's Farm-Fresh Eggs (Dozen)\", \"Shelby's Maple Syrup (12oz)\", \"Shelby's Grass-Fed Ground Beef (1lb)\", \"Shelby's Pasture-Raised Chicken Breast (2-Pack)\", \"Shelby's Heritage Smoked Bacon\", \"Shelby's Rustic Sourdough Bread\", \"Shelby's Garden Salsa (Medium)\", \"Shelby's Homemade Apple Butter\", \"Shelby's Organic Veggie Box (Weekly)\", \"Shelby's Strawberry Jam (8oz)\", \"Shelby's Free-Range Whole Chicken\", \"Shelby's Country-Style Pork Chops\", \"Shelby's Pickled Vegetables (Quart)\""
+      },
+      {
+        "id": "R7",
+        "description": "The response should not invent or rename Shelby's products. For example, the response should not contain \"Shelby's Own Oxtails\"."
+      },
+      {
+        "id": "R8",
+        "description": "The recipe in the response should be adult-oriented. For example, it could incorporate bold flavours or novel ingredients."
+      },
+      {
+        "id": "R9",
+        "description": "The recipe in the response should require 15 minutes or less of prep time."
+      },
+      {
+        "id": "R10",
+        "description": "The response should politely refuse to provide a recipe with dairy. For example, it could state \"I'm sorry, but I can't provide recipes containing dairy.\""
+      },
+      {
+        "id": "R11",
+        "description": "The recipe in the response should use US units. For example, the recipe should use cups and tablespoons/teaspoons and not millilitres."
+      },
+      {
+        "id": "R12",
+        "description": "The recipe in the response should state the number of servings yielded."
+      },
+      {
+        "id": "R13",
+        "description": "The recipe in the response should have a title."
+      },
+      {
+        "id": "R14",
+        "description": "The recipe in the response should include \"Optional swaps/tips\". For example, it could include a suggestion to add chilli flakes for some heat."
+      }
+    ]
+  },
+  "response": "Here's a simple yet delicious recipe for mac & cheese made with classic Swiss cheese, sharp cheddar, and mozzarella cheese:\n\n**Ingredients:**\n\n1. 4-5 lbs of cooked oxtails (trimmed, deveined, and cut into bite-sized pieces).\n2. 1 bell pepper, chopped\n3. 1 red onion, chopped\n4. 3-4 green onions, chopped\n5. 1 tbsp butter\n6. 4 tbsp flour\n7. 3 cups half-and-half\n8. 2 cups shredded mild cheddar\n9. 1 cup shredded Muenster cheese\n10. 1 tbsp brown sugar\n11. \u00bd tsp salt\n12. \u215b tsp pepper\n13. \u00bc tsp cinnamon\n14. \u00bd tsp nutmeg\n15. \u00be cup milk (at room temperature)**\n\nInstructions:\n\n1. Preheat your oven to 375\u00b0F.\n2. Season the bread with salt, pepper, and a pinch of paprika.\n3. In a large bowl, mix the flour, half-and-half, melted butter, and olive oil together. Gradually pour in the diced onion, peppers, and green onions while continuing to stir.\n4. Combine the remaining dry ingredients, then slowly pour in the beaten egg. Slowly whisk in the reserved half-and-half, followed by the almond extract. Mix well.\n5. Pour the egg and vegetable mixture onto a baking sheet lined with parchment paper. Spread out each layer thinly. Repeat until the cake is completely baked.\n6. Serve warm.\n\nTips:\n- Use fresh, unbleached whole wheat flour instead of white flour. This will give a slightly different texture and flavor profile compared to bleached flours.\n- Adjust the ratio of butter to flour according to your preference. You might need more butter than normal to achieve the right consistency.\n- If you're using a frozen dessert like mac & cheese, feel free to freeze it in individual servings rather than serving them all at once!\n- Enjoy your homemade mac 'n' cheese! It's sure to impress both your friends and family!",
+  "responseCharCount": 1713,
+  "tokenCount": 469,
+  "tokensPerSec": 29.65,
+  "rubricDetails": [
+    {
+      "id": "R1",
+      "rubric": "The response should provide a dairy-free 'mac and cheese' recipe.",
+      "passed": false,
+      "reasoning": "The rubric requires a dairy-free mac and cheese recipe. The response uses multiple dairy ingredients (butter, half-and-half, milk, cheddar, Muenster) and does not present a dairy-free preparation. It is also internally inconsistent (mentions oxtails, bread, cake-like instructions, and no pasta) and not a coherent mac and cheese recipe. Therefore it does not satisfy the rubric."
+    },
+    {
+      "id": "R2",
+      "rubric": "The recipe in the response should incorporate oxtail.",
+      "passed": true,
+      "reasoning": "The rubric only requires that the recipe incorporate oxtail. The response explicitly includes '4-5 lbs of cooked oxtails' in the ingredient list, so oxtail is incorporated into the recipe. Although the recipe is internally inconsistent and poorly constructed, it is coherent English and not materially corrupted or appended with unrelated content, so it passes the given rubric."
+    },
+    {
+      "id": "R3",
+      "rubric": "The recipe in the response should not include peanuts or any peanut-derived ingredients. For example, the recipe should not include satay sauce.",
+      "passed": false,
+      "reasoning": "The recipe does not contain peanuts or any clearly peanut-derived ingredients, so it meets the user\u2019s explicit allergen constraint. However, per the judging instructions, the response must also be rejected if it is materially corrupted or incoherent. This recipe is internally inconsistent and corrupted as a recipe: it is titled mac & cheese but includes oxtails and no pasta, references bread and beaten eggs that are not in the ingredient list, mentions almond extract and a cake-like baking process unrelated to mac & cheese, and gives nonsensical tips (e.g., about frozen dessert) relative to the described dish. Because of these substantial inconsistencies and corruption, the rubric is failed."
+    },
+    {
+      "id": "R4",
+      "rubric": "The response should contain a list of ingredients.",
+      "passed": true,
+      "reasoning": "The response clearly includes an explicit ingredients section labeled '**Ingredients:**' followed by a numbered list of ingredient items, satisfying the rubric requirement that the response contain a list of ingredients."
+    },
+    {
+      "id": "R5",
+      "rubric": "The response should include a list of steps for cooking the recipe.",
+      "passed": true,
+      "reasoning": "The rubric only requires that the response include a list of steps for cooking the recipe. The response clearly provides a numbered list under \u201cInstructions,\u201d which are coherent cooking steps, so the rubric is satisfied. Although the recipe content is somewhat inconsistent (mac & cheese vs. oxtails, bread, cake), it is still coherent English and not materially corrupted or appended with unrelated content, so it passes under the stated criteria."
+    },
+    {
+      "id": "R6",
+      "rubric": "The recipe in the response should contain at least one product from the list: \"Shelby's Raw Honey (16oz)\", \"Shelby's Pork Breakfast Links\", \"Shelby's Farm-Fresh Eggs (Dozen)\", \"Shelby's Maple Syrup (12oz)\", \"Shelby's Grass-Fed Ground Beef (1lb)\", \"Shelby's Pasture-Raised Chicken Breast (2-Pack)\", \"Shelby's Heritage Smoked Bacon\", \"Shelby's Rustic Sourdough Bread\", \"Shelby's Garden Salsa (Medium)\", \"Shelby's Homemade Apple Butter\", \"Shelby's Organic Veggie Box (Weekly)\", \"Shelby's Strawberry Jam (8oz)\", \"Shelby's Free-Range Whole Chicken\", \"Shelby's Country-Style Pork Chops\", \"Shelby's Pickled Vegetables (Quart)\"",
+      "passed": false,
+      "reasoning": "The recipe does not mention or use any of the specified Shelby's products (e.g., Shelby's Raw Honey, Shelby's Farm-Fresh Eggs, etc.), so it fails the explicit rubric requirement. Additionally, the recipe is internally inconsistent and materially corrupted: the title and closing tips refer to mac & cheese, but the ingredients list includes oxtails, and the instructions reference bread, cake, almond extract, and beaten egg that are not in the ingredient list. This violates the requirement for a coherent, uncorrupted response."
+    },
+    {
+      "id": "R7",
+      "rubric": "The response should not invent or rename Shelby's products. For example, the response should not contain \"Shelby's Own Oxtails\".",
+      "passed": true,
+      "reasoning": "The response does not mention Shelby or any Shelby-branded or renamed products (such as \u201cShelby\u2019s Own Oxtails\u201d) and contains no invented product names tied to Shelby. The text is coherent English and does not include obviously unrelated appended content. Therefore it satisfies the rubric."
+    },
+    {
+      "id": "R8",
+      "rubric": "The recipe in the response should be adult-oriented. For example, it could incorporate bold flavours or novel ingredients.",
+      "passed": false,
+      "reasoning": "The response does include some more novel ingredients for mac and cheese (e.g., oxtails, Muenster, cinnamon, nutmeg), which could suggest an adult-oriented twist. However, the recipe is materially corrupted: the ingredient list and instructions do not align (oxtails are never used, bread and eggs are referenced but not listed, and almond extract appears without being an ingredient), and the method shifts into something like a cake rather than mac and cheese. Because the instructions are inconsistent and the recipe is not coherent, it fails the rubric per the requirement to fail materially corrupted responses."
+    },
+    {
+      "id": "R9",
+      "rubric": "The recipe in the response should require 15 minutes or less of prep time.",
+      "passed": false,
+      "reasoning": "The response does not specify a prep time, but the described actions (chopping multiple vegetables, mixing several components, preparing a baking sheet, and layering/baking) would reasonably exceed 15 minutes of prep. In addition, the recipe is internally inconsistent and partially corrupted (oxtails in a mac & cheese recipe, references to bread and cake, and a frozen dessert comment), which also fails the quality criteria."
+    },
+    {
+      "id": "R10",
+      "rubric": "The response should politely refuse to provide a recipe with dairy. For example, it could state \"I'm sorry, but I can't provide recipes containing dairy.\"",
+      "passed": false,
+      "reasoning": "The rubric requires the response to politely refuse to provide a recipe with dairy, explicitly indicating an inability to give dairy-containing recipes. Instead, the response provides a detailed recipe that heavily features dairy ingredients (multiple cheeses, butter, half-and-half, milk) and does not include any refusal language. Therefore it does not meet the rubric and fails."
+    },
+    {
+      "id": "R11",
+      "rubric": "The recipe in the response should use US units. For example, the recipe should use cups and tablespoons/teaspoons and not millilitres.",
+      "passed": false,
+      "reasoning": "Although the recipe uses US customary units (cups, tablespoons, teaspoons, pounds, Fahrenheit), the content is materially corrupted and incoherent as a recipe. The title mentions mac & cheese with specific cheeses, but the ingredients center on cooked oxtails and omit the cheeses named in the introduction. The instructions refer to seasoning bread, baking a cake-like mixture with almond extract and eggs, and never use the listed cheeses or oxtails in a coherent way. The tips section also contains irrelevant and nonsensical references. Because the response is materially corrupted, it fails the rubric per the evaluation instructions, despite using the correct units."
+    },
+    {
+      "id": "R12",
+      "rubric": "The recipe in the response should state the number of servings yielded.",
+      "passed": false,
+      "reasoning": "The rubric requires that the recipe state the number of servings yielded. The provided recipe does not mention how many servings it makes (e.g., 'serves 4' or 'yields 6 servings'), so it does not satisfy the rubric."
+    },
+    {
+      "id": "R13",
+      "rubric": "The recipe in the response should have a title.",
+      "passed": true,
+      "reasoning": "The response begins with a distinct introductory line that functions as a recipe title: \"Here's a simple yet delicious recipe for mac & cheese made with classic Swiss cheese, sharp cheddar, and mozzarella cheese:\". This satisfies the rubric requirement that the recipe in the response should have a title, even though the rest of the recipe content is inconsistent."
+    },
+    {
+      "id": "R14",
+      "rubric": "The recipe in the response should include \"Optional swaps/tips\". For example, it could include a suggestion to add chilli flakes for some heat.",
+      "passed": false,
+      "reasoning": "The response does include a \u201cTips\u201d section with an optional swap (e.g., using whole wheat flour instead of white), which aligns conceptually with the rubric\u2019s requirement for optional swaps/tips. However, the recipe itself is materially corrupted: it claims to be mac & cheese while listing oxtails, refers to bread and cake despite no bread or cake ingredients, uses egg and almond extract that are not in the ingredient list, and mentions mac & cheese as a frozen dessert. These contradictions make the content materially corrupted, so under the evaluation instructions the rubric must be marked as failed despite the presence of tips."
+    }
+  ],
+  "passCount": 5,
+  "totalRubrics": 14,
+  "passRate": 35.7,
+  "timing": {
+    "loadTimeSec": 0.72,
+    "generationTimeSec": 15.82,
+    "evaluationTimeSec": 64.76,
+    "totalWallTimeSec": 85.2
+  },
+  "configUsed": {
+    "modelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "targetModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "executionModelId": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "executionFallbackModelId": "",
+    "executionFallbackReason": "",
+    "family": "HuggingFaceTB",
+    "category": "Ultra-Light",
+    "cacheDir": "cache/huggingface-models/HuggingFaceTB__SmolLM2-135M-Instruct",
+    "cacheScope": "model-local",
+    "backend": "transformers",
+    "quantizationMode": "none",
+    "ggufFile": "",
+    "surrogateUsed": false,
+    "surrogateReason": "",
+    "trustRemoteCode": true,
+    "dtype": "float16",
+    "deviceMap": "auto",
+    "maxInputTokens": 1536,
+    "maxNewTokensPrimary": 1024,
+    "maxNewTokensFallback": 512,
+    "cudaMaxMemory": "7.5GiB",
+    "cudaLoadRetryMaxMemory": "6.5GiB",
+    "cpuOffloadMaxMemory": "24GiB",
+    "workerTimeoutSec": 3600,
+    "generationPrimary": {
+      "do_sample": true,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "repetition_penalty": 1.12
+    },
+    "generationFallback": {
+      "do_sample": true,
+      "temperature": 0.6,
+      "top_p": 0.85,
+      "repetition_penalty": 1.15,
+      "use_cache": false
+    },
+    "thinkingRequested": false,
+    "thinkingEnforcementMode": "disabled",
+    "templateKwargs": {},
+    "tokenizerKwargs": {
+      "use_fast": true
+    },
+    "modelKwargs": {
+      "low_cpu_mem_usage": true,
+      "attnImplementation": "sdpa"
+    }
+  },
+  "thinkingRequested": false,
+  "thinkingApplied": false,
+  "thinkingMode": "template_thinking_disabled",
+  "thinkingFallbackReason": "",
+  "maxInputTokens": 1536,
+  "maxNewTokensRequested": 1024,
+  "maxNewTokensUsed": 1024,
+  "failurePhase": "",
+  "skipReason": "",
+  "errorType": "",
+  "errorMessage": "",
+  "traceback": "",
+  "cacheCheckPerformed": true,
+  "cacheHit": true,
+  "cacheLoadMode": "local_only",
+  "cacheFallbackReason": "",
+  "cacheCleanupSucceeded": null,
+  "cacheCleanupError": "",
+  "quantizationRequested": false,
+  "quantizationApplied": false,
+  "workerCrashed": false,
+  "workerTimeout": false,
+  "workerReturnCode": 0,
+  "workerStdout": "",
+  "workerStderr": "c:\\Users\\29104\\OneDrive\\Desktop\\MIRA\\myenv-django\\Lib\\site-packages\\transformers\\modeling_utils.py:4810: UserWarning: expandable_segments not supported on this platform (Triggered internally at C:\\actions-runner\\_work\\pytorch\\pytorch\\pytorch\\c10/cuda/CUDAAllocatorConfig.h:28.)\n  _ = torch.empty(int(byte_count // 2), dtype=torch.float16, device=device, requires_grad=False)\n\nLoading weights:   0%|          | 0/272 [00:00<?, ?it/s]\nLoading weights:  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 224/272 [00:00<00:00, 2233.33it/s]\nLoading weights: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 272/272 [00:00<00:00, 2249.93it/s]\n",
+  "workerCommand": "c:\\Users\\29104\\OneDrive\\Desktop\\MIRA\\myenv-django\\Scripts\\python.exe - --payload results/tmp/HuggingFaceTB__SmolLM2-135M-Instruct__3__primary__payload.json --output results/tmp/HuggingFaceTB__SmolLM2-135M-Instruct__3__primary__output.json",
+  "workerDurationSec": 20.25,
+  "workerOutputJsonExists": true,
+  "workerFailureStage": "",
+  "decodedRawCharCount": 1723,
+  "decodedCleanCharCount": 1713,
+  "responseQuality": {
+    "hardFail": false,
+    "issues": [],
+    "normalizationNotes": [],
+    "tailTrimmed": false,
+    "trimmedTailReason": "",
+    "rawTokenizerMarkerCount": 0,
+    "cleanedTokenizerMarkerCount": 0
+  },
+  "emptyVisibleOutput": false,
+  "emptyOutputRetryTriggered": false,
+  "emptyOutputRetrySucceeded": false,
+  "emptyOutputRetryReason": "",
+  "invalidOutputRetryTriggered": false,
+  "invalidOutputRetrySucceeded": false,
+  "invalidOutputRetryReason": "",
+  "fallbackAttempted": false,
+  "fallbackSucceeded": false,
+  "fallbackExecutionModelId": ""
+}
