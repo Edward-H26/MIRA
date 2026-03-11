@@ -13,7 +13,8 @@ from django.utils import timezone
 
 import math
 
-from app.services.gemini import generate_reply
+from app.services.gemini import generate_reply_stream
+from .rendering import render_assistant_markdown_html
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
 from app.users.models import UserProfile as Profile
@@ -123,29 +124,73 @@ def get_session_for_user(user, session_id, with_messages=False):
     return _get_session_or_404_for_user(user, session_id, with_messages=with_messages)
 
 
-def create_user_message_with_agent_reply(session, content):
+def build_agent_reply_from_stream(content):
     trimmed = (content or "").strip()
     if not trimmed:
-        return False
+        return ""
+
+    chunks = []
+    fallback_text = "Sorry, I couldn't reach the AI service just now."
+
+    try:
+        for chunk in generate_reply_stream(trimmed):
+            if chunk:
+                chunks.append(chunk)
+    except Exception:
+        if not chunks:
+            chunks.append(fallback_text)
+
+    return "".join(chunks).strip() or fallback_text
+
+
+def stream_user_message_with_agent_reply(session, content):
+    trimmed = (content or "").strip()
+    if not trimmed:
+        raise ValueError("Message content is required.")
 
     Message.objects.create(
         session=session,
         role=Role.USER,
         content=trimmed,
     )
-    try:
-        ai_text = generate_reply(trimmed)
-    except Exception:
-        ai_text = "Sorry, I couldn't reach the AI service just now."
 
-    Message.objects.create(
+    chunks = []
+    fallback_text = "Sorry, I couldn't reach the AI service just now."
+
+    try:
+        for chunk in generate_reply_stream(trimmed):
+            if not chunk:
+                continue
+            chunks.append(chunk)
+            yield {
+                "type": "delta",
+                "content": chunk,
+                "html": str(render_assistant_markdown_html("".join(chunks))),
+            }
+    except Exception:
+        if not chunks:
+            chunks.append(fallback_text)
+            yield {
+                "type": "delta",
+                "content": fallback_text,
+                "html": str(render_assistant_markdown_html("".join(chunks))),
+            }
+
+    assistant_text = "".join(chunks).strip() or fallback_text
+    assistant_message = Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
-        content=ai_text,
+        content=assistant_text,
     )
     session.updated_at = timezone.now()
     session.save(update_fields=["updated_at"])
-    return True
+
+    yield {
+        "type": "done",
+        "message_id": assistant_message.id,
+        "content": assistant_text,
+        "html": str(render_assistant_markdown_html(assistant_text)),
+    }
 
 
 def get_memory_list_data(user, search_query="", memory_type="", sort_key="created"):

@@ -1,7 +1,8 @@
 import csv
+import json
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.utils import timezone
@@ -10,9 +11,8 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic import DetailView, ListView
 
 from .models import Memory, MemoryBullet
-from .models.message import Role
 from .service import (
-    create_user_message_with_agent_reply,
+    stream_user_message_with_agent_reply,
     get_analytics_dashboard_context_with_reports,
     get_or_create_profile_for_user,
     get_memory_list_data,
@@ -24,6 +24,8 @@ from .service import (
     get_session_report_export_rows,
     get_session_for_user,
 )
+
+PENDING_PROMPT_SESSION_KEY = "pending_chat_prompts"
 
 
 @method_decorator(login_required(login_url="/"), name="dispatch")
@@ -65,33 +67,45 @@ class MemoryListView(ListView):
 class ConversationMessagesView(View):
     def get(self, request, session_id):
         session = get_session_for_user(request.user, session_id, with_messages=True)
-        return render(request, "chat/conversation_detail.html", {"session": session})
+        pending_prompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
+        pending_prompt = pending_prompts.pop(str(session.pk), "")
+        if pending_prompts:
+            request.session[PENDING_PROMPT_SESSION_KEY] = pending_prompts
+        else:
+            request.session.pop(PENDING_PROMPT_SESSION_KEY, None)
+        if pending_prompt:
+            request.session.modified = True
+        return render(
+            request,
+            "chat/conversation_detail.html",
+            {
+                "session": session,
+                "pending_prompt": pending_prompt,
+            },
+        )
 
     def post(self, request, session_id):
         session = get_session_for_user(request.user, session_id)
-
         content = (request.POST.get("message") or "").strip()
-        if content:
-            create_user_message_with_agent_reply(session, content)
+        if not content:
+            return JsonResponse({"error": "Empty message"}, status=400)
 
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            if not content:
-                return JsonResponse({"error": "Empty message"}, status=400)
-            assistant_msg = (
-                session.messages.filter(role=Role.ASSISTANT)
-                .order_by("-created_at")
-                .first()
-            )
-            assistant_text = assistant_msg.content if assistant_msg else "Agent Response"
-            return JsonResponse({
-                "messages": [
-                    {"role": "user", "content": content},
-                    {"role": "assistant", "content": assistant_text},
-                ],
-                "session_id": session.pk,
-            })
+        if request.headers.get("x-requested-with") != "XMLHttpRequest":
+            for _ in stream_user_message_with_agent_reply(session, content):
+                pass
+            return redirect(session.get_absolute_url())
 
-        return redirect(session.get_absolute_url())
+        def event_stream():
+            for payload in stream_user_message_with_agent_reply(session, content):
+                yield json.dumps(payload, ensure_ascii=False) + "\n"
+
+        response = StreamingHttpResponse(
+            event_stream(),
+            content_type="application/x-ndjson; charset=utf-8",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 @method_decorator(login_required(login_url="/"), name="dispatch")

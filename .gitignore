@@ -37,6 +37,7 @@ node_modules/
 cache/
 llm_test/cache/
 llm_test/results/tmp/
+.idea/*
 
 
 

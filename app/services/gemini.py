@@ -5,6 +5,9 @@ client = genai.Client(api_key=settings.GEMINI_API_KEY)
 MODEL_ID = "gemini-2.5-flash"
 
 
-def generate_reply(user_text: str) -> str:
-    response = client.models.generate_content(model=MODEL_ID, contents=user_text)
-    return response.text
+def generate_reply_stream(user_text: str):
+    response = client.models.generate_content_stream(model=MODEL_ID, contents=user_text)
+    for chunk in response:
+        text = getattr(chunk, "text", None)
+        if text:
+            yield text

@@ -18,5 +18,8 @@ def get_home_context_for_user(user):
 
 def create_home_session_for_user(user, content):
     profile = _get_or_create_profile_for_user(user)
-    return Session.create_with_opening_exchange(profile, content)
+    prompt = (content or "").strip()
+    if not prompt:
+        return None
+    return Session.objects.create(user=profile, title=prompt[:200])
 

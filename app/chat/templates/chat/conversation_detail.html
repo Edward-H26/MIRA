@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load tz %}
 {% load static %}
+{% load chat_extras %}
 
 {% block title %}Conversation{% endblock %}
 
@@ -10,11 +11,17 @@
 
 {% block content %}
 <div class="conversation-shell">
-  <div class="conversation-messages scroll-container">
+  <div class="conversation-messages scroll-container" id="conversation-messages">
     {% for message in session.messages.all %}
       {% if message.role != 1 %}
         <div class="message-row {% if message.role == 2 %}is-user{% else %}is-agent{% endif %}">
-          <div class="message-bubble {% if message.role == 2 %}bubble-user{% else %}bubble-agent{% endif %}">{{ message.content|linebreaksbr }}</div>
+          <div class="message-bubble {% if message.role == 2 %}bubble-user{% else %}bubble-agent{% endif %}">
+            {% if message.role == 2 %}
+              <span class="message-content">{{ message.content|linebreaksbr }}</span>
+            {% else %}
+              <div class="message-content message-content-markdown">{{ message.content|assistant_markdown }}</div>
+            {% endif %}
+          </div>
         </div>
       {% endif %}
     {% empty %}
@@ -22,13 +29,280 @@
     {% endfor %}
   </div>
 
-  <form class="conversation-input" method="post">
+  <form
+    class="conversation-input"
+    id="conversation-form"
+    method="post"
+    data-stream-url="{% url 'chat:conversation_detail' session.id %}"
+    data-pending-prompt="{{ pending_prompt|default:''|escape }}"
+  >
     {% csrf_token %}
-    <input type="text" name="message" placeholder="Enter what you think here..." aria-label="Message input" autocomplete="off">
+    <input
+      type="text"
+      name="message"
+      id="conversation-message-input"
+      placeholder="Enter what you think here..."
+      aria-label="Message input"
+      autocomplete="off"
+    >
     <div class="conversation-actions">
-      <button class="ghost-button" type="button">+ Add something...</button>
-      <button class="primary-button" type="submit">Continue</button>
+      <button class="ghost-button" type="button" id="conversation-add-button">+ Add something...</button>
+      <button class="primary-button" type="submit" id="conversation-submit-button">Continue</button>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("conversation-form");
+    const messages = document.getElementById("conversation-messages");
+    const input = document.getElementById("conversation-message-input");
+    const submitButton = document.getElementById("conversation-submit-button");
+    const addButton = document.getElementById("conversation-add-button");
+    if (!form || !messages || !input || !submitButton || !addButton) {
+      return;
+    }
+
+    let isStreaming = false;
+
+    const scrollToBottom = () => {
+      messages.scrollTop = messages.scrollHeight;
+    };
+
+    const removeEmptyState = () => {
+      const emptyState = messages.querySelector(".conversation-empty-state");
+      if (emptyState) {
+        emptyState.remove();
+      }
+    };
+
+    const createTypingDots = () => {
+      const dots = document.createElement("span");
+      dots.className = "conversation-typing-dots";
+      dots.setAttribute("aria-hidden", "true");
+      for (let index = 0; index < 3; index += 1) {
+        dots.appendChild(document.createElement("span"));
+      }
+      return dots;
+    };
+
+    const copyText = async (text) => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.setAttribute("readonly", "");
+      textArea.style.position = "absolute";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      textArea.remove();
+    };
+
+    const decorateCodeBlocks = (root) => {
+      const target = root || messages;
+      target.querySelectorAll(".message-content-markdown pre").forEach((pre) => {
+        if (pre.dataset.copyReady === "1") {
+          return;
+        }
+        const code = pre.querySelector("code");
+        if (!code) {
+          return;
+        }
+        pre.dataset.copyReady = "1";
+        pre.classList.add("chat-code-block");
+
+        const copyButton = document.createElement("button");
+        copyButton.type = "button";
+        copyButton.className = "chat-code-copy-button";
+        copyButton.textContent = "Copy";
+        copyButton.addEventListener("click", async () => {
+          const original = copyButton.textContent;
+          try {
+            await copyText(code.textContent || "");
+            copyButton.textContent = "Copied";
+            copyButton.classList.add("is-copied");
+          } catch (_) {
+            copyButton.textContent = "Failed";
+          } finally {
+            window.setTimeout(() => {
+              copyButton.textContent = original;
+              copyButton.classList.remove("is-copied");
+            }, 1200);
+          }
+        });
+        pre.appendChild(copyButton);
+      });
+    };
+
+    const appendMessage = (role, content = "", options = {}) => {
+      removeEmptyState();
+
+      const row = document.createElement("div");
+      row.className = `message-row ${role === "user" ? "is-user" : "is-agent"}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `message-bubble ${role === "user" ? "bubble-user" : "bubble-agent"}`;
+
+      const contentNode = document.createElement(role === "assistant" ? "div" : "span");
+      contentNode.className = role === "assistant" ? "message-content message-content-markdown" : "message-content";
+      contentNode.textContent = content;
+      bubble.appendChild(contentNode);
+
+      let dotsNode = null;
+      if (options.pending) {
+        bubble.classList.add("is-pending");
+        dotsNode = createTypingDots();
+        bubble.appendChild(dotsNode);
+      }
+
+      row.appendChild(bubble);
+      messages.appendChild(row);
+      if (role === "assistant") {
+        decorateCodeBlocks(contentNode);
+      }
+      scrollToBottom();
+
+      return { bubble, contentNode, dotsNode };
+    };
+
+    const setStreamingState = (streaming) => {
+      isStreaming = streaming;
+      form.classList.toggle("is-streaming", streaming);
+      input.disabled = streaming;
+      submitButton.disabled = streaming;
+      addButton.disabled = streaming;
+    };
+
+    const updateAssistantBubble = (assistantUi, content, html = "") => {
+      if (html) {
+        assistantUi.contentNode.innerHTML = html;
+        decorateCodeBlocks(assistantUi.contentNode);
+      } else {
+        assistantUi.contentNode.textContent = content;
+      }
+      const hasContent = content.length > 0 || html.length > 0;
+      assistantUi.bubble.classList.toggle("is-pending", !hasContent);
+      if (assistantUi.dotsNode) {
+        if (hasContent) {
+          assistantUi.dotsNode.remove();
+          assistantUi.dotsNode = null;
+        } else {
+          assistantUi.dotsNode.hidden = false;
+        }
+      }
+      scrollToBottom();
+    };
+
+    const readStream = async (response, onPayload) => {
+      const reader = response.body && response.body.getReader ? response.body.getReader() : null;
+      if (!reader) {
+        throw new Error("Streaming is not available for this response.");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+          onPayload(JSON.parse(trimmed));
+        }
+
+        if (done) {
+          break;
+        }
+      }
+
+      const tail = buffer.trim();
+      if (tail) {
+        onPayload(JSON.parse(tail));
+      }
+    };
+
+    const submitMessage = async (prefilledMessage = "") => {
+      if (isStreaming) {
+        return;
+      }
+
+      const content = (prefilledMessage || input.value).trim();
+      if (!content) {
+        return;
+      }
+
+      const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+      const streamUrl = form.dataset.streamUrl;
+      let assistantText = "";
+      let assistantHtml = "";
+
+      appendMessage("user", content);
+      const assistantUi = appendMessage("assistant", "", { pending: true });
+      input.value = "";
+      setStreamingState(true);
+
+      try {
+        const response = await fetch(streamUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: new URLSearchParams({ message: content }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        await readStream(response, (payload) => {
+          if (payload.type === "delta") {
+            assistantText += payload.content || "";
+            assistantHtml = payload.html || assistantHtml;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            return;
+          }
+
+          if (payload.type === "done") {
+            assistantText = payload.content || assistantText;
+            assistantHtml = payload.html || assistantHtml;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          }
+        });
+      } catch (error) {
+        updateAssistantBubble(assistantUi, "Sorry, I couldn't reach the AI service just now.");
+      } finally {
+        setStreamingState(false);
+        input.focus();
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await submitMessage();
+    });
+
+    scrollToBottom();
+    decorateCodeBlocks(messages);
+
+    const pendingPrompt = form.dataset.pendingPrompt || "";
+    if (pendingPrompt) {
+      submitMessage(pendingPrompt);
+    }
+  });
+</script>
 {% endblock %}

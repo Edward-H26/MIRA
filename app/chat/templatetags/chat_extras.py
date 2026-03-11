@@ -3,6 +3,7 @@ from datetime import timedelta
 from django import template
 from django.utils import timezone
 from django.utils.timesince import timesince
+from app.chat.rendering import render_assistant_markdown_html
 
 register = template.Library()
 
@@ -16,3 +17,8 @@ def relative_time(value):
     if delta <= timedelta(days=3):
         return f"{timesince(value, now)} ago"
     return timezone.localtime(value).strftime("%Y-%m-%d")
+
+
+@register.filter(name="assistant_markdown")
+def assistant_markdown(value):
+    return render_assistant_markdown_html(value)

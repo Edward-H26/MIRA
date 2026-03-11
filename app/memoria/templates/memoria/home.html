@@ -9,18 +9,69 @@
 <div class="home-start">
   <h1 class="home-start-title">Start your project here,</h1>
 
-  <form method="post" action="{% url 'memoria:home' %}">
+  <form method="post" action="{% url 'memoria:home' %}" id="home-start-form">
     {% csrf_token %}
     <div class="home-start-input">
-      <input type="text" name="message" placeholder="Enter what you think here..." aria-label="Project starter">
+      <input type="text" name="message" placeholder="Enter what you think here..." aria-label="Project starter" id="home-start-input">
     </div>
     <div class="home-start-actions">
       <button type="button" class="home-pill-button home-pill-ghost">
         <span class="home-pill-icon">+</span>
         Add something...
       </button>
-      <button type="submit" class="home-pill-button home-pill-solid">Continue</button>
+      <button type="submit" class="home-pill-button home-pill-solid" id="home-start-submit">Continue</button>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("home-start-form");
+    const input = document.getElementById("home-start-input");
+    const submitButton = document.getElementById("home-start-submit");
+    if (!form || !input || !submitButton) {
+      return;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message) {
+        return;
+      }
+
+      submitButton.disabled = true;
+      input.disabled = true;
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-CSRFToken": form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: new URLSearchParams({ message }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (payload.redirect_url) {
+          window.location.href = payload.redirect_url;
+          return;
+        }
+        throw new Error("Missing redirect URL");
+      } catch (_) {
+        input.disabled = false;
+        submitButton.disabled = false;
+        form.submit();
+      }
+    });
+  });
+</script>
 {% endblock %}

@@ -37,9 +37,9 @@ class Session(models.Model):
 
         from .message import Message, Role
         try:
-            from app.services.gemini import generate_reply
+            from app.chat.service import build_agent_reply_from_stream
 
-            ai_text = generate_reply(prompt)
+            ai_text = build_agent_reply_from_stream(prompt)
         except Exception:
             ai_text = assistant_reply
         Message.objects.create(session=session, role=Role.USER, content=prompt)

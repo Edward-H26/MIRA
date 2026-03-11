@@ -18,7 +18,6 @@ from app.chat.models.message import Role
 from app.chat.models.memory_bullet import MemoryType
 from app.chat.service import (
     create_home_session_for_user,
-    create_user_message_with_agent_reply,
     get_activity_chart_png,
     get_analytics_dashboard_context,
     get_api_analytics_summary_payload,
@@ -32,6 +31,7 @@ from app.chat.service import (
     get_memory_type_chart_png,
     get_session_for_user,
     get_sidebar_sessions_for_user,
+    stream_user_message_with_agent_reply,
 )
 from app.chat.holiday_service import (
     HolidayAPIUnavailableError,
@@ -158,26 +158,28 @@ def test_session_services(data):
         "with_messages=True uses prefetch",
     )
 
-    print("\n  --- create_user_message_with_agent_reply ---")
+    print("\n  --- stream_user_message_with_agent_reply ---")
     test_session = data["sessions"][0]
     before_count = Message.objects.filter(session=test_session).count()
     before_time = timezone.now()
-    result = create_user_message_with_agent_reply(test_session, "Hello test message")
+    result = list(stream_user_message_with_agent_reply(test_session, "Hello test message"))
     after_count = Message.objects.filter(session=test_session).count()
-    failures += assert_test(result is True, "Valid message returns True")
+    failures += assert_test(len(result) >= 1 and result[-1]["type"] == "done", "Valid message streams and completes")
     failures += assert_test(after_count == before_count + 2, "Creates 2 new messages (USER + ASSISTANT)")
 
     test_session.refresh_from_db()
     failures += assert_test(test_session.updated_at >= before_time, "Session updated_at is refreshed")
 
-    failures += assert_test(
-        create_user_message_with_agent_reply(test_session, "") is False,
-        "Empty content returns False",
-    )
-    failures += assert_test(
-        create_user_message_with_agent_reply(test_session, "   ") is False,
-        "Whitespace-only content returns False",
-    )
+    try:
+        list(stream_user_message_with_agent_reply(test_session, ""))
+        failures += assert_test(False, "Empty content raises ValueError")
+    except ValueError:
+        failures += assert_test(True, "Empty content raises ValueError")
+    try:
+        list(stream_user_message_with_agent_reply(test_session, "   "))
+        failures += assert_test(False, "Whitespace-only content raises ValueError")
+    except ValueError:
+        failures += assert_test(True, "Whitespace-only content raises ValueError")
 
     return failures
 
