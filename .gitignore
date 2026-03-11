@@ -34,6 +34,7 @@ media/
 node_modules/
 
 # Cache
+cache/
 llm_test/cache/
 llm_test/results/tmp/
 
