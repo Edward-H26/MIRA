@@ -3,6 +3,7 @@ from django.shortcuts import redirect
 from django.template import loader
 
 from .services import create_home_session_for_user, get_home_context_for_user
+from memoria.event_log import log_event
 
 PENDING_PROMPT_SESSION_KEY = "pending_chat_prompts"
 
@@ -28,6 +29,12 @@ def home(request):
         pending_prompts[str(session.pk)] = content
         request.session[PENDING_PROMPT_SESSION_KEY] = pending_prompts
         request.session.modified = True
+        log_event(
+            "chat_session_created",
+            request=request,
+            session_id=session.pk,
+            from_page="home",
+        )
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({
                 "session_id": session.pk,

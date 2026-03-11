@@ -13,6 +13,7 @@ from pathlib import Path
 
 from . import services
 from .models import UserProfile
+from memoria.event_log import log_event
 
 
 def _get_safe_redirect_url(request, fallback="/"):
@@ -123,6 +124,7 @@ def profile_view(request):
                 profile.display_name = display_name
                 profile.save(update_fields=["display_name"])
                 account_success = True
+                log_event("user_profile_updated", request=request, field="display_name")
         profile_img = request.FILES.get("profile_img")
         if profile_img and request.POST.get("save_account"):
             extension = Path(profile_img.name).suffix.lower()
@@ -136,6 +138,7 @@ def profile_view(request):
                 profile.profile_img = profile_img
                 profile.save(update_fields=["profile_img"])
                 account_success = True
+                log_event("user_profile_updated", request=request, field="avatar")
         return render(
             request,
             "users/profile.html",
@@ -220,6 +223,7 @@ def change_password_view(request):
     request.user.set_password(new_password)
     request.user.save(update_fields=["password"])
     update_session_auth_hash(request, request.user)
+    log_event("user_profile_updated", request=request, field="password")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"ok": True})
     return redirect("users:profile")

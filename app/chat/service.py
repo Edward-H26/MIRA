@@ -1,5 +1,8 @@
 import io
+import os
 import re
+import time
+import traceback
 from datetime import timedelta
 
 import matplotlib
@@ -13,7 +16,9 @@ from django.utils import timezone
 
 import math
 
+from memoria.event_log import log_event
 from app.services.gemini import generate_reply_stream
+from .ace_runtime import run_ace_chat_turn
 from .rendering import render_assistant_markdown_html
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
@@ -25,6 +30,15 @@ CHART_BG = "#F7F8FF"
 CHART_GRID = "#DCE1FF"
 CHART_TEXT = "#2F3A4A"
 CHART_MUTED = "#6A7290"
+
+
+def _is_stream_debug_enabled():
+    return (os.getenv("CHAT_STREAM_DEBUG", "0") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _stream_debug_log(message):
+    if _is_stream_debug_enabled():
+        print(f"[CHAT_STREAM_DEBUG] {message}", flush=True)
 
 
 def get_or_create_profile_for_user(user):
@@ -147,6 +161,9 @@ def stream_user_message_with_agent_reply(session, content):
     trimmed = (content or "").strip()
     if not trimmed:
         raise ValueError("Message content is required.")
+    started_at = time.monotonic()
+    _stream_debug_log(f"start session_id={session.pk} prompt_len={len(trimmed)}")
+    log_event("chat_stream_start", session_id=session.pk, prompt_len=len(trimmed))
 
     Message.objects.create(
         session=session,
@@ -154,29 +171,75 @@ def stream_user_message_with_agent_reply(session, content):
         content=trimmed,
     )
 
-    chunks = []
     fallback_text = "Sorry, I couldn't reach the AI service just now."
 
     try:
-        for chunk in generate_reply_stream(trimmed):
-            if not chunk:
-                continue
+        ace_result = run_ace_chat_turn(session, trimmed)
+        assistant_text = (ace_result.get("answer") or "").strip() or fallback_text
+        log_event(
+            "chat_stream_ace_ok",
+            session_id=session.pk,
+            answer_len=len(assistant_text),
+            bullets_retrieved=ace_result.get("num_bullets_retrieved", 0),
+        )
+        _stream_debug_log(
+            "ace_ok "
+            f"session_id={session.pk} answer_len={len(assistant_text)} "
+            f"retrieved={ace_result.get('num_bullets_retrieved', 0)} "
+            f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
+        )
+    except Exception as exc:
+        print(f"[ACE] run_ace_chat_turn failed: {exc}", flush=True)
+        traceback.print_exc()
+        assistant_text = build_agent_reply_from_stream(trimmed)
+        log_event(
+            "chat_stream_ace_failed_fallback",
+            session_id=session.pk,
+            error_type=exc.__class__.__name__,
+            answer_len=len(assistant_text),
+        )
+        _stream_debug_log(
+            "ace_failed_fallback "
+            f"session_id={session.pk} answer_len={len(assistant_text)} "
+            f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
+        )
+
+    if not assistant_text:
+        assistant_text = build_agent_reply_from_stream(trimmed)
+    if not assistant_text:
+        assistant_text = fallback_text
+
+    chunks = []
+    cursor = 0
+    delta_count = 0
+    while cursor < len(assistant_text):
+        chunk = assistant_text[cursor:cursor + 48]
+        cursor += 48
+        if chunk:
             chunks.append(chunk)
+            delta_count += 1
+            if delta_count <= 3:
+                _stream_debug_log(
+                    "delta "
+                    f"session_id={session.pk} index={delta_count} chunk_len={len(chunk)} "
+                    f"total_len={len(''.join(chunks))}"
+                )
             yield {
                 "type": "delta",
                 "content": chunk,
                 "html": str(render_assistant_markdown_html("".join(chunks))),
             }
-    except Exception:
-        if not chunks:
-            chunks.append(fallback_text)
-            yield {
-                "type": "delta",
-                "content": fallback_text,
-                "html": str(render_assistant_markdown_html("".join(chunks))),
-            }
 
-    assistant_text = "".join(chunks).strip() or fallback_text
+    if not chunks:
+        chunks.append(fallback_text)
+        assistant_text = fallback_text
+        _stream_debug_log(f"empty_answer_fallback session_id={session.pk}")
+        yield {
+            "type": "delta",
+            "content": fallback_text,
+            "html": str(render_assistant_markdown_html(fallback_text)),
+        }
+
     assistant_message = Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
@@ -191,6 +254,19 @@ def stream_user_message_with_agent_reply(session, content):
         "content": assistant_text,
         "html": str(render_assistant_markdown_html(assistant_text)),
     }
+    log_event(
+        "chat_stream_done",
+        session_id=session.pk,
+        message_id=assistant_message.id,
+        answer_len=len(assistant_text),
+        elapsed_ms=int((time.monotonic() - started_at) * 1000),
+    )
+    _stream_debug_log(
+        "done "
+        f"session_id={session.pk} message_id={assistant_message.id} "
+        f"delta_count={delta_count or 1} answer_len={len(assistant_text)} "
+        f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
+    )
 
 
 def get_memory_list_data(user, search_query="", memory_type="", sort_key="created"):

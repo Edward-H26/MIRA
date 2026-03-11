@@ -11,3 +11,11 @@ def generate_reply_stream(user_text: str):
         text = getattr(chunk, "text", None)
         if text:
             yield text
+
+
+def generate_reply_text(user_text: str):
+    chunks = []
+    for chunk in generate_reply_stream(user_text):
+        if chunk:
+            chunks.append(chunk)
+    return "".join(chunks).strip()

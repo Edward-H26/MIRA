@@ -1,5 +1,6 @@
 import csv
 import json
+import time
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
@@ -10,6 +11,7 @@ from django.views import View
 from django.views.decorators.http import require_http_methods
 from django.views.generic import DetailView, ListView
 
+from memoria.event_log import log_event
 from .models import Memory, MemoryBullet
 from .service import (
     stream_user_message_with_agent_reply,
@@ -67,6 +69,7 @@ class MemoryListView(ListView):
 class ConversationMessagesView(View):
     def get(self, request, session_id):
         session = get_session_for_user(request.user, session_id, with_messages=True)
+        is_generating = session.ensure_generation_lock_fresh()
         pending_prompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
         pending_prompt = pending_prompts.pop(str(session.pk), "")
         if pending_prompts:
@@ -81,6 +84,7 @@ class ConversationMessagesView(View):
             {
                 "session": session,
                 "pending_prompt": pending_prompt,
+                "generation_in_progress": is_generating,
             },
         )
 
@@ -89,15 +93,28 @@ class ConversationMessagesView(View):
         content = (request.POST.get("message") or "").strip()
         if not content:
             return JsonResponse({"error": "Empty message"}, status=400)
+        log_event("chat_message_submit", request=request, session_id=session.pk)
+        if not session.acquire_generation_lock():
+            log_event("chat_generation_rejected_locked", request=request, session_id=session.pk)
+            return JsonResponse(
+                {"error": "generation_in_progress", "message": "Previous response is still generating."},
+                status=409,
+            )
 
         if request.headers.get("x-requested-with") != "XMLHttpRequest":
-            for _ in stream_user_message_with_agent_reply(session, content):
-                pass
+            try:
+                for _ in stream_user_message_with_agent_reply(session, content):
+                    pass
+            finally:
+                session.release_generation_lock()
             return redirect(session.get_absolute_url())
 
         def event_stream():
-            for payload in stream_user_message_with_agent_reply(session, content):
-                yield json.dumps(payload, ensure_ascii=False) + "\n"
+            try:
+                for payload in stream_user_message_with_agent_reply(session, content):
+                    yield json.dumps(payload, ensure_ascii=False) + "\n"
+            finally:
+                session.release_generation_lock()
 
         response = StreamingHttpResponse(
             event_stream(),
@@ -125,6 +142,54 @@ class MemoryBulletsView(DetailView):
 
 
 @login_required(login_url="/")
+@require_http_methods(["GET"])
+def conversation_lock_status_view(request, session_id):
+    session = get_session_for_user(request.user, session_id)
+    is_generating = session.ensure_generation_lock_fresh()
+    return JsonResponse(
+        {
+            "session_id": session.pk,
+            "generation_in_progress": is_generating,
+            "generation_started_at": session.generation_started_at.isoformat() if session.generation_started_at else None,
+            "updated_at": session.updated_at.isoformat(),
+        }
+    )
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def conversation_wait_for_unlock_view(request, session_id):
+    session = get_session_for_user(request.user, session_id)
+    try:
+        timeout_seconds = int(request.GET.get("timeout", "55"))
+    except (TypeError, ValueError):
+        timeout_seconds = 55
+    timeout_seconds = min(max(timeout_seconds, 5), 120)
+
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        session.refresh_from_db(fields=["generation_in_progress", "generation_started_at", "updated_at"])
+        is_generating = session.ensure_generation_lock_fresh()
+        if not is_generating:
+            return JsonResponse(
+                {
+                    "session_id": session.pk,
+                    "generation_in_progress": False,
+                    "timed_out": False,
+                }
+            )
+        if time.monotonic() >= deadline:
+            return JsonResponse(
+                {
+                    "session_id": session.pk,
+                    "generation_in_progress": True,
+                    "timed_out": True,
+                }
+            )
+        time.sleep(0.5)
+
+
+@login_required(login_url="/")
 @require_http_methods(["POST"])
 def session_rename_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
@@ -132,6 +197,7 @@ def session_rename_view(request, session_id):
     if title:
         session.title = title[:200]
         session.save(update_fields=["title"])
+        log_event("chat_session_updated", request=request, session_id=session.pk, action="rename")
     return JsonResponse({"ok": True, "title": session.title})
 
 
@@ -139,7 +205,9 @@ def session_rename_view(request, session_id):
 @require_http_methods(["POST"])
 def session_delete_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
+    deleted_id = session.pk
     session.delete()
+    log_event("chat_session_updated", request=request, session_id=deleted_id, action="delete")
     return JsonResponse({"ok": True})
 
 

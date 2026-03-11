@@ -33,6 +33,7 @@ if not GEMINI_API_KEY:
 DEBUG = True
 
 ALLOWED_HOSTS = []
+ENABLE_DEV_EVENT_LOG = False
 
 
 # Application definition
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "app.memoria.middleware.PageVisitEventMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "app.users.middleware.TimezoneMiddleware",

@@ -1,9 +1,11 @@
 from unittest.mock import patch
 import json
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from app.chat.models import Message, Session
 from app.chat.models.message import Role
@@ -24,8 +26,8 @@ class ChatStreamingServiceTests(TestCase):
 
     def test_stream_user_message_with_agent_reply_saves_final_message(self):
         with patch(
-            "app.chat.service.generate_reply_stream",
-            return_value=iter(["Hello", " world"]),
+            "app.chat.service.run_ace_chat_turn",
+            return_value={"answer": "Hello world"},
         ):
             events = list(stream_user_message_with_agent_reply(self.session, "Hi there"))
 
@@ -49,8 +51,8 @@ class ChatStreamingServiceTests(TestCase):
 
     def test_stream_user_message_with_agent_reply_uses_fallback_on_failure(self):
         with patch(
-            "app.chat.service.generate_reply_stream",
-            side_effect=RuntimeError("Gemini unavailable"),
+            "app.chat.service.run_ace_chat_turn",
+            side_effect=RuntimeError("ACE unavailable"),
         ):
             events = list(stream_user_message_with_agent_reply(self.session, "Hi there"))
 
@@ -111,6 +113,19 @@ class ChatStreamingViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"], "Empty message")
 
+    def test_conversation_detail_post_rejects_when_generation_in_progress(self):
+        self.session.generation_in_progress = True
+        self.session.save(update_fields=["generation_in_progress"])
+
+        response = self.client.post(
+            reverse("chat:conversation_detail", args=[self.session.pk]),
+            {"message": "Second message"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()["error"], "generation_in_progress")
+
     def test_home_post_returns_redirect_url_for_immediate_navigation(self):
         response = self.client.post(
             reverse("memoria:home"),
@@ -137,3 +152,27 @@ class ChatStreamingViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'data-pending-prompt="Auto send me"', html=False)
         self.assertNotIn("pending_chat_prompts", self.client.session)
+
+    def test_conversation_lock_status_view_returns_generation_state(self):
+        self.session.generation_in_progress = True
+        self.session.save(update_fields=["generation_in_progress"])
+
+        response = self.client.get(reverse("chat:conversation_lock_status", args=[self.session.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["session_id"], self.session.pk)
+        self.assertTrue(payload["generation_in_progress"])
+
+    def test_conversation_lock_wait_view_returns_unlocked_state_when_lock_is_stale(self):
+        self.session.generation_in_progress = True
+        self.session.generation_started_at = timezone.now() - timedelta(minutes=10)
+        self.session.save(update_fields=["generation_in_progress", "generation_started_at"])
+
+        response = self.client.get(reverse("chat:conversation_lock_wait", args=[self.session.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["session_id"], self.session.pk)
+        self.assertFalse(payload["generation_in_progress"])
+        self.assertFalse(payload["timed_out"])

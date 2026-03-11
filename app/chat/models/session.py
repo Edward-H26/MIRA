@@ -1,6 +1,9 @@
 from django.db import models
+from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
+import os
+from datetime import timedelta
 
 # Create your models here.
 class Session(models.Model):
@@ -16,6 +19,10 @@ class Session(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # Timestamp when the session was last updated
     updated_at = models.DateTimeField(auto_now=True)
+    # Server-side lock to prevent concurrent user submits while assistant generation is running
+    generation_in_progress = models.BooleanField(default=False)
+    # Timestamp when the current generation lock was acquired
+    generation_started_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [models.Index(fields=["user", "-created_at"])]
@@ -26,6 +33,53 @@ class Session(models.Model):
 
     def get_absolute_url(self):
         return reverse("chat:conversation_detail", kwargs={"session_id": self.pk})
+
+    @staticmethod
+    def _lock_timeout_seconds():
+        raw = os.getenv("CHAT_GENERATION_LOCK_TIMEOUT_SECONDS", "180")
+        try:
+            value = int(raw)
+        except Exception:
+            value = 180
+        return value if value > 0 else 180
+
+    def _is_lock_stale(self):
+        if not self.generation_in_progress:
+            return False
+        if not self.generation_started_at:
+            return True
+        return self.generation_started_at <= timezone.now() - timedelta(seconds=self._lock_timeout_seconds())
+
+    def ensure_generation_lock_fresh(self):
+        if not self._is_lock_stale():
+            return bool(self.generation_in_progress)
+        self.generation_in_progress = False
+        self.generation_started_at = None
+        self.save(update_fields=["generation_in_progress", "generation_started_at"])
+        return False
+
+    def acquire_generation_lock(self):
+        with transaction.atomic():
+            row = Session.objects.select_for_update().get(pk=self.pk)
+            if row._is_lock_stale():
+                row.generation_in_progress = False
+                row.generation_started_at = None
+            if row.generation_in_progress:
+                return False
+            row.generation_in_progress = True
+            row.generation_started_at = timezone.now()
+            row.save(update_fields=["generation_in_progress", "generation_started_at"])
+        self.generation_in_progress = True
+        self.generation_started_at = timezone.now()
+        return True
+
+    def release_generation_lock(self):
+        Session.objects.filter(pk=self.pk).update(
+            generation_in_progress=False,
+            generation_started_at=None,
+        )
+        self.generation_in_progress = False
+        self.generation_started_at = None
 
     @classmethod
     def create_with_opening_exchange(cls, user_profile, content, assistant_reply="Agent Response"):
