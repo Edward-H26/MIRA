@@ -256,4 +256,11 @@ class Memory(models.Model):
             created_count += 1
 
         self.save(update_fields=["access_clock"])
+
+        try:
+            from app.services.neo4j_memory import sync_memory_to_neo4j
+            sync_memory_to_neo4j(learner_id, self)
+        except Exception:
+            pass
+
         return {"num_new_bullets": created_count, "num_updates": updated_count, "num_removals": 0}

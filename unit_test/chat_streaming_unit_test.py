@@ -61,6 +61,20 @@ class ChatStreamingServiceTests(TestCase):
         self.assertEqual(events[-1]["type"], "done")
         self.assertEqual(events[-1]["content"], events[0]["content"])
 
+    def test_stream_user_message_skips_cold_local_preprocess_on_complex_prompt(self):
+        with patch("app.chat.service.classify_prompt", return_value="complex"), patch(
+            "app.chat.service.local_llm.is_available",
+            return_value=True,
+        ), patch("app.chat.service.local_llm.is_loaded", return_value=False), patch(
+            "app.chat.service.local_llm.preprocess_prompt",
+        ) as preprocess_mock, patch(
+            "app.chat.service.run_ace_chat_turn",
+            return_value={"answer": "Hello world"},
+        ):
+            list(stream_user_message_with_agent_reply(self.session, "Help me plan a complex project"))
+
+        preprocess_mock.assert_not_called()
+
 
 class ChatStreamingViewTests(TestCase):
     def setUp(self):
@@ -88,15 +102,14 @@ class ChatStreamingViewTests(TestCase):
                 {"message": "Hi"},
                 HTTP_X_REQUESTED_WITH="XMLHttpRequest",
             )
-
-        payloads = [
-            json.loads(chunk)
-            for chunk in (
-                part.decode("utf-8") if isinstance(part, bytes) else part
-                for part in response.streaming_content
-            )
-            if chunk.strip()
-        ]
+            payloads = [
+                json.loads(chunk)
+                for chunk in (
+                    part.decode("utf-8") if isinstance(part, bytes) else part
+                    for part in response.streaming_content
+                )
+                if chunk.strip()
+            ]
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response["Content-Type"].startswith("application/x-ndjson"))
@@ -144,8 +157,9 @@ class ChatStreamingViewTests(TestCase):
         )
 
     def test_conversation_detail_get_reads_pending_prompt_from_session(self):
-        self.client.session["pending_chat_prompts"] = {str(self.session.pk): "Auto send me"}
-        self.client.session.save()
+        session = self.client.session
+        session["pending_chat_prompts"] = {str(self.session.pk): "Auto send me"}
+        session.save()
 
         response = self.client.get(reverse("chat:conversation_detail", args=[self.session.pk]))
 

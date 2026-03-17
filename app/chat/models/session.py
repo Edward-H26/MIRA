@@ -47,7 +47,7 @@ class Session(models.Model):
         if not self.generation_in_progress:
             return False
         if not self.generation_started_at:
-            return True
+            return False
         return self.generation_started_at <= timezone.now() - timedelta(seconds=self._lock_timeout_seconds())
 
     def ensure_generation_lock_fresh(self):

@@ -248,8 +248,10 @@ def test_analytics_services(data):
 
     print("\n  --- get_analytics_dashboard_context ---")
     ctx = get_analytics_dashboard_context(maria_auth)
-    expected_keys = {"total_memories", "total_sessions", "total_messages", "avg_strength", "type_summary"}
-    failures += assert_test(set(ctx.keys()) == expected_keys, "Returns correct keys")
+    core_keys = {"total_memories", "total_sessions", "total_messages", "avg_strength", "type_summary"}
+    report_keys = {"session_group", "memory_group", "session_grouped_rows", "memory_grouped_rows"}
+    expected_keys = core_keys | report_keys
+    failures += assert_test(expected_keys.issubset(set(ctx.keys())), "Returns correct keys")
     failures += assert_test(ctx["total_memories"] >= 7, "Maria has at least 7 memories")
 
     empty_ctx = get_analytics_dashboard_context(empty_auth)
@@ -407,12 +409,13 @@ def test_model_methods(data):
         msgs = Message.objects.filter(session=session)
         failures += assert_test(msgs.count() == 2, "Creates USER + ASSISTANT messages")
 
-    custom = Session.create_with_opening_exchange(maria_profile, "Hi there", assistant_reply="Custom reply")
+    with patch("app.chat.service.build_agent_reply_from_stream", return_value="Mocked AI reply"):
+        custom = Session.create_with_opening_exchange(maria_profile, "Hi there")
     if custom:
         assistant_msg = Message.objects.filter(session=custom, role=Role.ASSISTANT).first()
         failures += assert_test(
-            assistant_msg is not None and assistant_msg.content == "Custom reply",
-            "Custom assistant_reply is used",
+            assistant_msg is not None and assistant_msg.content == "Mocked AI reply",
+            "Opening exchange uses build_agent_reply_from_stream",
         )
 
     long_content = "X" * 300

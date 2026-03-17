@@ -1,6 +1,6 @@
 MEMORIA WEEK 4 PROGRESS NOTES
 
-These notes document the MEMORIA project's weekly progress for Feb 6 through Feb 13, 2026. They cover URL linking, ORM queries, static files, data visualization, forms, and APIs.
+These notes document the MEMORIA project's weekly progress for the week. They cover URL linking, ORM queries, static files, data visualization, forms, and APIs.
 
 ================================================================================
 

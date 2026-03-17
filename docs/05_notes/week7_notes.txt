@@ -1,0 +1,382 @@
+MEMORIA WEEK 7 PROGRESS NOTES
+
+These notes document the MEMORIA project's weekly progress for Week 7.
+This week covers LLM benchmark development, Gemini API streaming
+integration, ACE memory algorithm integration, hybrid pipeline design,
+production deployment fixes, API demonstrations, and markdown rendering.
+
+================================================================================
+
+Section 1: LLM Benchmark Development
+=================================================
+
+1.1 Challenge: Hardware constraints for multi-model evaluation
+
+    Running 15 language models across 5 size categories on a single
+    RTX 4060 with 8GB VRAM required careful resource management. Larger
+    models (7B+ parameters) exceeded available VRAM when loaded at full
+    precision, causing CUDA out-of-memory failures during inference.
+
+1.2 Solution: Quantization and subprocess isolation
+
+    Three techniques were combined to enable the full benchmark suite:
+
+      - Quantization modes: Models were loaded in reduced precision
+        (4-bit and 8-bit quantization via bitsandbytes) to fit within
+        the 8GB VRAM budget. This allowed 7B+ models to run inference
+        without exceeding memory limits.
+
+      - CPU offload: For models that still exceeded VRAM after
+        quantization, layers were partially offloaded to system RAM
+        using accelerate's device_map="auto" configuration.
+
+      - Subprocess isolation: Each model run was executed in a separate
+        subprocess. This ensured that GPU memory was fully released
+        between runs, preventing cumulative memory leaks from
+        incomplete CUDA cache cleanup within a single process.
+
+1.3 Design choice: Five size tiers for model categorization
+
+    Models were organized into five tiers based on parameter count:
+
+      Tier 1, Ultra-Light:   < 0.5B parameters
+      Tier 2, Small:         0.5B to 1B parameters
+      Tier 3, Medium:        1B to 3B parameters
+      Tier 4, Large:         3B to 7B parameters
+      Tier 5, Extra-Large:   7B+ parameters
+
+    This categorization enabled fair comparison within each tier and
+    revealed that smaller models can outperform larger ones on
+    structured, constrained tasks.
+
+1.4 Design choice: GPT-5.1 as automated evaluator
+
+    Manual evaluation of 15 models across multiple runs was infeasible.
+    GPT-5.1 served as the automated evaluator, scoring model outputs
+    against 14 deterministic rubrics for a recipe generation task. Each
+    rubric produced a binary pass/fail result, eliminating subjective
+    scoring variance. The rubrics covered factual accuracy, formatting
+    compliance, ingredient completeness, instruction ordering, and
+    constraint adherence.
+
+1.5 Design choice: Cache path structure
+
+    Downloaded model weights were stored in a structured cache directory:
+
+      llm_test/cache/huggingface-models/<vendor>__<model>
+
+    The double-underscore separator distinguishes vendor from model name
+    without conflicting with HuggingFace's internal naming conventions.
+    The entire cache directory is excluded via .gitignore to prevent
+    multi-gigabyte model weights from entering version control.
+
+1.6 Result: Qwen3.5-0.8B as top performer
+
+    Qwen3.5-0.8B achieved 78.6% (11 out of 14 rubrics passed), beating
+    all models in the 7B+ category. This counterintuitive result
+    demonstrates that for constrained, structured tasks with clear
+    rubrics, smaller models trained on high-quality data can outperform
+    larger models that spread capacity across broader capabilities.
+
+1.7 Control route implementation
+
+    Two control routes were implemented for comparison:
+
+      Route A, Prompt Engineering: Uses a constraint ledger approach
+      where the prompt explicitly enumerates all requirements as a
+      numbered checklist. The model is instructed to verify each
+      constraint before generating output.
+
+      Route B, CL-bench Fine-tuning: Fine-tunes models on the CL-bench
+      dataset to internalize task constraints, reducing reliance on
+      prompt engineering for compliance.
+
+1.8 Reference benchmark migration
+
+    The original Open LLM Leaderboard stopped updating during the
+    evaluation period. The project switched to LMSYS Chatbot Arena as
+    the reference benchmark for cross-validating model rankings. This
+    required remapping model identifiers and recalibrating tier
+    boundaries against the new leaderboard's scoring methodology.
+
+================================================================================
+
+Section 2: Gemini API Integration
+==================================
+
+2.1 Challenge: Streaming responses through Django
+
+    Django is a synchronous framework by default. Streaming LLM
+    responses required sending partial content to the frontend as
+    tokens are generated, rather than waiting for the complete response
+    before sending anything.
+
+2.2 Solution: Generator-based streaming with NDJSON
+
+    The implementation uses Django's StreamingHttpResponse with a Python
+    generator function. As the Gemini API yields tokens, the generator
+    emits NDJSON (newline-delimited JSON) delta events. Each event
+    contains a chunk of approximately 48 characters. The frontend reads
+    these events incrementally and appends content to the message
+    container in real time.
+
+2.3 Design choice: Model selection
+
+    The initial integration used gemini-2.5-flash for its balance of
+    speed and capability. The current upgrade path targets
+    gemini-3-flash-preview, which offers improved reasoning and
+    instruction following while maintaining comparable latency for
+    streaming use cases.
+
+2.4 Challenge: Blocking user input during generation
+
+    Without input blocking, users could submit additional prompts while
+    the AI was still generating a response. This created race conditions
+    where multiple concurrent generation requests competed for the same
+    session context.
+
+2.5 Solution: Generation lock on Session model
+
+    A generation lock field on the Session model prevents concurrent
+    requests. When generation begins, the lock is acquired with a
+    180-second timeout. Subsequent requests to the same session are
+    rejected until the lock is released (either on completion or
+    timeout expiration). The frontend disables the input field and
+    submit button while the lock is active.
+
+2.6 Challenge: New chat redirect race condition
+
+    When a user submits a prompt from the home page, the system creates
+    a new session and redirects to the conversation detail page. The
+    redirect could complete before the AI response was ready, resulting
+    in the user seeing an empty conversation.
+
+2.7 Solution: Pending prompts in session storage
+
+    The user's initial prompt is stored in the browser's sessionStorage
+    before the redirect. On the conversation detail page load, the
+    JavaScript checks for a pending prompt and automatically submits it
+    via the streaming API endpoint. This ensures the AI generation
+    begins only after the page is fully loaded and ready to display
+    streamed content.
+
+================================================================================
+
+Section 3: ACE Memory Algorithm Integration
+============================================
+
+3.1 Challenge: Balancing exploration and exploitation in memory retrieval
+
+    The memory system must decide between retrieving known, high-value
+    memories (exploitation) and exploring less-accessed memories that
+    might be relevant (exploration). Pure exploitation leads to
+    repetitive responses; pure exploration degrades response quality.
+
+3.2 Solution: Epsilon-greedy UCB1 multi-armed bandit
+
+    The planner uses an epsilon-greedy variant of the UCB1 (Upper
+    Confidence Bound) multi-armed bandit algorithm to select among four
+    retrieval actions:
+
+      Action 1, direct:       Retrieve the most relevant memories by
+                              cosine similarity.
+      Action 2, explore:      Sample from less-accessed memories with
+                              exploration bonus.
+      Action 3, refine:       Re-rank initial results using contextual
+                              signals (recency, frequency, strength).
+      Action 4, deep_refine:  Multi-pass retrieval with iterative
+                              relevance feedback.
+
+    The UCB1 formula balances each action's average reward against an
+    exploration bonus proportional to the logarithm of total selections
+    divided by per-action selection count.
+
+3.3 Design choice: Quality gates with configurable thresholds
+
+    Quality gates evaluate retrieved memory sets before they are passed
+    to the generation stage. If the retrieved memories fail to meet
+    minimum relevance or diversity thresholds, the planner retries with
+    a different action. Thresholds are configurable via environment
+    variables, enabling tuning without code changes across different
+    deployment environments.
+
+3.4 Challenge: Preventing duplicate memory bullets
+
+    Memory extraction from conversations can produce near-duplicate
+    bullets when the user revisits similar topics. Storing duplicates
+    wastes storage, inflates retrieval noise, and biases the memory
+    system toward over-represented topics.
+
+3.5 Solution: Content hashing with Jaccard similarity
+
+    Two deduplication layers operate in sequence:
+
+      Layer 1, exact match: SHA256 hashing of normalized content detects
+      byte-identical duplicates before insertion.
+
+      Layer 2, fuzzy match: Jaccard similarity between the candidate
+      bullet's token set and existing bullets' token sets is computed.
+      A threshold of 0.9 rejects candidates that share 90% or more of
+      their tokens with an existing bullet, catching paraphrased
+      duplicates that differ only in word order or minor phrasing.
+
+3.6 Design choice: Tri-memory system with per-channel decay
+
+    Memories are organized into three channels, each with distinct
+    decay characteristics:
+
+      Semantic memory:    General knowledge and facts. Slowest decay
+                          rate, as factual knowledge remains relevant
+                          over long periods.
+
+      Episodic memory:    Specific events and interactions. Moderate
+                          decay rate, reflecting the natural fading of
+                          event-specific details over time.
+
+      Procedural memory:  Learned preferences and behavioral patterns.
+                          Fastest decay rate for initial storage, but
+                          strengthened through repeated reinforcement.
+
+    Per-channel decay rates allow each memory type to follow its own
+    retention curve, mirroring how human memory systems operate with
+    different persistence characteristics.
+
+3.7 Configuration via environment variables
+
+    The ACE memory system exposes 9+ environment variables for runtime
+    tuning:
+
+      ACE_PLANNER_EPSILON:     Exploration rate for the bandit (0.0 to
+                                1.0; higher values increase exploration).
+      ACE_WEIGHT_RELEVANCE:    Weight for cosine similarity in the
+                                composite retrieval score.
+      ACE_WEIGHT_RECENCY:      Weight for temporal recency in scoring.
+      ACE_WEIGHT_FREQUENCY:    Weight for access frequency in scoring.
+      ACE_WEIGHT_STRENGTH:     Weight for memory strength in scoring.
+      ACE_QUALITY_THRESHOLD:   Minimum quality gate score for acceptance.
+      ACE_DECAY_SEMANTIC:      Decay rate for semantic memories.
+      ACE_DECAY_EPISODIC:      Decay rate for episodic memories.
+      ACE_DECAY_PROCEDURAL:    Decay rate for procedural memories.
+
+    This configuration approach enables A/B testing different memory
+    strategies in production without redeployment.
+
+================================================================================
+
+Section 4: Hybrid Pipeline Design
+==================================
+
+4.1 Challenge: Local LLM preprocessing without latency increase
+
+    Adding a local LLM preprocessing step before the main Gemini API
+    call risks doubling response latency for simple queries that do not
+    benefit from preprocessing. The pipeline must route efficiently,
+    applying local LLM processing only when it adds value.
+
+4.2 Solution: Heuristic classifier with conservative thresholds
+
+    A lightweight heuristic classifier scores each incoming query on
+    multiple complexity signals (query length, entity count, temporal
+    references, multi-step reasoning indicators). Queries scoring 2 or
+    higher on the composite scale are routed through the complex path
+    with local LLM preprocessing. Queries below the threshold bypass
+    the local model entirely, going directly to the Gemini API with
+    ACE memory context.
+
+    The threshold of 2 is deliberately conservative, ensuring that only
+    clearly complex queries incur the additional preprocessing latency.
+    Simple greetings, factual lookups, and single-turn questions are
+    never delayed by unnecessary local model inference.
+
+4.3 Design choice: Qwen3.5-0.8B as preprocessor only
+
+    Qwen3.5-0.8B is used exclusively for preprocessing tasks (query
+    analysis, intent classification, context extraction) and never for
+    final response generation. This separation ensures that the
+    preprocessing model's limited generation quality does not affect
+    user-facing output. The Gemini API handles all final generation,
+    receiving enriched context from the preprocessor when applicable.
+
+4.4 Design choice: Lazy model loading pattern
+
+    The local Qwen3.5-0.8B model is loaded on first use rather than at
+    Django startup. This prevents the model loading time (several
+    seconds for weight initialization) from blocking the web server's
+    startup sequence. A module-level singleton holds the loaded model
+    and tokenizer after first initialization, avoiding redundant
+    reloading on subsequent requests.
+
+4.5 Design choice: Classification-based routing
+
+    Three routing strategies were evaluated:
+
+      Option A, Parallel processing: Run both local and cloud models
+      simultaneously, merge results. Rejected due to doubled API costs
+      and complexity in merging contradictory outputs.
+
+      Option B, Cascading fallback: Start with the local model, fall
+      back to the cloud model if quality is insufficient. Rejected due
+      to worst-case latency being the sum of both models.
+
+      Option C, Classification-based routing (selected): Classify the
+      query first, route to the appropriate path. Chosen because the
+      classifier adds negligible latency (heuristic, not model-based),
+      and each query takes exactly one path.
+
+4.6 Data flow summary
+
+    The complete pipeline processes each request through the following
+    stages:
+
+      Stage 1: User Input received by Django view
+      Stage 2: Heuristic Classifier scores query complexity
+      Stage 3: If complex, Local LLM (Qwen3.5-0.8B) extracts intent,
+               entities, and context enrichment
+      Stage 4: ACE Planner selects retrieval action via UCB1 bandit
+      Stage 5: Memory Retrieval across semantic, episodic, and
+               procedural channels
+      Stage 6: Quality Gate evaluates retrieved memory set
+      Stage 7: Gemini API generates final response with memory context
+      Stage 8: Streaming Response delivered via NDJSON to frontend
+
+================================================================================
+
+Section 5: Summary of Key Design Decisions
+==========================================
+
+5.1Local model selection rationale
+
+    Qwen3.5-0.8B was selected based on benchmark results showing
+    78.6% rubric compliance on structured tasks, combined with its
+    small memory footprint (fits in 8GB VRAM without quantization).
+    The model serves as a preprocessor only, keeping final generation
+    quality dependent on the cloud API.
+
+5.2Streaming architecture rationale
+
+    NDJSON streaming over StreamingHttpResponse was chosen over
+    WebSockets because it requires no additional infrastructure (no
+    Redis, no channels layer) and works within Django's synchronous
+    request/response model. The tradeoff is unidirectional streaming
+    (server to client only), which is acceptable for LLM response
+    delivery.
+
+5.3Memory deduplication rationale
+
+    The two-layer deduplication approach (SHA256 for exact, Jaccard for
+    fuzzy) balances precision and performance. SHA256 hashing is O(n)
+    in content length and catches identical entries instantly. Jaccard
+    similarity catches paraphrased duplicates at O(n*m) cost (where m
+    is the existing bullet count), which remains acceptable at the
+    current scale of per-user memory storage.
+
+5.4Environment variable configuration rationale
+
+    Exposing ACE parameters as environment variables (rather than
+    database-stored configuration or hardcoded constants) enables
+    runtime tuning on Render without redeployment. This is particularly
+    valuable for the exploration/exploitation tradeoff, where optimal
+    epsilon values depend on the user population size and conversation
+    patterns that change over time.
+
+================================================================================

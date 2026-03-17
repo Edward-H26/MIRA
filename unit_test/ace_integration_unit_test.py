@@ -60,3 +60,14 @@ class AceIntegrationTests(TestCase):
         self.assertIn("User: My name is Alex.", latest_prompt)
         self.assertIn("Assistant: Nice to meet you, Alex.", latest_prompt)
         self.assertIn("Latest user question:\nWhat is my name?", latest_prompt)
+
+    def test_run_ace_chat_turn_does_not_store_fact_recall_as_memory_lesson(self):
+        Message.objects.create(session=self.session, role=Role.USER, content="My name is Alex.")
+        Message.objects.create(session=self.session, role=Role.ASSISTANT, content="Nice to meet you, Alex.")
+
+        with patch("app.chat.ace_runtime.generate_reply_text", return_value="Your name is Alex."):
+            run_ace_chat_turn(self.session, "What is my name?")
+
+        memory = Memory.objects.get(user=self.profile)
+        learned_bullets = MemoryBullet.objects.filter(memory=memory).exclude(topic="meta_strategy")
+        self.assertEqual(learned_bullets.count(), 0)

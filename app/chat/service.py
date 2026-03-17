@@ -2,7 +2,6 @@ import io
 import os
 import re
 import time
-import traceback
 from datetime import timedelta
 
 import matplotlib
@@ -18,7 +17,10 @@ import math
 
 from memoria.event_log import log_event
 from app.services.gemini import generate_reply_stream
-from .ace_runtime import run_ace_chat_turn
+from app.services.classifier import classify_prompt
+from app.services import local_llm
+from app.services.gemini import generate_reply_text
+from .ace_runtime import run_ace_chat_turn, guidance_from_bullets
 from .rendering import render_assistant_markdown_html
 from .models import Memory, Message, MemoryBullet, Session
 from .models.message import Role
@@ -30,6 +32,9 @@ CHART_BG = "#F7F8FF"
 CHART_GRID = "#DCE1FF"
 CHART_TEXT = "#2F3A4A"
 CHART_MUTED = "#6A7290"
+LOCAL_PREPROCESS_CONTEXT_MAX_MESSAGES = 6
+INITIAL_STREAM_CHUNK_SIZE = 5
+FALLBACK_TEXT = "Sorry, I couldn't reach the AI service just now."
 
 
 def _is_stream_debug_enabled():
@@ -38,7 +43,54 @@ def _is_stream_debug_enabled():
 
 def _stream_debug_log(message):
     if _is_stream_debug_enabled():
-        print(f"[CHAT_STREAM_DEBUG] {message}", flush=True)
+        log_event("chat_stream_debug", message=message)
+
+
+def _safe_env_bool(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _safe_env_int(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except Exception:
+        return default
+    return parsed if parsed > 0 else default
+
+
+def _build_local_preprocess_context(session):
+    rows = list(
+        session.messages.exclude(role=Role.SYSTEM)
+        .order_by("-created_at")
+        .values_list("role", "content")[1:LOCAL_PREPROCESS_CONTEXT_MAX_MESSAGES + 1]
+    )
+    if not rows:
+        return ""
+
+    rows.reverse()
+    role_name_map = {
+        int(Role.USER): "User",
+        int(Role.ASSISTANT): "Assistant",
+    }
+    lines = []
+    for role, content in rows:
+        normalized = (content or "").strip()
+        if not normalized:
+            continue
+        speaker = role_name_map.get(int(role), "Other")
+        lines.append(f"{speaker}: {normalized}")
+    return "\n".join(lines)
 
 
 def get_or_create_profile_for_user(user):
@@ -144,17 +196,28 @@ def build_agent_reply_from_stream(content):
         return ""
 
     chunks = []
-    fallback_text = "Sorry, I couldn't reach the AI service just now."
 
     try:
         for chunk in generate_reply_stream(trimmed):
             if chunk:
                 chunks.append(chunk)
     except Exception:
-        if not chunks:
-            chunks.append(fallback_text)
+        return FALLBACK_TEXT
 
-    return "".join(chunks).strip() or fallback_text
+    return "".join(chunks).strip() or FALLBACK_TEXT
+
+
+def _should_run_local_preprocess(prompt_text, classification):
+    if classification != "complex":
+        return False
+    if not _safe_env_bool("CHAT_ENABLE_LOCAL_PREPROCESS", True):
+        return False
+    if not local_llm.is_available():
+        return False
+    if _safe_env_bool("CHAT_LOCAL_PREPROCESS_WARM_ONLY", True) and not local_llm.is_loaded():
+        return False
+    token_limit = _safe_env_int("CHAT_LOCAL_PREPROCESS_MAX_TOKENS", 220)
+    return len((prompt_text or "").split()) <= token_limit
 
 
 def stream_user_message_with_agent_reply(session, content):
@@ -171,27 +234,54 @@ def stream_user_message_with_agent_reply(session, content):
         content=trimmed,
     )
 
-    fallback_text = "Sorry, I couldn't reach the AI service just now."
+    recent_count = session.messages.values("id").order_by()[:15].count()
+    classification = classify_prompt(trimmed, message_count=recent_count)
+    log_event("chat_classify", session_id=session.pk, classification=classification)
+
+    use_local_ace_pipeline = _should_run_local_preprocess(trimmed, classification)
 
     try:
-        ace_result = run_ace_chat_turn(session, trimmed)
-        assistant_text = (ace_result.get("answer") or "").strip() or fallback_text
+        if use_local_ace_pipeline:
+            profile = get_or_create_profile_for_user(session.user.user)
+            memory_obj, _ = Memory.get_or_create_for_profile(profile)
+            bullets = memory_obj.retrieve_ranked_bullets(
+                query=trimmed,
+                learner_id=str(profile.user_id),
+                context_scope_id=str(session.pk),
+                top_k=10,
+            )
+            guidance = guidance_from_bullets(bullets)
+            conversation_context = _build_local_preprocess_context(session)
+
+            ace_plan = local_llm.preprocess_prompt(
+                trimmed,
+                guidance=guidance,
+                conversation_context=conversation_context,
+            )
+            if ace_plan:
+                log_event("chat_local_ace_ok", session_id=session.pk, plan_len=len(ace_plan), bullets_retrieved=len(bullets))
+                assistant_text = (generate_reply_text(ace_plan) or "").strip() or FALLBACK_TEXT
+            else:
+                ace_result = run_ace_chat_turn(session, trimmed)
+                assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
+        else:
+            ace_result = run_ace_chat_turn(session, trimmed)
+            assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
+
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
             answer_len=len(assistant_text),
-            bullets_retrieved=ace_result.get("num_bullets_retrieved", 0),
+            pipeline="local_ace" if use_local_ace_pipeline else "standard_ace",
         )
         _stream_debug_log(
             "ace_ok "
             f"session_id={session.pk} answer_len={len(assistant_text)} "
-            f"retrieved={ace_result.get('num_bullets_retrieved', 0)} "
+            f"pipeline={'local_ace' if use_local_ace_pipeline else 'standard_ace'} "
             f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
         )
     except Exception as exc:
-        print(f"[ACE] run_ace_chat_turn failed: {exc}", flush=True)
-        traceback.print_exc()
-        assistant_text = build_agent_reply_from_stream(trimmed)
+        assistant_text = FALLBACK_TEXT
         log_event(
             "chat_stream_ace_failed_fallback",
             session_id=session.pk,
@@ -205,16 +295,21 @@ def stream_user_message_with_agent_reply(session, content):
         )
 
     if not assistant_text:
-        assistant_text = build_agent_reply_from_stream(trimmed)
-    if not assistant_text:
-        assistant_text = fallback_text
+        assistant_text = FALLBACK_TEXT
 
     chunks = []
-    cursor = 0
     delta_count = 0
-    while cursor < len(assistant_text):
-        chunk = assistant_text[cursor:cursor + 48]
-        cursor += 48
+    if assistant_text == FALLBACK_TEXT:
+        chunk_queue = [assistant_text]
+    elif len(assistant_text) <= INITIAL_STREAM_CHUNK_SIZE:
+        chunk_queue = [assistant_text]
+    else:
+        chunk_queue = [
+            assistant_text[:INITIAL_STREAM_CHUNK_SIZE],
+            assistant_text[INITIAL_STREAM_CHUNK_SIZE:],
+        ]
+
+    for chunk in chunk_queue:
         if chunk:
             chunks.append(chunk)
             delta_count += 1
@@ -231,13 +326,13 @@ def stream_user_message_with_agent_reply(session, content):
             }
 
     if not chunks:
-        chunks.append(fallback_text)
-        assistant_text = fallback_text
+        chunks.append(FALLBACK_TEXT)
+        assistant_text = FALLBACK_TEXT
         _stream_debug_log(f"empty_answer_fallback session_id={session.pk}")
         yield {
             "type": "delta",
-            "content": fallback_text,
-            "html": str(render_assistant_markdown_html(fallback_text)),
+            "content": FALLBACK_TEXT,
+            "html": str(render_assistant_markdown_html(FALLBACK_TEXT)),
         }
 
     assistant_message = Message.objects.create(

@@ -1,6 +1,6 @@
 MEMORIA WEEK 3 PROGRESS NOTES
 
-These notes document the MEMORIA project's weekly progress for Feb 1 through Feb 6, 2026. They cover the project structure, security practices, GitHub workflow, views, templates, view-model-URL-template connection maps, challenges encountered, and future plans.
+These notes document the MEMORIA project's weekly progress for the week. They cover the project structure, security practices, GitHub workflow, views, templates, view-model-URL-template connection maps, challenges encountered, and future plans.
 
 ================================================================================
 
@@ -351,7 +351,7 @@ Challenges Encountered
 
 1. Template directory reorganization (three iterations)
 
-The template directory structure went through three major reorganizations between Feb 4 and Feb 6. The first layout placed all templates in a top-level templates/ directory alongside frontend build tooling (Vite, Tailwind, React). The second iteration moved everything into app/memoria/templates/, colocating templates with the memoria app. The final structure settled on a hybrid approach: templates/base.html lives at the project root for global inheritance, the standalone landing page sits at memoria/templates/memoria/landing.html, and each app owns its templates under app/<name>/templates/<name>/. Each reorganization required updating TEMPLATES["DIRS"] in base.py, fixing all {% extends %} and {% include %} paths, and verifying that Django's template loader resolved every reference correctly.
+The template directory structure went through three major reorganizations during the week. The first layout placed all templates in a top-level templates/ directory alongside frontend build tooling (Vite, Tailwind, React). The second iteration moved everything into app/memoria/templates/, colocating templates with the memoria app. The final structure settled on a hybrid approach: templates/base.html lives at the project root for global inheritance, the standalone landing page sits at memoria/templates/memoria/landing.html, and each app owns its templates under app/<name>/templates/<name>/. Each reorganization required updating TEMPLATES["DIRS"] in base.py, fixing all {% extends %} and {% include %} paths, and verifying that Django's template loader resolved every reference correctly.
 
 2. Frontend tooling pivot
 

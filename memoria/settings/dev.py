@@ -4,7 +4,7 @@ import os
 DEBUG = True
 ENABLE_DEV_EVENT_LOG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
 DATABASES = {
     'default': {

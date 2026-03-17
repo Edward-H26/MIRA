@@ -171,3 +171,101 @@ Section 6: Production Deployment Notes
 - Production database needs mock data seeding for Vega-Lite chart display.
 
 ================================================================================
+
+Section 7: Production Deployment Fixes
+=====================================================
+
+7.1 Challenge: CSRF_TRUSTED_ORIGINS format mismatch
+
+    Django's CSRF_TRUSTED_ORIGINS requires full URLs including the
+    https:// scheme (e.g., "https://miramemoria.com"), while
+    ALLOWED_HOSTS requires plain domain names without the scheme
+    (e.g., "miramemoria.com"). Using the same format for both settings
+    caused either CSRF validation failures or host header rejections.
+
+7.2 Solution: Separate formatting in prod_render.py
+
+    The production settings file maintains two distinct formatting
+    patterns. CSRF_TRUSTED_ORIGINS entries include the full scheme
+    prefix. ALLOWED_HOSTS entries strip the scheme, containing only
+    the domain name. This separation is explicitly documented in the
+    settings file to prevent future regressions.
+
+7.3 Challenge: Session count inflation in analytics
+
+    The analytics dashboard reported inflated session counts because
+    COUNT aggregations were counting all matching rows rather than
+    distinct sessions. A user with multiple messages per session would
+    inflate the session count proportionally to their message volume.
+
+7.4 Solution: distinct=True on COUNT aggregations
+
+    The get_analytics_dashboard_context_with_reports function was
+    updated to use distinct=True on all COUNT aggregations that operate
+    across joined tables. This ensures each session is counted once
+    regardless of how many messages it contains.
+
+7.5 Challenge: Missing production dependencies
+
+    The initial Render deployment failed to serve static files because
+    Django's development server static file handling is not available
+    in production. CSS, JavaScript, and image assets returned 404
+    responses.
+
+7.6 Solution: WhiteNoise for static file serving
+
+    WhiteNoise was added to requirements.txt and configured in the
+    production MIDDLEWARE stack. WhiteNoise serves static files directly
+    from the Django process without requiring a separate web server
+    (nginx or Apache) for static assets. This is the recommended
+    approach for Render deployments where a reverse proxy for static
+    files is not available.
+
+================================================================================
+
+Section 8: API Demos and Documentation
+=======================================
+
+8.1 Three API demonstration scripts
+
+    Three standalone Python scripts demonstrate alternative uses of the
+    public API:
+
+      Demo 1, Python aggregation (demo1_python_aggregation.py):
+        Fetches data from the active-users endpoint, computes total
+        active users, daily average, peak day, and busiest day of the
+        week using only the Python standard library.
+
+      Demo 2, pandas analysis (demo2_pandas_analysis.py):
+        Creates a DataFrame from API data, computes descriptive
+        statistics, Pearson correlation between active users and message
+        count, identifies top activity days, and produces a weekly
+        summary with groupby aggregation.
+
+      Demo 3, CSV export (demo3_csv_export.py):
+        Exports API response data to a CSV file suitable for import
+        into Excel or Google Sheets. Includes column headers and ISO
+        date formatting.
+
+8.2 Vega-Lite interactive chart specification
+
+    A Vega-Lite JSON specification was created for the public
+    active-users endpoint. The spec uses data.url referencing the
+    production API URL, enabling the chart to be rendered in the
+    Vega-Lite online editor at vega.github.io without any code changes.
+
+8.3 Mock data overhaul
+
+    The mock data generation was redesigned with two improvements:
+
+      Deterministic admin account: The tester account uses
+      get_or_create to ensure idempotent execution. Running the seed
+      script multiple times updates the existing account rather than
+      failing on duplicate constraints.
+
+      Realistic conversation patterns: 50+ conversations are distributed
+      with daily patterns reflecting real usage: 2 conversations on
+      weekdays, 1 on weekends, with activity spikes every 9th day.
+      This produces realistic-looking charts and analytics dashboards.
+
+================================================================================
