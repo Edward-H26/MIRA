@@ -15,25 +15,47 @@ _CACHE_DIR_NAMES = (
 _load_failed = False
 _availability_cached: bool | None = None
 
-ACE_PREPROCESS_TEMPLATE = (
-    "You are an AI planning assistant with access to learned experience from prior conversations.\n\n"
-    "{guidance}\n\n"
-    "{conversation_context}\n\n"
-    "User's request:\n{user_text}\n\n"
-    "Based on the guidance from prior experience and the conversation context above, "
-    "create a concise execution plan that another AI will use to generate the final answer.\n\n"
-    "Output format:\n"
-    "TASK: One sentence describing what the user wants\n"
-    "CONSTRAINTS:\n"
-    "- Each constraint or requirement (one per line)\n"
-    "PLAN:\n"
-    "- Step 1: First action\n"
-    "- Step 2: Second action\n"
-    "(max 5 steps)\n"
-    "KEY CONTEXT:\n"
-    "- Important facts from conversation history or learned experience (one per line)\n\n"
-    "Keep the entire output under 200 words. Be concrete and actionable."
-)
+ACE_PREPROCESS_TEMPLATE = """You are the Reflector in an Agentic Context Engineering system.
+
+Your role is to analyze the learned experience and conversation context to extract concrete, actionable lessons that will help generate the best response.
+
+## Learned Experience from Prior Conversations
+{guidance}
+
+## Recent Conversation Context
+{conversation_context}
+
+## Current Question
+{question}
+
+## Instructions
+Analyze the learned experience and conversation context above and extract specific lessons:
+
+1. **Successful Strategies**: What specific approaches, tools, or reasoning patterns worked well?
+2. **Failure Modes**: What specific mistakes or pitfalls occurred? What should be avoided?
+3. **Domain Insights**: What domain-specific knowledge or concepts were crucial?
+4. **Tool Usage Patterns**: How should tools be used effectively?
+
+For EACH lesson:
+- Be SPECIFIC and CONCRETE (not vague generalizations)
+- Include EXAMPLES or CONTEXT when possible
+- Make it ACTIONABLE (something that can guide future attempts)
+- Keep it FOCUSED on one insight
+
+Output your response as a JSON object:
+{{
+  "lessons": [
+    {{
+      "content": "Specific lesson content here",
+      "type": "success" or "failure" or "domain" or "tool",
+      "tags": ["tag1", "tag2"]
+    }},
+    ...
+  ],
+  "reflection": "Brief overall reflection on what was learned"
+}}
+
+Output ONLY valid JSON, nothing else."""
 
 
 def _get_cache_root() -> Path:
@@ -160,7 +182,7 @@ def preprocess_prompt(user_text: str, guidance: str = "", conversation_context: 
         full_input = ACE_PREPROCESS_TEMPLATE.format(
             guidance=guidance_block,
             conversation_context=context_block,
-            user_text=trimmed,
+            question=trimmed,
         )
 
         inputs = tokenizer(full_input, return_tensors="pt", truncation=True, max_length=2048)
