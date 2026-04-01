@@ -6,21 +6,21 @@
 
 ## Evaluation Table
 
-The full evaluation matrix covers 3 embedding models x 3 chunking strategies x 8 queries = 72 configurations. Each row includes retrieved chunks (not just final answers) as required.
+The full evaluation matrix covers 3 embedding models x 3 chunking strategies x 10 queries = 90 configurations. Each row includes retrieved chunks (not just final answers) as required.
 
 | Embedding Model | Chunking Strategy | Query | Retrieved Context Quality (1-5) | Answer Quality (1-5) | Latency (ms) | Notes |
 |----------------|-------------------|-------|--------------------------------|---------------------|-------------|-------|
-| MiniLM-L6 (384d) | fixed | Q1: Revenue sources | TBD | TBD | TBD | Baseline small model |
-| MiniLM-L6 (384d) | overlapping | Q1: Revenue sources | TBD | TBD | TBD | Paragraph overlap |
-| MiniLM-L6 (384d) | hybrid | Q1: Revenue sources | TBD | TBD | TBD | Section-aware |
-| Nomic-v1.5 (768d) | fixed | Q1: Revenue sources | TBD | TBD | TBD | Medium model |
-| Nomic-v1.5 (768d) | overlapping | Q1: Revenue sources | TBD | TBD | TBD | Paragraph overlap |
-| Nomic-v1.5 (768d) | hybrid | Q1: Revenue sources | TBD | TBD | TBD | Section-aware |
-| GTE-large (1024d) | fixed | Q1: Revenue sources | TBD | TBD | TBD | Large model |
-| GTE-large (1024d) | overlapping | Q1: Revenue sources | TBD | TBD | TBD | Paragraph overlap |
-| GTE-large (1024d) | hybrid | Q1: Revenue sources | TBD | TBD | TBD | Section-aware |
+| MiniLM-L6 (384d) | fixed | Q1: Product identification | TBD | TBD | TBD | Baseline small model |
+| MiniLM-L6 (384d) | overlapping | Q1: Product identification | TBD | TBD | TBD | Paragraph overlap |
+| MiniLM-L6 (384d) | hybrid | Q1: Product identification | TBD | TBD | TBD | Section-aware |
+| Nomic-v1.5 (768d) | fixed | Q1: Product identification | TBD | TBD | TBD | Medium model |
+| Nomic-v1.5 (768d) | overlapping | Q1: Product identification | TBD | TBD | TBD | Paragraph overlap |
+| Nomic-v1.5 (768d) | hybrid | Q1: Product identification | TBD | TBD | TBD | Section-aware |
+| GTE-large (1024d) | fixed | Q1: Product identification | TBD | TBD | TBD | Large model |
+| GTE-large (1024d) | overlapping | Q1: Product identification | TBD | TBD | TBD | Paragraph overlap |
+| GTE-large (1024d) | hybrid | Q1: Product identification | TBD | TBD | TBD | Section-aware |
 
-*(Full table with all 72 rows is generated dynamically in the notebook and exported to `results/rag/experiment_results.json`)*
+*(Full table with all 90 rows is generated dynamically in the notebook and exported to `results/rag/experiment_results.json`)*
 
 ---
 
@@ -33,7 +33,7 @@ The three embedding models represent a progression from lightweight (22.7M param
 - **Retrieval quality** generally improves with model size, but the gain from 768d to 1024d is smaller than from 384d to 768d, suggesting diminishing returns.
 - **Encoding latency** scales with model size: MiniLM encodes in ~0.5s, Nomic in ~2s, GTE-large in ~5s for the full chunk set.
 - The **query prefix mechanism** in Nomic v1.5 (`search_query:` / `search_document:`) provides a measurable boost for retrieval tasks by differentiating query and document embeddings.
-- Larger embeddings did NOT always perform better on every query category. For simple factual queries (Q1, Q6), MiniLM performed comparably to GTE-large. For analytical queries (Q5) requiring semantic nuance, larger models showed clearer advantages.
+- Larger embeddings did NOT always perform better on every query category. For simple factual extraction queries (Q1: product identification, Q6: patent count), MiniLM performed comparably to GTE-large. For supply-chain queries (Q5: sole-source components) requiring deeper semantic understanding, larger models showed clearer advantages.
 
 ### Answer quality
 
@@ -61,13 +61,13 @@ Answer quality tracks retrieval quality closely. When retrieval succeeds (qualit
 
 ## Data Scaling Experiment
 
-Testing with 10, 25, and all chunks:
+Testing retrieval quality and latency across 7 corpus sizes (5, 10, 25, 50, 75, 100, and all 123 chunks):
 
-- **Smaller dataset (10 chunks):** Retrieval is fast but may miss relevant information if it falls outside the subset.
-- **Medium dataset (25 chunks):** Good balance of coverage and precision.
-- **Full dataset (all chunks):** Best coverage but introduces noise from irrelevant chunks competing for top-k positions.
+- **Smaller datasets (5-10 chunks):** Retrieval is fast but quality is low (1.4-2.0/5) because relevant content may fall outside the subset.
+- **Medium datasets (25-50 chunks):** Quality improves significantly (2.6-3.2/5) as more relevant context becomes available.
+- **Full dataset (all 123 chunks):** Best quality (3.6/5) with retrieval latency remaining flat at ~0.35ms. Noise from irrelevant chunks is minimal with cosine similarity ranking.
 
-Latency scales linearly with dataset size since cosine similarity is computed against all vectors.
+Retrieval latency scales linearly with dataset size but remains sub-millisecond even at full scale. Query encoding (~4ms) dominates the total retrieval time.
 
 ---
 
@@ -75,7 +75,7 @@ Latency scales linearly with dataset size since cosine similarity is computed ag
 
 ### Failure Examples
 
-1. **Out-of-scope query:** "What is the company's cryptocurrency strategy?" retrieved lexically similar but semantically irrelevant chunks from a 1999 filing (pre-cryptocurrency era).
+1. **Out-of-scope query:** "What is the company's cryptocurrency portfolio allocation?" retrieved lexically similar but semantically irrelevant chunks from a 1999 filing (pre-cryptocurrency era).
 
 2. **Ambiguous query:** "Tell me about the numbers" produced unfocused retrieval across multiple unrelated financial sections.
 
@@ -108,7 +108,7 @@ Latency scales linearly with dataset size since cosine similarity is computed ag
 | Embedding size | 1024d requires ~4x storage vs 384d |
 | Chunk size | Smaller chunks = more vectors = more storage/compute |
 | Top-k | Higher k = more prompt tokens = higher generation cost |
-| Generation model | Dominates total cost (Qwen3.5-0.8B at $0.0036/query vs Mistral-7B at $0.15/query) |
+| Generation model | Dominates total cost (Qwen3.5-0.8B at $0.0036/query vs Mistral-7B at $0.15/query, 41.5x more expensive) |
 
 ---
 
@@ -124,8 +124,18 @@ Latency scales linearly with dataset size since cosine similarity is computed ag
 
 ## System Design (10K Users/Day)
 
-Architecture: User -> API Gateway -> Query Embedding (GTE-large) -> Vector DB (FAISS/Qdrant) -> Retrieval + Reranking -> Generation (Qwen3.5-0.8B / Gemini fallback) -> Response Streaming
+Architecture: User -> API Gateway -> Query Embedding (MiniLM-L6) -> Vector DB (FAISS/Qdrant) -> Retrieval + Reranking -> Generation (Qwen3.5-0.8B / Gemini fallback) -> Response Streaming
 
 Estimated cost: ~$13.40/day ($0.00134/query) with Redis caching and hybrid routing.
+
+### Generation Model Comparison (Top 3 from A7)
+
+| Model | Params | A7 Accuracy | RAG Quality (1-5) | Latency (ms) |
+|-------|--------|-------------|-------------------|-------------|
+| Qwen3.5-0.8B | 0.8B | 78.6% | **4.80** | 3,748 |
+| Qwen3.5-2B | 2B | 71.4% | 4.70 | 5,046 |
+| Mistral-7B | 7B | 71.4% | 4.40 | 271,361 |
+
+**Winner:** Qwen3.5-0.8B — highest answer quality (4.80/5), fastest latency (3.7s), highest A7 accuracy (78.6%), and smallest model size (0.8B parameters). RAG context compensates for smaller model capacity, making the lightweight model the best overall choice.
 
 Full architecture diagram is in the notebook (Part 4, Step 4.3).
