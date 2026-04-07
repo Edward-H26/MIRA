@@ -1,0 +1,93 @@
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.agent-detail-form {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 24px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.agent-detail-form label {
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.agent-detail-form input,
+.agent-detail-form textarea,
+.agent-detail-form select {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+    outline: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.agent-detail-form input:focus,
+.agent-detail-form textarea:focus,
+.agent-detail-form select:focus {
+    border-color: #00327d;
+    box-shadow: 0 0 0 2px rgba(0, 50, 125, 0.15);
+}
+
+.agent-detail-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.agent-detail-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.agent-detail-form-actions button {
+    border: none;
+    border-radius: 0.5rem;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.agent-detail-form-actions .btn-save {
+    color: #fff;
+    background: #00327d;
+}
+
+.agent-detail-form-actions .btn-save:hover {
+    background: #002561;
+}
+
+.agent-detail-form-actions .btn-delete {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.agent-detail-form-actions .btn-delete:hover {
+    background: rgba(220, 38, 38, 0.14);
+}
+
+@media (max-width: 640px) {
+    .max-w-\[1400px\] {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

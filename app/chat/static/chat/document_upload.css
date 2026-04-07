@@ -1,0 +1,15 @@
+.upload-dropzone input[type="file"] {
+    display: none;
+}
+
+.upload-dropzone.is-dragover {
+    border-color: #00327d !important;
+    background-color: rgba(0, 50, 125, 0.05);
+}
+
+@media (max-width: 768px) {
+    .max-w-\[1400px\] {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

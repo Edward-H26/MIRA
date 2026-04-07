@@ -1,9 +1,9 @@
 function getCSRFToken() {
     const cookie = document.cookie.split("; ").find(c => c.startsWith("csrftoken="))
     if (cookie) return cookie.split("=")[1]
-    const meta = document.querySelector('meta[name="csrf-token"]')
+    const meta = document.querySelector("meta[name='csrf-token']")
     if (meta) return meta.content
-    const input = document.querySelector('input[name="csrfmiddlewaretoken"]')
+    const input = document.querySelector("input[name='csrfmiddlewaretoken']")
     if (input) return input.value
     return ""
 }
@@ -13,7 +13,12 @@ function getAppRoutes() {
         home: "/home/",
         chatMemory: "/chat/memory/",
         chatAnalytics: "/chat/analytics/",
+        chatDashboard: "/chat/dashboard/",
+        chatAgentList: "/chat/agents/",
+        chatActivityLog: "/chat/activity/",
+        chatDocumentUpload: "/chat/document/upload/",
         chatSessionsApi: "/chat/api/sessions/",
+        chatSemanticSearchApi: "/chat/api/semantic-search/",
         chatConversationDetailTemplate: "/chat/c/0/",
         chatSessionRenameTemplate: "/chat/c/0/rename/",
         chatSessionDeleteTemplate: "/chat/c/0/delete/",
@@ -26,318 +31,157 @@ function routeFromTemplate(template, id) {
     return template.replace("/0/", `/${id}/`)
 }
 
-function initSidebar() {
+function initHeaderNav() {
+    const path = window.location.pathname
     const routes = getAppRoutes()
-    const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed"
-    const sidebar = document.getElementById("sidebar")
-    const sidebarOverlay = document.getElementById("sidebar-overlay")
-    const mainContent = document.getElementById("main-content")
-    const collapseArrow = document.getElementById("collapse-arrow")
-    const expandArrow = document.getElementById("expand-arrow")
-    const collapseBtn = document.getElementById("collapse-btn")
-    const newChatText = document.getElementById("new-chat-text")
-    const newChatContainer = document.getElementById("new-chat-container")
+    const headerLinks = document.querySelectorAll("[data-header-nav]")
 
-    if (!sidebar || !mainContent) return
+    headerLinks.forEach(link => {
+        const key = link.dataset.headerNav
+        let isActive = false
 
-    const menuLabels = document.querySelectorAll(".sidebar-menu-label")
-    const sectionLabels = document.querySelectorAll(".sidebar-section-label")
-    const conversationItems = document.querySelectorAll(".conversation-item")
-    const conversationActions = document.querySelectorAll(".conversation-actions")
-    const navItems = document.querySelectorAll("[data-nav]")
-    const sidebarContent = sidebar.querySelector(".sidebar-content")
-    const searchModalPanel = document.getElementById("search-modal-panel")
+        if (key === "chat") {
+            const homeNoSlash = routes.home.endsWith("/") ? routes.home.slice(0, -1) : routes.home
+            const convPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+            isActive = path === routes.home || path === homeNoSlash || path.startsWith(convPrefix)
+        } else if (key === "analytics") {
+            isActive = path.startsWith(routes.chatAnalytics)
+        } else if (key === "agents") {
+            isActive = path.startsWith(routes.chatAgentList)
+        }
 
-    function getCollapsedMainOffset() {
-        const keepOffsetForCollapsed = mainContent.querySelector("[data-collapsed-offset='sidebar']") !== null
-        return keepOffsetForCollapsed ? "80px" : "0"
-    }
-
-    function syncSearchModalPosition() {
-        if (!searchModalPanel) return
-        const isDesktop = window.innerWidth >= 1024
-        const isCollapsed = sidebar.dataset.collapsed === "true"
-        searchModalPanel.style.left = (isDesktop && !isCollapsed)
-            ? "calc((20vw + 100vw) / 2)"
-            : "50%"
-    }
-
-    function setSidebarExpanded() {
-        sidebar.classList.remove("collapsed")
-        menuLabels.forEach(el => el.style.opacity = "1")
-        sectionLabels.forEach(el => el.classList.remove("hidden"))
-        conversationItems.forEach(el => el.classList.remove("hidden"))
-        conversationActions.forEach(el => el.classList.remove("hidden"))
-        if (newChatText) newChatText.classList.remove("hidden")
-        if (newChatContainer) newChatContainer.classList.remove("hidden")
-        syncSearchModalPosition()
-    }
-
-    function setSidebarCollapsed() {
-        sidebar.classList.add("collapsed")
-        menuLabels.forEach(el => el.style.opacity = "0")
-        sectionLabels.forEach(el => el.classList.add("hidden"))
-        conversationItems.forEach(el => el.classList.add("hidden"))
-        conversationActions.forEach(el => el.classList.add("hidden"))
-        if (newChatText) newChatText.classList.add("hidden")
-        if (newChatContainer) newChatContainer.classList.add("hidden")
-        syncSearchModalPosition()
-    }
-
-    function toggleSidebarCollapse() {
-        const isCollapsed = sidebar.dataset.collapsed === "true"
-
-        if (isCollapsed) {
-            sidebar.dataset.collapsed = "false"
-            sessionStorage.setItem(SIDEBAR_COLLAPSED_KEY, "false")
-            mainContent.style.left = "20vw"
-            if (collapseArrow) collapseArrow.classList.remove("hidden")
-            if (expandArrow) expandArrow.classList.add("hidden")
-            if (collapseBtn) collapseBtn.title = "Collapse sidebar"
-            setSidebarExpanded()
+        if (isActive) {
+            link.classList.remove("text-mm-muted")
+            link.classList.add("text-mm-primary")
         } else {
-            sidebar.dataset.collapsed = "true"
-            sessionStorage.setItem(SIDEBAR_COLLAPSED_KEY, "true")
-            mainContent.style.left = getCollapsedMainOffset()
-            if (collapseArrow) collapseArrow.classList.add("hidden")
-            if (expandArrow) expandArrow.classList.remove("hidden")
-            if (collapseBtn) collapseBtn.title = "Expand sidebar"
-            setSidebarCollapsed()
+            link.classList.add("text-mm-muted")
+            link.classList.remove("text-mm-primary")
         }
-    }
+    })
+}
 
-    function openSidebar() {
-        sidebar.classList.add("sidebar-open")
-        sidebar.dataset.collapsed = "false"
-        if (sidebarOverlay) sidebarOverlay.classList.remove("hidden")
-        setSidebarExpanded()
-    }
+function initSidebarNav() {
+    const path = window.location.pathname
+    const routes = getAppRoutes()
+    const sidebarLinks = document.querySelectorAll("[data-sidebar-nav]")
 
-    function closeSidebar() {
-        if (window.innerWidth < 1024) {
-            sidebar.classList.remove("sidebar-open")
-            if (sidebarOverlay) sidebarOverlay.classList.add("hidden")
-        }
-    }
+    sidebarLinks.forEach(link => {
+        const key = link.dataset.sidebarNav
+        let isActive = false
 
-    function selectConversation(id, shouldCloseSidebar = true) {
-        document.querySelectorAll(".conversation-item").forEach(item => {
-            const isSelected = item.dataset.id === id
-            item.dataset.selected = isSelected
-            const content = item.querySelector(".conversation-content")
-            if (isSelected) {
-                content.classList.add("bg-black/5")
-                content.classList.remove("hover:bg-black/5")
-            } else {
-                content.classList.remove("bg-black/5")
-                content.classList.add("hover:bg-black/5")
-            }
-        })
-
-        if (shouldCloseSidebar && window.innerWidth < 1024) {
-            closeSidebar()
-        }
-    }
-
-    function renameConversation(id) {
-        const item = document.querySelector(`.conversation-item[data-id="${id}"]`)
-        if (!item) return
-        const titleEl = item.querySelector(".conversation-title")
-        const actionsEl = item.querySelector(".conversation-actions")
-        const currentTitle = titleEl.textContent.trim()
-
-        if (actionsEl) actionsEl.style.display = "none"
-
-        const contentEl = item.querySelector(".conversation-content")
-        const originalContent = contentEl.innerHTML
-
-        const wrapper = document.createElement("div")
-        wrapper.className = "flex items-center gap-2"
-        wrapper.style.padding = "4px"
-
-        const input = document.createElement("input")
-        input.type = "text"
-        input.value = currentTitle
-        input.className = "flex-1 min-w-0 rounded border border-black/20 bg-white px-2 py-1 text-sm font-inter focus:outline-none focus:border-blue-400"
-
-        const saveBtn = document.createElement("button")
-        saveBtn.innerHTML = '<svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
-        saveBtn.className = "flex-shrink-0 p-1 rounded hover:bg-black/10"
-
-        wrapper.appendChild(input)
-        wrapper.appendChild(saveBtn)
-
-        contentEl.innerHTML = ""
-        contentEl.appendChild(wrapper)
-
-        input.focus()
-        input.select()
-
-        const saveEdit = async () => {
-            const newTitle = input.value.trim() || "New Chat"
-            contentEl.innerHTML = originalContent
-            contentEl.querySelector(".conversation-title").textContent = newTitle
-            if (actionsEl) actionsEl.style.display = ""
-            try {
-                const formData = new FormData()
-                formData.append("title", newTitle)
-                await fetch(routeFromTemplate(routes.chatSessionRenameTemplate, id), {
-                    method: "POST",
-                    headers: { "X-CSRFToken": getCSRFToken() },
-                    body: formData
-                })
-            } catch (_) {}
+        if (key === "chat") {
+            const homeNoSlash = routes.home.endsWith("/") ? routes.home.slice(0, -1) : routes.home
+            const convPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+            isActive = path === routes.home || path === homeNoSlash || path.startsWith(convPrefix)
+        } else if (key === "memory") {
+            const memoryDetailPrefix = routes.chatMemoryDetailTemplate.replace("0/", "")
+            isActive = path.startsWith(routes.chatMemory) || path.startsWith(memoryDetailPrefix)
+        } else if (key === "analytics") {
+            isActive = path.startsWith(routes.chatAnalytics)
+        } else if (key === "dashboard") {
+            isActive = path.startsWith(routes.chatDashboard)
+        } else if (key === "agents") {
+            isActive = path.startsWith(routes.chatAgentList)
+        } else if (key === "activity") {
+            isActive = path.startsWith(routes.chatActivityLog)
+        } else if (key === "documents") {
+            isActive = path.startsWith(routes.chatDocumentUpload)
         }
 
-        const cancelEdit = () => {
-            contentEl.innerHTML = originalContent
-            if (actionsEl) actionsEl.style.display = ""
-        }
+        link.classList.toggle("is-active", isActive)
+    })
+}
 
-        saveBtn.onclick = saveEdit
-        input.onkeydown = (e) => {
-            if (e.key === "Enter") saveEdit()
-            if (e.key === "Escape") cancelEdit()
-        }
-        input.onblur = (e) => {
-            if (e.relatedTarget !== saveBtn) {
-                saveEdit()
-            }
-        }
-    }
+function renameConversation(id) {
+    const routes = getAppRoutes()
+    const item = document.querySelector(`.conv-sidebar-item[data-id="${id}"]`)
+    if (!item) return
+    const titleEl = item.querySelector(".conv-sidebar-title")
+    const actionsEl = item.querySelector(".conv-sidebar-actions")
+    const currentTitle = titleEl.textContent.trim()
 
-    function deleteConversation(id) {
-        if (!confirm("Are you sure you want to delete this conversation?")) return
-        const item = document.querySelector(`.conversation-item[data-id="${id}"]`)
-        if (item) item.remove()
-        fetch(routeFromTemplate(routes.chatSessionDeleteTemplate, id), {
-            method: "POST",
-            headers: { "X-CSRFToken": getCSRFToken() }
-        }).then(res => {
-            if (res.ok) {
-                const conversationPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
-                const pattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
-                const match = window.location.pathname.match(pattern)
-                if (match && match[1] === String(id)) {
-                    window.location.href = routes.home
-                }
-            }
-        }).catch(() => {})
-    }
+    if (actionsEl) actionsEl.style.display = "none"
 
-    function createNewChat() {
-        window.location.href = routes.home
-    }
+    const contentEl = item.querySelector(".conv-sidebar-content")
+    const originalContent = contentEl.innerHTML
 
-    function setActiveNav() {
-        if (!navItems.length) return
-        const path = window.location.pathname
-        let activeKey = ""
+    const wrapper = document.createElement("div")
+    wrapper.className = "flex items-center gap-2 px-1"
 
-        const homeNoSlash = routes.home.endsWith("/") ? routes.home.slice(0, -1) : routes.home
-        const memoryPrefix = routes.chatMemory
-        const memoryDetailPrefix = routes.chatMemoryDetailTemplate.replace("0/", "")
-        const analyticsPrefix = routes.chatAnalytics
+    const input = document.createElement("input")
+    input.type = "text"
+    input.value = currentTitle
+    input.className = "flex-1 min-w-0 rounded border border-mm-border bg-white px-2 py-1 text-sm font-inter focus:outline-none focus:ring-1 focus:ring-mm-primary"
 
-        if (path === routes.home || path === homeNoSlash) {
-            activeKey = "new-chat"
-        } else if (path.startsWith(memoryPrefix) || path.startsWith(memoryDetailPrefix)) {
-            activeKey = "memory"
-        } else if (path.startsWith(analyticsPrefix)) {
-            activeKey = "analytics"
-        }
+    const saveBtn = document.createElement("button")
+    saveBtn.innerHTML = '<svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+    saveBtn.className = "flex-shrink-0 p-1 rounded hover:bg-mm-hover"
 
-        navItems.forEach(item => {
-            const isActive = item.dataset.nav === activeKey
-            item.classList.toggle("is-active", isActive)
-        })
+    wrapper.appendChild(input)
+    wrapper.appendChild(saveBtn)
 
-        const conversationPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
-        const conversationPattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
-        const conversationMatch = path.match(conversationPattern)
-        if (conversationMatch) {
-            selectConversation(conversationMatch[1], false)
-        }
-    }
+    contentEl.innerHTML = ""
+    contentEl.appendChild(wrapper)
 
-    function restoreSidebarScroll() {
-        if (!sidebarContent) return
-        const stored = sessionStorage.getItem("sidebarScrollTop")
-        if (stored) {
-            const top = Number(stored)
-            if (!Number.isNaN(top)) {
-                requestAnimationFrame(() => {
-                    sidebarContent.scrollTop = top
-                })
-            }
-            sessionStorage.removeItem("sidebarScrollTop")
-        }
-    }
+    input.focus()
+    input.select()
 
-    function bindSidebarScrollPersistence() {
-        if (!sidebarContent) return
-        sidebarContent.querySelectorAll("a").forEach(link => {
-            link.addEventListener("click", () => {
-                sessionStorage.setItem("sidebarScrollTop", String(sidebarContent.scrollTop))
+    const saveEdit = async () => {
+        const newTitle = input.value.trim() || "New Chat"
+        contentEl.innerHTML = originalContent
+        contentEl.querySelector(".conv-sidebar-title").textContent = newTitle
+        if (actionsEl) actionsEl.style.display = ""
+        try {
+            const formData = new FormData()
+            formData.append("title", newTitle)
+            await fetch(routeFromTemplate(routes.chatSessionRenameTemplate, id), {
+                method: "POST",
+                headers: { "X-CSRFToken": getCSRFToken() },
+                body: formData
             })
-        })
+        } catch (_) {}
     }
 
-    window.addEventListener("resize", () => {
-        if (window.innerWidth >= 1024) {
-            sidebar.classList.remove("sidebar-open")
-            if (sidebarOverlay) sidebarOverlay.classList.add("hidden")
-        }
-        syncSearchModalPosition()
-    })
+    const cancelEdit = () => {
+        contentEl.innerHTML = originalContent
+        if (actionsEl) actionsEl.style.display = ""
+    }
 
-    document.addEventListener("keydown", function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === "n") {
-            e.preventDefault()
-            createNewChat()
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-            e.preventDefault()
-            openSearchModal()
-        }
-        if (e.key === "Escape" && sidebarOverlay && !sidebarOverlay.classList.contains("hidden")) {
-            closeSidebar()
-        }
-    })
-
-    if (window.innerWidth < 1024) {
-        mainContent.style.left = "0"
-    } else {
-        const persistedCollapsed = sessionStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true"
-        if (persistedCollapsed) {
-            sidebar.dataset.collapsed = "true"
-            mainContent.style.left = getCollapsedMainOffset()
-            if (collapseArrow) collapseArrow.classList.add("hidden")
-            if (expandArrow) expandArrow.classList.remove("hidden")
-            if (collapseBtn) collapseBtn.title = "Expand sidebar"
-            setSidebarCollapsed()
-        } else {
-            sidebar.dataset.collapsed = "false"
-            mainContent.style.left = "20vw"
-            if (collapseArrow) collapseArrow.classList.remove("hidden")
-            if (expandArrow) expandArrow.classList.add("hidden")
-            if (collapseBtn) collapseBtn.title = "Collapse sidebar"
-            setSidebarExpanded()
+    saveBtn.onclick = saveEdit
+    input.onkeydown = (e) => {
+        if (e.key === "Enter") saveEdit()
+        if (e.key === "Escape") cancelEdit()
+    }
+    input.onblur = (e) => {
+        if (e.relatedTarget !== saveBtn) {
+            saveEdit()
         }
     }
-    syncSearchModalPosition()
+}
 
-    window.toggleSidebarCollapse = toggleSidebarCollapse
-    window.openSidebar = openSidebar
-    window.closeSidebar = closeSidebar
-    window.selectConversation = selectConversation
-    window.renameConversation = renameConversation
-    window.deleteConversation = deleteConversation
-    window.createNewChat = createNewChat
+function deleteConversation(id) {
+    const routes = getAppRoutes()
+    if (!confirm("Are you sure you want to delete this conversation?")) return
+    const item = document.querySelector(`.conv-sidebar-item[data-id="${id}"]`)
+    if (item) item.remove()
+    fetch(routeFromTemplate(routes.chatSessionDeleteTemplate, id), {
+        method: "POST",
+        headers: { "X-CSRFToken": getCSRFToken() }
+    }).then(res => {
+        if (res.ok) {
+            const conversationPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+            const pattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
+            const match = window.location.pathname.match(pattern)
+            if (match && match[1] === String(id)) {
+                window.location.href = routes.home
+            }
+        }
+    }).catch(() => {})
+}
 
-    setActiveNav()
-    restoreSidebarScroll()
-    bindSidebarScrollPersistence()
+function createNewChat() {
+    const routes = getAppRoutes()
+    window.location.href = routes.home
 }
 
 function initSearchModal() {
@@ -346,34 +190,13 @@ function initSearchModal() {
     const input = document.getElementById("search-modal-input")
     const resultsEl = document.getElementById("search-modal-results")
     const emptyEl = document.getElementById("search-modal-empty")
-    const appShell = document.querySelector(".bg-bg-surface")
     if (!modal || !input) return
 
     let debounceTimer = null
-    let restoreInert = null
-
-    function lockBackground() {
-        document.documentElement.classList.add("search-modal-open")
-        document.body.classList.add("search-modal-open")
-        if (appShell && appShell !== modal) {
-            restoreInert = appShell.hasAttribute("inert") ? null : appShell
-            appShell.setAttribute("inert", "")
-        }
-    }
-
-    function unlockBackground() {
-        document.documentElement.classList.remove("search-modal-open")
-        document.body.classList.remove("search-modal-open")
-        if (restoreInert) {
-            restoreInert.removeAttribute("inert")
-            restoreInert = null
-        } else if (appShell && appShell.hasAttribute("inert")) {
-            appShell.removeAttribute("inert")
-        }
-    }
 
     function open() {
-        lockBackground()
+        document.documentElement.classList.add("search-modal-open")
+        document.body.classList.add("search-modal-open")
         modal.classList.remove("hidden")
         input.value = ""
         resultsEl.innerHTML = ""
@@ -386,7 +209,8 @@ function initSearchModal() {
         input.value = ""
         resultsEl.innerHTML = ""
         emptyEl.classList.add("hidden")
-        unlockBackground()
+        document.documentElement.classList.remove("search-modal-open")
+        document.body.classList.remove("search-modal-open")
     }
 
     modal.addEventListener("click", (e) => {
@@ -400,6 +224,43 @@ function initSearchModal() {
         }
     })
 
+    function renderSessionResult(s) {
+        const a = document.createElement("a")
+        a.href = s.url
+        a.className = "flex flex-col gap-0.5 px-3 py-2.5 rounded-lg text-inherit no-underline transition-colors hover:bg-mm-hover"
+        const title = document.createElement("span")
+        title.className = "font-inter text-[14px] font-medium text-mm-text"
+        title.textContent = s.title || "Untitled"
+        const time = document.createElement("span")
+        time.className = "font-inter text-[12px] text-mm-light"
+        time.textContent = new Date(s.updated_at).toLocaleDateString()
+        a.appendChild(title)
+        a.appendChild(time)
+        return a
+    }
+
+    function renderMemoryResult(m) {
+        const a = document.createElement("a")
+        a.href = routes.chatMemory
+        a.className = "flex flex-col gap-0.5 px-3 py-2.5 rounded-lg text-inherit no-underline transition-colors hover:bg-mm-hover"
+        const content = document.createElement("span")
+        content.className = "font-inter text-[14px] font-medium text-mm-text truncate"
+        content.textContent = m.content.length > 80 ? m.content.slice(0, 80) + "..." : m.content
+        const meta = document.createElement("span")
+        meta.className = "font-inter text-[12px] text-mm-light"
+        meta.textContent = `Similarity: ${(m.similarity * 100).toFixed(0)}% \u00b7 ${m.topic || "Memory"}`
+        a.appendChild(content)
+        a.appendChild(meta)
+        return a
+    }
+
+    function renderSectionHeader(text) {
+        const header = document.createElement("div")
+        header.className = "font-inter text-[11px] font-semibold text-mm-muted uppercase tracking-[0.5px] px-3 py-2 mt-1"
+        header.textContent = text
+        return header
+    }
+
     input.addEventListener("input", () => {
         clearTimeout(debounceTimer)
         const q = input.value.trim()
@@ -409,45 +270,86 @@ function initSearchModal() {
             return
         }
         debounceTimer = setTimeout(() => {
-            fetch(`${routes.chatSessionsApi}?q=${encodeURIComponent(q)}`)
-                .then(r => r.json())
-                .then(data => {
-                    resultsEl.innerHTML = ""
-                    if (!data.results || data.results.length === 0) {
-                        emptyEl.classList.remove("hidden")
-                        return
-                    }
-                    emptyEl.classList.add("hidden")
-                    data.results.forEach(s => {
-                        const a = document.createElement("a")
-                        a.href = s.url
-                        a.style.cssText = "display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: inherit; transition: background 0.15s;"
-                        a.onmouseenter = () => { a.style.background = "rgba(0,0,0,0.04)" }
-                        a.onmouseleave = () => { a.style.background = "transparent" }
-                        const title = document.createElement("span")
-                        title.style.cssText = "font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; color: #333;"
-                        title.textContent = s.title || "Untitled"
-                        const time = document.createElement("span")
-                        time.style.cssText = "font-family: Inter, sans-serif; font-size: 12px; color: #999;"
-                        time.textContent = new Date(s.updated_at).toLocaleDateString()
-                        a.appendChild(title)
-                        a.appendChild(time)
-                        resultsEl.appendChild(a)
-                    })
-                })
-                .catch(() => {
+            const sessionsPromise = fetch(`${routes.chatSessionsApi}?q=${encodeURIComponent(q)}`)
+                .then(r => r.json()).catch(() => ({ results: [] }))
+            const semanticPromise = fetch(`${routes.chatSemanticSearchApi}?q=${encodeURIComponent(q)}&top_k=5`)
+                .then(r => r.json()).catch(() => ({ results: [] }))
+
+            Promise.all([sessionsPromise, semanticPromise]).then(([sessionData, memoryData]) => {
+                resultsEl.innerHTML = ""
+                const sessions = sessionData.results || []
+                const memories = (memoryData.results || []).filter(m => m.similarity >= 0.30)
+                if (sessions.length === 0 && memories.length === 0) {
                     emptyEl.classList.remove("hidden")
-                })
-        }, 250)
+                    return
+                }
+                emptyEl.classList.add("hidden")
+                if (sessions.length > 0) {
+                    resultsEl.appendChild(renderSectionHeader("Conversations"))
+                    sessions.forEach(s => resultsEl.appendChild(renderSessionResult(s)))
+                }
+                if (memories.length > 0) {
+                    resultsEl.appendChild(renderSectionHeader("Semantic Matches"))
+                    memories.forEach(m => resultsEl.appendChild(renderMemoryResult(m)))
+                }
+            })
+        }, 300)
     })
 
     window.openSearchModal = open
     window.closeSearchModal = close
 }
 
+function initConversationSidebarSearch() {
+    const searchInput = document.getElementById("conv-sidebar-search")
+    if (!searchInput) return
+
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.trim().toLowerCase()
+        const items = document.querySelectorAll(".conv-sidebar-item")
+        items.forEach(item => {
+            const title = item.querySelector(".conv-sidebar-title")
+            if (!title) return
+            const matches = !query || title.textContent.toLowerCase().includes(query)
+            item.style.display = matches ? "" : "none"
+        })
+    })
+}
+
+function toggleConvSidebar() {
+    const sidebar = document.querySelector("[data-conv-sidebar]")
+    if (!sidebar) return
+    const isHidden = sidebar.classList.contains("max-lg:hidden")
+    if (isHidden) {
+        sidebar.classList.remove("max-lg:hidden")
+        sidebar.classList.add("fixed", "inset-0", "z-50", "w-full")
+    } else {
+        sidebar.classList.add("max-lg:hidden")
+        sidebar.classList.remove("fixed", "inset-0", "z-50", "w-full")
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    initSidebar()
+    initHeaderNav()
+    initSidebarNav()
     initSearchModal()
+    initConversationSidebarSearch()
+
+    document.addEventListener("keydown", function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+            e.preventDefault()
+            createNewChat()
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+            e.preventDefault()
+            if (window.openSearchModal) window.openSearchModal()
+        }
+    })
+
+    window.toggleConvSidebar = toggleConvSidebar
+    window.renameConversation = renameConversation
+    window.deleteConversation = deleteConversation
+    window.createNewChat = createNewChat
 
     const filterButton = document.getElementById("memory-filter-btn")
     const filterMenu = document.getElementById("memory-filter-menu")

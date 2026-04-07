@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Skill Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/skills.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <div class="mb-8">
+        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px]">Skill Marketplace</h1>
+        <p class="font-inter text-[#64748b] text-[16px] mt-1">Pre-built template skills to supercharge your agents</p>
+    </div>
+
+    <form method="get" class="flex gap-3 items-center mb-8 flex-wrap">
+        <input
+            type="text"
+            name="q"
+            class="flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white outline-none focus:border-[#00327d] focus:ring-2 focus:ring-[#00327d]/10 transition"
+            placeholder="Search skills..."
+            value="{{ searchQuery }}"
+            autocomplete="off"
+        >
+        <select name="category" class="px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white cursor-pointer" onchange="this.form.submit()">
+            <option value="">All categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if activeCategory == cat.id %}selected{% endif %}>{{ cat.label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="hidden"></button>
+        <span class="font-inter text-[13px] text-[#64748b] whitespace-nowrap">{{ skills|length }} of {{ totalCount }} skills</span>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for skill in skills %}
+        <a href="{% url 'chat:skill_marketplace_detail' skill_id=skill.id %}" class="border border-[#e2e8f0] rounded-2xl p-6 bg-white hover:shadow-lg transition-shadow block no-underline">
+            <div class="flex items-center justify-between mb-3">
+                <span class="font-inter font-bold text-[#0f172a] text-[16px]">{{ skill.name }}</span>
+            </div>
+            <p class="font-inter text-[#64748b] text-[14px] line-clamp-3 mb-4 leading-relaxed">{{ skill.description }}</p>
+            <div class="flex items-center justify-between">
+                <span class="bg-[#00327d]/10 text-[#00327d] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
+                <span class="text-[#00327d] hover:text-[#002561] font-semibold text-[13px]">View details &rarr;</span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-16 font-inter text-[14px] text-[#64748b]">No skills found matching your search.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

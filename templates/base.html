@@ -5,274 +5,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Dashboard{% endblock %}</title>
+    <title>{% block title %}Memoria Agent{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "mm-primary": "#00327d",
+                        "mm-primary-hover": "#002561",
+                        "mm-header": "#f6fafe",
+                        "mm-sidebar": "#f0f4f8",
+                        "mm-border": "#e2e8f0",
+                        "mm-text": "#0f172a",
+                        "mm-muted": "#64748b",
+                        "mm-light": "#94a3b8",
+                        "mm-icon": "#434653",
+                        "mm-nav": "#475569",
+                        "mm-hover": "#f0f4f8",
+                        "mm-card": "#f8fafc",
+                    },
+                    fontFamily: {
+                        "manrope": ["Manrope", "sans-serif"],
+                        "inter": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={% now 'U' %}">
 
     {% block extra_css %}{% endblock %}
+    <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
 </head>
-<body class="min-h-screen">
+<body class="h-screen overflow-hidden">
     {% block body %}
-    <div class="bg-bg-surface rounded-none overflow-hidden relative shadow-none" style="width: 100vw; height: 100vh;">
-        <div class="absolute inset-0 w-full h-full opacity-70 pointer-events-none gradient-background"></div>
+    <div class="flex flex-col h-screen w-screen overflow-hidden">
 
-        <!-- Mobile Sidebar Overlay -->
-        <div
-            id="sidebar-overlay"
-            class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm hidden lg:hidden"
-            onclick="closeSidebar()"
-        ></div>
+        <!-- Header -->
+        <header id="app-header" class="h-[64px] w-full flex-shrink-0">
+            <div class="flex items-center justify-between h-full px-8">
+                <!-- Logo -->
+                <a href="{% if user.is_authenticated %}{% url 'memoria:home' %}{% else %}{% url 'memoria:landing' %}{% endif %}" class="font-manrope font-extrabold text-mm-primary text-[20px] tracking-[-1px] leading-[28px] flex-shrink-0">
+                    Memoria&nbsp;&nbsp;Agent
+                </a>
 
-        <!-- Sidebar -->
-        <div
-            id="sidebar"
-            class="absolute z-50 overflow-hidden"
-            data-collapsed="false"
-        >
-            <div
-                class="absolute inset-0 frosted-glass"
-                style="background-image: url('{% static 'images/sidebar-bg.svg' %}'); background-size: cover; background-position: center;"
-            ></div>
-
-            <div class="relative z-10 flex flex-col h-full w-full overflow-hidden">
-                <!-- Sidebar Header -->
-                <div class="sidebar-header flex items-center justify-between py-3 px-3">
-                    <a href="{% if user.is_authenticated %}{% url 'memoria:home' %}{% else %}{% url 'memoria:landing' %}{% endif %}" id="sidebar-logo" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img src="{% static 'images/logo.svg' %}" alt="Logo" class="h-5 w-auto" />
+                <!-- Center Nav -->
+                <nav class="hidden lg:flex items-center gap-8">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'chat:agent_list' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-semibold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="agents">
+                        Agent Hub
                     </a>
-                    <div class="header-buttons flex items-center gap-1">
-                        <button
-                            id="collapse-btn"
-                            onclick="toggleSidebarCollapse()"
-                            class="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-black/5 transition-colors flex-shrink-0"
-                            title="Collapse sidebar"
-                        >
-                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
-                                <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
-                                <path id="collapse-arrow" d="M10 8L13 5.5V10.5L10 8Z" fill="#727272"/>
-                                <path id="expand-arrow" d="M13 8L10 5.5V10.5L13 8Z" fill="#727272" class="hidden"/>
-                            </svg>
-                        </button>
-                        <button
-                            id="close-sidebar-btn"
-                            onclick="closeSidebar()"
-                            class="flex lg:hidden w-8 h-8 items-center justify-center rounded-lg hover:bg-black/5 transition-colors flex-shrink-0"
-                        >
-                            <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
-                                <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
-                                <path d="M10 8L13 5.5V10.5L10 8Z" fill="#727272"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                    <a href="{% url 'memoria:home' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-bold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="chat">
+                        Chat
+                    </a>
+                    <a href="{% url 'chat:analytics' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-semibold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="analytics">
+                        Analytics
+                    </a>
+                    {% endif %}
+                </nav>
 
-                <!-- Menu Items -->
-                <div class="sidebar-menu flex flex-col gap-3 px-4 pt-2">
-                    <button
-                        id="expand-btn-collapsed"
-                        onclick="toggleSidebarCollapse()"
-                        class="hidden items-center justify-center rounded-lg hover:bg-black/5 transition-colors"
-                        title="Expand sidebar"
-                    >
-                        <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
-                            <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
-                            <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
+                <!-- Right Side -->
+                <div class="flex items-center gap-3">
+                    <!-- Mobile Hamburger -->
+                    <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="flex lg:hidden w-9 h-9 items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
                         </svg>
                     </button>
+
                     {% if user.is_authenticated %}
-                        <a href="{% url 'chat:memory' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="memory">
-                            <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <img src="{% static 'images/icon-memory.svg' %}" alt="" class="w-4 h-4 object-contain" />
-                            </div>
-                            <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Memory</span>
-                        </a>
-                        <a href="{% url 'chat:analytics' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="analytics">
-                            <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#727272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                                </svg>
-                            </div>
-                            <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Analytics</span>
-                        </a>
-                        <div onclick="createNewChat()" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="new-chat">
-                            <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <img src="{% static 'images/icon-edit.svg' %}" alt="" class="w-4 h-4 object-contain" />
-                            </div>
-                            <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">New chat</span>
-                        </div>
-                        <div onclick="openSearchModal()" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="search">
-                            <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#727272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                            </div>
-                            <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Search</span>
-                        </div>
-                    {% else %}
-                        <a href="{% url 'memoria:landing' %}" class="sidebar-nav-item flex items-center gap-3 cursor-pointer rounded-lg py-2 px-2 transition-colors" data-nav="back-home">
-                            <div class="w-5 h-5 overflow-hidden flex items-center justify-center flex-shrink-0">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#727272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </div>
-                            <span class="sidebar-menu-label font-inter font-medium text-sm leading-5 text-text-secondary whitespace-nowrap transition-all duration-300 overflow-hidden">Back to Home</span>
-                        </a>
-                    {% endif %}
-                </div>
-
-                <!-- Conversation List -->
-                <div class="sidebar-content flex-1 overflow-y-auto px-4 py-3">
-                    {% if user.is_authenticated %}
-                        <span class="sidebar-section-label font-inter font-medium text-sm leading-5 text-text-secondary block mb-4">
-                            Your Conversations
-                        </span>
-                        <div id="conversations-list" class="flex flex-col gap-3">
-                            {% block conversations %}
-                              {% for session in sessions %}
-                                <div class="conversation-item group relative" data-id="{{ session.id }}" data-selected="false">
-                                  <a href="{{ session.get_absolute_url }}" class="conversation-content flex flex-col gap-0.5 rounded-lg px-3 py-2 transition-colors hover:bg-black/5">
-                                    <span class="conversation-title font-inter font-medium text-sm leading-5 text-text-secondary truncate block">{{ session.title|default:"Untitled" }}</span>
-                                    <span class="conversation-time font-inter text-xs text-text-secondary/60">{{ session.updated_at|relative_time }}</span>
-                                  </a>
-                                  <div class="conversation-actions absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="event.preventDefault(); event.stopPropagation(); renameConversation('{{ session.id }}')" class="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10" title="Rename">
-                                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#727272" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </button>
-                                    <button onclick="event.preventDefault(); event.stopPropagation(); deleteConversation('{{ session.id }}')" class="w-6 h-6 flex items-center justify-center rounded hover:bg-red-100" title="Delete">
-                                        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              {% empty %}
-                                <div class="conversation-empty">No conversation history</div>
-                              {% endfor %}
-                            {% endblock %}
-                        </div>
-                    {% endif %}
-
-                    {% block sidebar_content %}{% endblock %}
-                </div>
-
-            </div>
-        </div>
-
-        <!-- NavBar -->
-        <nav class="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-3 z-20">
-            <div class="flex items-center">
-                <button
-                    id="mobile-menu-btn"
-                    onclick="openSidebar()"
-                    class="flex lg:hidden w-10 h-10 items-center justify-center rounded-lg hover:bg-black/5 transition-colors"
-                >
-                    <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="0.75" y="0.75" width="16.5" height="14.5" rx="1.25" stroke="#727272" stroke-width="1.5"/>
-                        <line x1="6" y1="0.75" x2="6" y2="15.25" stroke="#727272" stroke-width="1.5"/>
-                        <path d="M13 8L10 5.5V10.5L13 8Z" fill="#727272"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="flex items-center gap-4">
-                {% if user.is_authenticated %}
-                <div class="relative">
-                    <button
-                        id="avatar-menu-trigger"
-                        type="button"
-                        class="w-10 h-10 rounded-button bg-bg-surface2 flex items-center justify-center overflow-hidden"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                    >
-                        {% if user.is_authenticated and user.profile.profile_img %}
-                            <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
-                        {% else %}
-                            <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-8 h-8 rounded-full object-cover" />
-                        {% endif %}
-                    </button>
-                    <div
-                        id="avatar-menu"
-                        class="hidden absolute right-0 mt-2 w-44 rounded-xl border border-black/10 bg-white shadow-lg"
-                        role="menu"
-                    >
-                        <div class="menu-header">
-                        <div class="menu-header-avatar">
-                            {% if user.is_authenticated and user.profile.profile_img %}
-                                <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" />
-                            {% else %}
-                                <img src="{% static 'images/avatar.png' %}" alt="Avatar" />
+                    <!-- Notifications -->
+                    <div class="relative" id="notification-wrapper">
+                        <button id="notification-bell" type="button" class="p-2 rounded-full hover:bg-white/50 transition-colors relative" onclick="toggleNotificationDropdown()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+                            </svg>
+                            {% if unreadNotificationCount > 0 %}
+                            <span id="notification-badge" class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">{{ unreadNotificationCount }}</span>
                             {% endif %}
-                        </div>
-                            <div class="menu-header-name">
-                                {{ user.profile.display_name|default:user.username|default:"User" }}
+                        </button>
+                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 rounded-xl border border-mm-border bg-white shadow-lg overflow-hidden" style="z-index: 100;">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-mm-border">
+                                <span class="font-inter font-semibold text-sm text-mm-text">Notifications</span>
+                                <button onclick="markAllNotificationsRead()" class="text-xs font-medium text-mm-primary hover:text-mm-primary-hover transition-colors">Mark all read</button>
+                            </div>
+                            <div id="notification-list" class="max-h-64 overflow-y-auto">
+                                {% for notif in recentNotifications %}
+                                <div class="px-4 py-3 border-b border-mm-border/50 hover:bg-mm-card transition-colors {% if not notif.isRead %}bg-mm-primary/5{% endif %}">
+                                    <div class="font-inter text-sm font-medium text-mm-text">{{ notif.title }}</div>
+                                    <div class="font-inter text-xs text-mm-muted mt-0.5">{{ notif.message|truncatechars:80 }}</div>
+                                </div>
+                                {% empty %}
+                                <div class="px-4 py-6 text-center text-sm text-mm-muted">No notifications</div>
+                                {% endfor %}
                             </div>
                         </div>
-                        <div class="py-1">
-                            <a
-                                href="{% url 'users:profile' %}"
-                                class="menu-item menu-item-action menu-item-top"
-                                role="menuitem"
-                            >
-                                Settings
-                            </a>
-                            <div
-                                class="menu-item menu-item-disabled"
-                                role="menuitem"
-                                aria-disabled="true"
-                            >
-                                Billing
+                    </div>
+
+                    <!-- Settings -->
+                    <a href="{% url 'users:profile' %}" class="p-2 rounded-full hover:bg-white/50 transition-colors">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+                        </svg>
+                    </a>
+
+                    <!-- Avatar -->
+                    <div class="relative">
+                        <button id="avatar-menu-trigger" type="button" class="w-8 h-8 rounded-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative" aria-haspopup="true" aria-expanded="false">
+                            {% if user.is_authenticated and user.profile.profile_img %}
+                                <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" class="w-full h-full object-cover" />
+                            {% else %}
+                                <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-full h-full object-cover" />
+                            {% endif %}
+                            <div aria-hidden="true" class="absolute inset-0 border-2 border-mm-primary rounded-full"></div>
+                        </button>
+                        <div id="avatar-menu" class="hidden absolute right-0 mt-2 w-44 rounded-xl border border-mm-border bg-white shadow-lg" role="menu" style="z-index: 100;">
+                            <div class="menu-header">
+                                <div class="menu-header-avatar">
+                                    {% if user.is_authenticated and user.profile.profile_img %}
+                                        <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" />
+                                    {% else %}
+                                        <img src="{% static 'images/avatar.png' %}" alt="Avatar" />
+                                    {% endif %}
+                                </div>
+                                <div class="menu-header-name">
+                                    {{ user.profile.display_name|default:user.username|default:"User" }}
+                                </div>
                             </div>
-                            <form method="post" action="{% url 'users:logout' %}" class="menu-item-form">
-                              {% csrf_token %}
-                              <button
-                                type="submit"
-                                class="menu-item menu-item-action menu-item-bottom"
-                                role="menuitem"
-                              >
-                                Logout
-                              </button>
-                            </form>
+                            <div class="py-1">
+                                <a href="{% url 'users:profile' %}" class="menu-item menu-item-action menu-item-top" role="menuitem">Settings</a>
+                                <div class="menu-item menu-item-disabled" role="menuitem" aria-disabled="true">Billing</div>
+                                <form method="post" action="{% url 'users:logout' %}" class="menu-item-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="menu-item menu-item-action menu-item-bottom" role="menuitem">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebar-overlay" class="hidden lg:hidden" onclick="toggleMobileSidebar()"></div>
+
+        <!-- Main Layout -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Left Sidebar -->
+            {% if user.is_authenticated %}
+            <aside id="left-sidebar" class="hidden lg:flex flex-col h-full px-3 py-6 gap-4">
+                <!-- Integration Status Card -->
+                <div class="bg-[rgba(176,191,250,0.48)] rounded-xl p-3 flex gap-3 items-start">
+                    <div class="bg-mm-primary flex items-center justify-center rounded-lg w-10 h-10 flex-shrink-0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
+                        </svg>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="font-inter font-semibold text-[#171c1f] text-[14px] leading-5">Integrations</div>
+                        <div class="flex gap-1 items-center">
+                            <div class="bg-[#4edea3] rounded-full w-1.5 h-1.5"></div>
+                            <div class="font-inter font-medium text-mm-icon text-[12px] leading-4">Connected</div>
                         </div>
                     </div>
                 </div>
-                {% endif %}
-            </div>
-        </nav>
 
-        <!-- Main Content Area -->
-        <div id="main-content" class="absolute top-16 right-0 bottom-0 flex flex-col" style="left: 20vw;">
-            {% block content %}
-            <div id="chat-root" class="flex-1 min-h-0"></div>
+                <!-- Nav Section -->
+                <div class="flex flex-col gap-4">
+                    <div class="font-inter font-semibold text-mm-icon text-[10px] tracking-[1.2px] uppercase opacity-60 leading-4">
+                        Navigation
+                    </div>
+                    <div class="flex flex-col gap-1" id="sidebar-nav">
+                        <a href="{% url 'memoria:home' %}" class="sidebar-nav-link" data-sidebar-nav="chat">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                            </svg>
+                            <span class="sidebar-nav-label">Chat</span>
+                        </a>
+                        <a href="{% url 'chat:agent_list' %}" class="sidebar-nav-link" data-sidebar-nav="agents">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            <span class="sidebar-nav-label">My Agent</span>
+                        </a>
+                        <a href="{% url 'chat:memory' %}" class="sidebar-nav-link" data-sidebar-nav="memory">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 16v-4"></path>
+                                <path d="M12 8h.01"></path>
+                            </svg>
+                            <span class="sidebar-nav-label">Memory</span>
+                        </a>
+                        <a href="{% url 'chat:dashboard' %}" class="sidebar-nav-link" data-sidebar-nav="dashboard">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span class="sidebar-nav-label">Dashboard</span>
+                        </a>
+                        <a href="{% url 'chat:activity_log' %}" class="sidebar-nav-link" data-sidebar-nav="activity">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <span class="sidebar-nav-label">Activity</span>
+                        </a>
+                        <a href="{% url 'chat:document_upload' %}" class="sidebar-nav-link" data-sidebar-nav="documents">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            <span class="sidebar-nav-label">Documents</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="mt-auto flex flex-col pb-4">
+                    <button class="sidebar-nav-link" onclick="window.open('https://github.com/','_blank')">
+                        <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span class="font-inter font-medium text-[14px] leading-5 text-mm-nav">Help</span>
+                    </button>
+                    <button class="sidebar-nav-link">
+                        <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span class="font-inter font-medium text-[14px] leading-5 text-mm-nav">Privacy</span>
+                    </button>
+                </div>
+            </aside>
+            {% endif %}
+
+            <!-- Page Body (overridable by chat pages to inject ConversationSidebar) -->
+            {% block page_body %}
+            <main id="main-content" class="flex-1 overflow-auto bg-white/70 backdrop-blur-sm">
+                {% block content %}{% endblock %}
+            </main>
             {% endblock %}
         </div>
     </div>
     {% endblock %}
 
-    <!-- Search Modal (ChatGPT Ctrl+K pattern) -->
-    <div id="search-modal" class="hidden fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); z-index: 9999;">
-        <div id="search-modal-panel" style="position: absolute; top: 20%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px; background: #fff; border-radius: 16px; box-shadow: 0 24px 48px rgba(0,0,0,0.2); overflow: hidden; z-index: 10000;">
-            <div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; gap: 10px;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Search Modal -->
+    <div id="search-modal" class="hidden fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+        <div id="search-modal-panel" class="absolute bg-white rounded-2xl border border-mm-border shadow-2xl overflow-hidden" style="top: 20%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px;">
+            <div class="flex items-center px-4 py-3 border-b border-mm-border gap-2.5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input id="search-modal-input" type="text" placeholder="Search conversations..." autocomplete="off" style="flex: 1; border: none; outline: none; font-size: 15px; font-family: Inter, sans-serif; background: transparent;">
-                <kbd style="font-size: 11px; padding: 2px 6px; border: 1px solid #ddd; border-radius: 4px; color: #999; font-family: Inter, sans-serif;">Esc</kbd>
+                <input id="search-modal-input" type="text" placeholder="Search conversations..." autocomplete="off" class="flex-1 border-none outline-none text-[15px] font-inter bg-transparent placeholder:text-mm-light">
+                <kbd class="text-[11px] px-1.5 py-0.5 border border-mm-border rounded text-mm-light font-inter">Esc</kbd>
             </div>
-            <div id="search-modal-results" style="max-height: 320px; overflow-y: auto; padding: 8px;"></div>
-            <div id="search-modal-empty" class="hidden" style="padding: 24px; text-align: center; color: #999; font-size: 14px; font-family: Inter, sans-serif;">No conversations found</div>
+            <div id="search-modal-results" class="max-h-[320px] overflow-y-auto p-2"></div>
+            <div id="search-modal-empty" class="hidden py-6 text-center text-mm-muted text-[14px] font-inter">No conversations found</div>
         </div>
     </div>
 
@@ -282,45 +287,112 @@
             chatMemory: "{% url 'chat:memory' %}",
             chatAnalytics: "{% url 'chat:analytics' %}",
             chatSessionsApi: "{% url 'chat:api_sessions' %}",
+            chatSemanticSearchApi: "{% url 'chat:api_semantic_search' %}",
             chatConversationDetailTemplate: "{% url 'chat:conversation_detail' 0 %}",
             chatSessionRenameTemplate: "{% url 'chat:session_rename' 0 %}",
             chatSessionDeleteTemplate: "{% url 'chat:session_delete' 0 %}",
-            chatMemoryDetailTemplate: "{% url 'chat:memory_detail' 0 %}"
+            chatMemoryDetailTemplate: "{% url 'chat:memory_detail' 0 %}",
+            chatDashboard: "{% url 'chat:dashboard' %}",
+            chatAgentList: "{% url 'chat:agent_list' %}",
+            chatActivityLog: "{% url 'chat:activity_log' %}",
+            chatDocumentUpload: "{% url 'chat:document_upload' %}",
+            chatNotificationsApi: "{% url 'chat:api_notifications' %}",
+            chatPusherAuth: "{% url 'chat:pusher_auth' %}",
         };
+
+        window.PUSHER_CONFIG = {
+            key: "{{ pusherKey|default:'' }}",
+            cluster: "{{ pusherCluster|default:'us2' }}",
+        };
+
+        window.PUSHER_EVENTS = {
+            MESSAGE_SENT: "message:sent",
+            MESSAGE_EDITED: "message:edited",
+            MESSAGE_DELETED: "message:deleted",
+            MEMBER_JOINED: "member:joined",
+            MEMBER_LEFT: "member:left",
+            TYPING: "user:typing",
+            STOP_TYPING: "user:stop-typing",
+            NOTIFICATION: "notification:new",
+            SKILL_GENERATED: "skill:generated",
+        };
+
+        function toggleNotificationDropdown() {
+            var dropdown = document.getElementById("notification-dropdown");
+            if (dropdown) dropdown.classList.toggle("hidden");
+        }
+
+        function markAllNotificationsRead() {
+            fetch("{% url 'chat:notification_mark_all_read' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            }).then(function() {
+                var badge = document.getElementById("notification-badge");
+                if (badge) badge.remove();
+                document.querySelectorAll("#notification-list > div").forEach(function(el) {
+                    el.classList.remove("bg-mm-primary/5");
+                });
+            });
+        }
+
+        function toggleMobileSidebar() {
+            var sidebar = document.getElementById("left-sidebar");
+            var overlay = document.getElementById("sidebar-overlay");
+            if (!sidebar) return;
+            var isOpen = sidebar.classList.contains("sidebar-open");
+            if (isOpen) {
+                sidebar.classList.remove("sidebar-open");
+                sidebar.classList.add("hidden");
+                sidebar.classList.remove("flex");
+                if (overlay) overlay.classList.add("hidden");
+            } else {
+                sidebar.classList.add("sidebar-open");
+                sidebar.classList.remove("hidden");
+                sidebar.classList.add("flex");
+                if (overlay) overlay.classList.remove("hidden");
+            }
+        }
+
+        if (window.PUSHER_CONFIG.key && typeof Pusher !== "undefined") {
+            window.pusherClient = new Pusher(window.PUSHER_CONFIG.key, {
+                cluster: window.PUSHER_CONFIG.cluster,
+                authEndpoint: window.APP_ROUTES.chatPusherAuth,
+            });
+        }
     </script>
     <script type="module" src="{% static 'js/main.js' %}?v={% now 'U' %}"></script>
     {% block extra_js %}{% endblock %}
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        document.addEventListener("DOMContentLoaded", function() {
+            var tzName = Intl.DateTimeFormat().resolvedOptions().timeZone;
             if (tzName) {
-                const existing = document.cookie
-                    .split("; ")
-                    .find((item) => item.startsWith("user_tz="));
-                const encoded = encodeURIComponent(tzName);
+                var existing = document.cookie.split("; ").find(function(item) { return item.startsWith("user_tz="); });
+                var encoded = encodeURIComponent(tzName);
                 if (!existing || existing.split("=")[1] !== encoded) {
-                    document.cookie = `user_tz=${encoded}; path=/; max-age=31536000`;
+                    document.cookie = "user_tz=" + encoded + "; path=/; max-age=31536000";
                 }
             }
-            const trigger = document.getElementById("avatar-menu-trigger");
-            const menu = document.getElementById("avatar-menu");
+            var trigger = document.getElementById("avatar-menu-trigger");
+            var menu = document.getElementById("avatar-menu");
             if (!trigger || !menu) return;
 
-            const closeMenu = () => {
+            var closeMenu = function() {
                 menu.classList.add("hidden");
                 trigger.setAttribute("aria-expanded", "false");
             };
 
-            trigger.addEventListener("click", (event) => {
+            trigger.addEventListener("click", function(event) {
                 event.stopPropagation();
-                const isHidden = menu.classList.contains("hidden");
-                document.querySelectorAll("#avatar-menu").forEach((item) => item.classList.add("hidden"));
+                var isHidden = menu.classList.contains("hidden");
                 menu.classList.toggle("hidden", !isHidden);
                 trigger.setAttribute("aria-expanded", isHidden ? "true" : "false");
             });
 
             document.addEventListener("click", closeMenu);
-            document.addEventListener("keydown", (event) => {
+            document.addEventListener("keydown", function(event) {
                 if (event.key === "Escape") {
                     closeMenu();
                 }

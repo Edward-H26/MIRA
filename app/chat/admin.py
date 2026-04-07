@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Memory, MemoryBullet, Message, Session
+from .models import Memory, MemoryBullet, Message, Session, Agent, SessionParticipant, AuditLog, Notification
 
 
 @admin.register(Session)
@@ -44,3 +44,38 @@ class MemoryBulletAdmin(admin.ModelAdmin):
     search_fields = ("topic", "content", "concept")
     list_select_related = ("memory", "memory__user")
     ordering = ("-last_accessed",)
+
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "user", "is_active", "temperature", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "description", "user__user__username")
+    list_select_related = ("user",)
+    ordering = ("-created_at",)
+
+
+@admin.register(SessionParticipant)
+class SessionParticipantAdmin(admin.ModelAdmin):
+    list_display = ("id", "session", "agent", "joined_at")
+    search_fields = ("session__title", "agent__name")
+    list_select_related = ("session", "agent")
+    ordering = ("-joined_at",)
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "agent", "event_type", "created_at")
+    list_filter = ("event_type",)
+    search_fields = ("user__user__username", "event_type", "description")
+    list_select_related = ("user", "agent")
+    ordering = ("-created_at",)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "title", "notification_type", "is_read", "created_at")
+    list_filter = ("notification_type", "is_read")
+    search_fields = ("user__user__username", "title", "message")
+    list_select_related = ("user",)
+    ordering = ("-created_at",)

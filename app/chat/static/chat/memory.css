@@ -1,89 +1,21 @@
-.memory-shell {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    padding: 28px 24px;
-}
-
-.memory-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.memory-search {
-    flex: 1;
-    min-width: 240px;
-    max-width: 380px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 999px;
-    padding: 8px 12px;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
-}
-
-.memory-search input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 12px;
-    color: #1b1b1b;
-    outline: none;
-}
-
-.memory-search input::placeholder {
-    color: #9aa0aa;
-}
-
-.memory-search-icon {
-    width: 18px;
-    height: 18px;
-    color: #9aa0aa;
-    display: inline-flex;
-}
-
-.memory-search-icon svg {
-    width: 18px;
-    height: 18px;
-}
-
-.memory-filter {
-    border: none;
-    background: transparent;
-    color: #9aa0aa;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-
 .memory-filter.is-active {
-    color: #5f739f;
-}
-
-.memory-filter-wrap {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
+    color: #00327d;
 }
 
 .memory-filter-menu {
     position: absolute;
-    top: 28px;
+    top: 32px;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 6px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     display: none;
     flex-direction: column;
     gap: 2px;
     min-width: 150px;
-    z-index: 5;
+    z-index: 10;
 }
 
 .memory-filter-menu.is-open {
@@ -93,59 +25,59 @@
 .memory-filter-item {
     border: none;
     background: transparent;
-    padding: 6px 10px;
-    font-size: 12px;
-    color: #4b5563;
+    padding: 6px 12px;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    color: #0f172a;
     text-align: left;
-    border-radius: 8px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .memory-filter-item:hover {
-    background: rgba(95, 115, 159, 0.12);
+    background: #f0f4f8;
 }
 
 .memory-filter-item.is-selected {
-    background: rgba(95, 115, 159, 0.18);
-    color: #2f3a4a;
+    background: #f0f4f8;
+    color: #00327d;
+    font-weight: 500;
 }
 
-.memory-filter svg {
-    width: 18px;
-    height: 18px;
-}
-
-.memory-sort {
-    border: none;
-    border-radius: 999px;
+.memory-sort-btn-style {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     padding: 8px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b6b6b;
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #0f172a;
+    background: #ffffff;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
 }
 
-.memory-sort-wrap {
-    position: relative;
-    display: inline-flex;
+.memory-sort-btn-style:hover {
+    border-color: #00327d;
 }
 
 .memory-sort-menu {
     position: absolute;
-    top: 42px;
+    top: 44px;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 6px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
     display: none;
     flex-direction: column;
     gap: 2px;
-    min-width: 160px;
-    z-index: 5;
+    min-width: 170px;
+    z-index: 10;
 }
 
 .memory-sort-menu.is-open {
@@ -155,16 +87,18 @@
 .memory-sort-item {
     border: none;
     background: transparent;
-    padding: 6px 10px;
-    font-size: 12px;
-    color: #4b5563;
+    padding: 6px 12px;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    color: #0f172a;
     text-align: left;
-    border-radius: 8px;
+    border-radius: 6px;
+    cursor: pointer;
     position: relative;
 }
 
 .memory-sort-item:hover {
-    background: rgba(95, 115, 159, 0.12);
+    background: #f0f4f8;
 }
 
 .memory-sort-item:hover::after {
@@ -173,154 +107,85 @@
     right: calc(100% + 8px);
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(27, 27, 27, 0.94);
+    background: #0f172a;
     color: #f8fafc;
+    font-family: "Inter", sans-serif;
     font-size: 11px;
-    line-height: 1.35;
-    padding: 7px 9px;
-    border-radius: 8px;
+    line-height: 1.4;
+    padding: 8px 10px;
+    border-radius: 6px;
     white-space: normal;
     width: 220px;
     pointer-events: none;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.22);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
     z-index: 20;
 }
 
 .memory-sort-item.is-selected {
-    background: rgba(95, 115, 159, 0.18);
-    color: #2f3a4a;
+    background: #f0f4f8;
+    color: #00327d;
+    font-weight: 500;
 }
 
-.memory-sort svg {
-    width: 14px;
-    height: 14px;
-}
-
-.memory-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
-}
-
-.memory-stats {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-}
-
-.memory-stat-card {
-    flex: 1 1 100px;
-    min-width: 100px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 10px;
-    padding: 12px;
-    text-align: center;
-    backdrop-filter: blur(8px);
-}
-
-.memory-stat-value {
-    font-family: Inter, sans-serif;
-    font-size: 22px;
-    font-weight: 600;
-    color: #333;
-}
-
-.memory-stat-label {
-    font-family: Inter, sans-serif;
-    font-size: 11px;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.memory-card {
-    background: rgba(255, 255, 255, 0.86);
-    border-radius: 16px;
-    padding: 14px 14px 12px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 50vw;
-}
-
-.memory-card-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.memory-pill {
-    background: rgba(95, 115, 159, 0.18);
-    color: #4b5563;
+.memory-pill-1 {
+    display: inline-block;
+    font-family: "Inter", sans-serif;
     font-size: 11px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 3px 10px;
     border-radius: 999px;
+    background: #dbeafe;
+    color: #1e40af;
 }
 
-.memory-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: #a0a0a0;
-}
-
-.memory-actions button {
-    border: none;
-    background: transparent;
-    padding: 0;
-    color: inherit;
-}
-
-.memory-actions svg {
-    width: 16px;
-    height: 16px;
-}
-
-.memory-content {
-    margin: 0;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #2b2b2b;
-    word-break: break-word;
-}
-
-.memory-card-link {
-    text-decoration: none;
-    color: inherit;
-}
-
-.memory-meta {
+.memory-pill-2 {
+    display: inline-block;
+    font-family: "Inter", sans-serif;
     font-size: 11px;
-    color: #9aa0aa;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #d1fae5;
+    color: #065f46;
 }
 
-.memory-empty {
-    font-size: 13px;
-    color: #9aa0aa;
-    padding: 12px 8px;
+.memory-pill-3 {
+    display: inline-block;
+    font-family: "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.memory-detail-breadcrumb a {
+    color: #00327d;
+    text-decoration: none;
+}
+
+.memory-detail-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.memory-strength-track {
+    width: 100%;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.memory-strength-fill {
+    height: 100%;
+    background: #00327d;
+    border-radius: 999px;
+    transition: width 0.3s;
 }
 
 @media (max-width: 768px) {
-    .memory-shell {
-        padding: 20px 16px;
-    }
-    .memory-search {
-        max-width: none;
-        width: 100%;
-    }
-    .memory-sort {
-        width: 100%;
-        justify-content: center;
-    }
-    .memory-sort-wrap {
-        width: 100%;
-    }
-    .memory-card {
-        max-width: none;
+    .memory-sort-item:hover::after {
+        display: none;
     }
 }

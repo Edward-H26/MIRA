@@ -58,6 +58,10 @@ class MemoryBullet(models.Model):
     semantic_last_access = models.DateTimeField(null=True, blank=True)
     episodic_last_access = models.DateTimeField(null=True, blank=True)
     procedural_last_access = models.DateTimeField(null=True, blank=True)
+    is_skill = models.BooleanField(default=False, db_index=True)
+    skill_enabled = models.BooleanField(default=True)
+    skill_group = models.CharField(max_length=100, blank=True, default="")
+    embedding_json = models.TextField(blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["memory","-last_accessed"])]

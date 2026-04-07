@@ -82,15 +82,66 @@ Then edit `.env` and replace `YOUR_KEY` with a freshly generated Django secret k
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-5. Run migrations:
+5. Install system dependencies for AI features:
+```bash
+brew install tesseract          # macOS (OCR engine)
+# apt-get install tesseract-ocr # Linux alternative
+```
+
+6. Configure AI environment variables in `.env`:
+```bash
+GEMINI_API_KEY="your_gemini_key"   # Required: get from https://aistudio.google.com/apikey
+```
+
+7. Run migrations:
 ```bash
 python manage.py migrate
 ```
 
-6. Start the development server:
+8. Start the development server:
 ```bash
 python manage.py runserver
 ```
+
+### Model Downloads (Automatic)
+
+The following models download automatically on first use:
+
+| Model | Size | Purpose | Cache Location |
+|---|---|---|---|
+| all-MiniLM-L6-v2 | ~80 MB | Semantic search embeddings | `llm_test/cache/embedding-models/` |
+| Qwen3.5-0.8B | ~1.6 GB | Local query preprocessing | `llm_test/cache/huggingface-models/` |
+
+Model weights are excluded from version control via `.gitignore` (`*.bin`, `*.safetensors`, `*.pt`, `*.onnx`, `*.h5`). The application downloads weights locally when run.
+
+### Optional Services
+
+| Service | Purpose | Required? |
+|---|---|---|
+| Neo4j | Graph memory synchronization | No (app works without it) |
+| Pusher | Real-time notifications | No (app works without it) |
+| Google OAuth | Social login | No (email/password login available) |
+
+---
+
+## Accessing AI Features
+
+After starting the server, the following AI-powered features are accessible through the sidebar navigation:
+
+| Feature | URL | AI Models Used |
+|---|---|---|
+| Chat (New Conversation) | `/home/` | Gemini 3 Flash (streaming), Qwen3.5-0.8B (preprocessing), MiniLM-L6-v2 (context retrieval) |
+| Memory Management | `/chat/memory/` | MiniLM-L6-v2 (semantic search), ACE tri-channel decay |
+| Semantic Search API | `/chat/api/semantic-search/?q=` | MiniLM-L6-v2 (384-dim cosine similarity) |
+| Document Scanning (OCR) | `/chat/document/upload/` | pytesseract (Tesseract OCR engine) |
+| Dashboard | `/chat/dashboard/` | Aggregated AI system metrics |
+| Agent Management | `/chat/agents/` | Agent configuration with custom system prompts |
+| Agent Marketplace | `/chat/agents/marketplace/` | 10 pre-built agent templates |
+| Skill Marketplace | `/chat/skills/marketplace/` | 15 pre-built skill templates across 8 categories |
+| Activity Log | `/chat/activity/` | Audit trail of AI operations |
+| Analytics | `/chat/analytics/` | Memory distribution and activity charts |
+
+For detailed AI architecture documentation, see [README_AI.md](README_AI.md).
 
 ---
 
@@ -106,16 +157,41 @@ python manage.py runserver
 |   |-- billing/                  # Billing and subscription domain (scaffolded)
 |   |   `-- models: Plan, Subscription, Payment
 |   |
-|   |-- chat/                     # Chat sessions, messages, memory
-|   |   |-- models: Memory, MemoryBullet, Session, Message
-|   |   |-- views.py              # MemoryListView, ConversationMessagesView, MemoryBulletsView, analytics, charts, rename/delete
-|   |   |-- urls.py               # /chat/memory/, /chat/c/<id>/, /chat/m/<id>/, analytics, API routes (15 patterns)
-|   |   |-- api.py                # JSON API views (memories, analytics, sessions, messages, demo)
-|   |   |-- service.py            # 22 service functions (sessions, memory, analytics, charts, API payloads)
-|   |   |-- context_processors.py # user_sessions (injects sidebar session list)
+|   |-- chat/                     # Chat sessions, messages, memory, agents, skills
+|   |   |-- models/               # Data models
+|   |   |   |-- memory.py         # Memory (tri-channel ACE system with planner state)
+|   |   |   |-- memory_bullet.py  # MemoryBullet (semantic/episodic/procedural with embeddings)
+|   |   |   |-- session.py        # Session (chat sessions with generation lock)
+|   |   |   |-- message.py        # Message (user/assistant/system roles)
+|   |   |   |-- agent.py          # Agent (custom AI agents with system prompts)
+|   |   |   |-- audit_log.py      # AuditLog (event tracking)
+|   |   |   |-- notification.py   # Notification (real-time alerts)
+|   |   |   `-- session_participant.py # SessionParticipant (agent-session mapping)
+|   |   |-- views.py              # 20+ views: chat, memory, dashboard, agents, skills, OCR, analytics
+|   |   |-- urls.py               # 35+ URL patterns (page + API routes)
+|   |   |-- api.py                # JSON API views (memories, analytics, sessions, semantic search, agents)
+|   |   |-- service.py            # Core service functions (sessions, memory, analytics, streaming)
+|   |   |-- ace_runtime.py        # ACE (Agentic Context Engineering) runtime orchestrator
+|   |   |-- agent_service.py      # Agent CRUD, skill management, mention parsing
+|   |   |-- agent_catalog.py      # 10 pre-built agent templates
+|   |   |-- skill_catalog.py      # 15 pre-built skill templates across 8 categories
+|   |   |-- audit_service.py      # Activity event logging (dual ORM + Neo4j)
+|   |   |-- notification_service.py # Notification creation and delivery
+|   |   |-- forms.py              # DocumentUploadForm for OCR
+|   |   |-- context_processors.py # user_sessions, notifications (sidebar injection)
+|   |   |-- signals.py            # Django signals for audit events
 |   |   |-- templatetags/         # chat_extras: relative_time filter
-|   |   |-- templates/chat/       # conversation_detail.html, memory.html, analytics.html
-|   |   `-- static/chat/          # analytics.css, chat.css, conversation.css, memory.css
+|   |   |-- templates/chat/       # 19 templates (chat, memory, dashboard, agents, skills, OCR, analytics)
+|   |   `-- static/chat/          # 10 CSS files (per-feature styling)
+|   |
+|   |-- services/                 # AI and integration services
+|   |   |-- classifier.py         # Prompt complexity classifier (8 dimensions + synergy)
+|   |   |-- embedding.py          # all-MiniLM-L6-v2 embedding service (384-dim)
+|   |   |-- gemini.py             # Gemini 3 Flash streaming API client
+|   |   |-- local_llm.py          # Qwen3.5-0.8B local preprocessing
+|   |   |-- ocr.py                # pytesseract OCR pipeline with field parsing
+|   |   |-- neo4j_memory.py       # Neo4j graph memory synchronization
+|   |   `-- pusher_service.py     # Real-time broadcast service
 |   |
 |   |-- memoria/                  # Main app wiring (landing, home, 404)
 |   |   |-- views.py              # home(), landing(), not_found_view()
@@ -164,6 +240,10 @@ python manage.py runserver
 |   `-- design_choice/            # database_design_choice.md
 |
 |-- data/                         # Local data storage
+|-- llm_test/                    # LLM experiments and model cache
+|   |-- cache/                   # Auto-downloaded model weights (gitignored)
+|   |-- results/                 # Benchmark results from A6/A7/A8
+|   `-- *.ipynb                  # Experiment notebooks
 `-- unit_test/                    # Test suite
     |-- mock_data.py              # Shared test data (8 users + admin, 5 plans, 26 bullets, 17 sessions, 49 messages)
     |-- database_unit_test.py     # Database relationship and constraint tests
@@ -206,6 +286,19 @@ Screenshots:
 ![Memory Management](docs/imgs/memory_management_normal.png)
 ![Conversation Detail](docs/imgs/conversation_detail_normal.png)
 ![Sidebar Collapsed](docs/imgs/sidebar_collapsed.png)
+
+### AI Feature Screenshots
+
+![Dashboard](docs/imgs/ai_dashboard.png)
+![Agent List](docs/imgs/ai_agent_list.png)
+![Agent Settings](docs/imgs/ai_agent_settings.png)
+![Agent Marketplace](docs/imgs/ai_agent_marketplace.png)
+![Skill Marketplace](docs/imgs/ai_skill_marketplace.png)
+![Document Upload (OCR)](docs/imgs/ai_document_upload.png)
+![Activity Log](docs/imgs/ai_activity_log.png)
+![Analytics Dashboard](docs/imgs/ai_analytics.png)
+![Chat AI Response](docs/imgs/ai_chat_response.png)
+![Semantic Search API](docs/imgs/ai_semantic_search.png)
 
 ---
 

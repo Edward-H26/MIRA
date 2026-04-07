@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/dashboard.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px] mb-8">Dashboard</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalAgents }}</span>
+            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Agents</span>
+        </div>
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalSessions }}</span>
+            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Sessions</span>
+        </div>
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalBullets }}</span>
+            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Memories</span>
+        </div>
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalSkills }}</span>
+            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Skills</span>
+        </div>
+    </div>
+
+    <div class="flex gap-3 flex-wrap mb-8">
+        <a href="{% url 'memoria:home' %}" class="inline-flex items-center btn-gradient rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">New Chat</a>
+        <a href="{% url 'chat:agent_list' %}" class="inline-flex items-center bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">Create Agent</a>
+        <a href="{% url 'chat:document_upload' %}" class="inline-flex items-center bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">Scan Document</a>
+    </div>
+
+    {% if agents %}
+    <div class="mb-8">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Your Agents</h2>
+        <div class="flex gap-2.5 flex-wrap">
+            {% for agent in agents %}
+            <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="inline-flex items-center gap-2 bg-[#f0f4f8] rounded-md px-3 py-1.5 no-underline transition-colors hover:bg-[#e2e8f0]">
+                <span class="w-2 h-2 rounded-full flex-shrink-0 {% if agent.isActive %}bg-[#10b981]{% else %}bg-[#9ca3af]{% endif %}"></span>
+                <span class="font-inter font-medium text-[#0f172a] text-[13px] whitespace-nowrap">{{ agent.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recentSessions %}
+    <div class="mb-8">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Recent Sessions</h2>
+        <div class="flex flex-col gap-1">
+            {% for session in recentSessions %}
+            <a href="{{ session.get_absolute_url }}" class="flex items-center justify-between gap-3 hover:bg-[#f8fafc] transition-colors rounded-xl p-4 no-underline">
+                <span class="font-inter font-semibold text-[#0f172a] text-[14px] truncate">{{ session.title|default:"Untitled" }}</span>
+                <span class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0">{{ session.updated_at|timesince }} ago</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if activityFeed %}
+    <div class="mb-8">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Activity Feed</h2>
+        <div class="flex flex-col gap-0.5">
+            {% for entry in activityFeed %}
+            <div class="flex items-start gap-3 p-3 rounded-lg">
+                <span class="dashboard-activity-dot w-2 h-2 rounded-full flex-shrink-0 mt-1.5 {% if entry.eventType == 'error' %}bg-[#f59e0b]{% elif entry.eventType == 'session_created' or entry.eventType == 'skill_generated' %}bg-[#10b981]{% else %}bg-[#3b82f6]{% endif %}"></span>
+                <span class="flex-1 font-inter text-[#0f172a] text-[13px] leading-5">
+                    <strong>{{ entry.eventType }}</strong>
+                    {{ entry.description }}
+                    {% if entry.agentName %} ({{ entry.agentName }}){% endif %}
+                </span>
+                <span class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0 whitespace-nowrap">{{ entry.createdAt }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

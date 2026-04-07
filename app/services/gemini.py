@@ -4,6 +4,18 @@ from django.conf import settings
 
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 MODEL_ID = "gemini-3-flash-preview"
+CLASSIFIER_MODEL_ID = "gemini-3.1-flash-lite-preview"
+
+CLASSIFIER_SYSTEM_INSTRUCTION = (
+    "You are a query complexity classifier. Respond with exactly one word: "
+    "SIMPLE or COMPLEX.\n\n"
+    "SIMPLE: factual lookups, greetings, single-topic questions, short requests, "
+    "casual conversation, definitions, yes/no questions.\n\n"
+    "COMPLEX: multi-step reasoning, comparisons across categories, analytical tasks, "
+    "planning with constraints, queries requiring multiple pieces of information, "
+    "queries with conditions like 'must', 'at least', 'compare', 'evaluate', "
+    "'step by step', or 'then'."
+)
 
 
 def _build_generation_config(
@@ -75,3 +87,30 @@ def generate_structured_text(
         ),
     )
     return _extract_response_text(response)
+
+
+def classify_prompt(user_text: str) -> str:
+    trimmed = (user_text or "").strip()
+    if not trimmed:
+        return "simple"
+
+    try:
+        config_kwargs = {
+            "max_output_tokens": 8,
+        }
+        if CLASSIFIER_SYSTEM_INSTRUCTION:
+            config_kwargs["system_instruction"] = CLASSIFIER_SYSTEM_INSTRUCTION
+        config = types.GenerateContentConfig(**config_kwargs)
+
+        response = client.models.generate_content(
+            model=CLASSIFIER_MODEL_ID,
+            contents=f"Classify this user query as SIMPLE or COMPLEX. Reply with one word only.\n\nQuery: {trimmed}",
+            config=config,
+        )
+        result = _extract_response_text(response).upper().strip()
+        if "COMPLEX" in result:
+            return "complex"
+        return "simple"
+    except Exception:
+        from app.services.classifier import classify_prompt as regex_classify
+        return regex_classify(trimmed)

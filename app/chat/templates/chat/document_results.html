@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}OCR Results{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/document_upload.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <div class="mb-6">
+        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px]">OCR Results</h1>
+        <p class="font-inter text-[#64748b] text-[16px] mt-1">Extracted text and parsed fields from your document</p>
+    </div>
+
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-[#10b981]/10">
+                <span class="font-inter font-bold text-[#10b981] text-[20px]">{{ bulletCount }}</span>
+            </div>
+            <span class="font-inter text-[#64748b] text-[14px]">memory bullets created from this document</span>
+        </div>
+    </div>
+
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Raw Text</h2>
+        <pre class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#0f172a] leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto border border-[#e2e8f0]"><code>{{ ocrResult.raw_text }}</code></pre>
+    </div>
+
+    {% if parsedFields %}
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Parsed Fields</h2>
+        <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
+            <table class="w-full font-inter text-[13px]">
+                <thead>
+                    <tr class="bg-[#f8fafc]">
+                        <th class="text-left px-4 py-3 font-semibold text-[#64748b] text-[12px] uppercase tracking-wider border-b border-[#e2e8f0]">Field</th>
+                        <th class="text-left px-4 py-3 font-semibold text-[#64748b] text-[12px] uppercase tracking-wider border-b border-[#e2e8f0]">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in parsedFields.items %}
+                    <tr class="hover:bg-[#f8fafc] transition-colors">
+                        <td class="px-4 py-3 text-[#0f172a] font-medium border-b border-[#e2e8f0]">{{ key }}</td>
+                        <td class="px-4 py-3 text-[#64748b] border-b border-[#e2e8f0]">{{ value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex items-center gap-3">
+        <a href="{% url 'chat:document_upload' %}" class="btn-gradient font-inter font-semibold text-[14px] rounded-lg px-6 py-2.5 transition-colors inline-flex items-center gap-2">
+            Upload Another
+        </a>
+        <a href="{% url 'chat:memory' %}" class="border border-[#e2e8f0] hover:bg-[#f8fafc] text-[#0f172a] font-inter font-semibold text-[14px] rounded-lg px-6 py-2.5 transition-colors inline-flex items-center gap-2">
+            View Memories
+        </a>
+    </div>
+</div>
+{% endblock %}

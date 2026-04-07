@@ -25,6 +25,7 @@ from .service import (
     get_activity_chart_png,
     get_session_report_export_rows,
     get_session_for_user,
+    get_sidebar_sessions_for_user,
 )
 
 PENDING_PROMPT_SESSION_KEY = "pending_chat_prompts"
@@ -123,6 +124,61 @@ class ConversationMessagesView(View):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def conversation_upload_view(request, session_id):
+    session = get_session_for_user(request.user, session_id)
+
+    uploadedFile = request.FILES.get("file")
+    if not uploadedFile:
+        return JsonResponse({"error": "No file uploaded"}, status=400)
+
+    from app.services.ocr import validate_uploaded_image, extract_text_from_image, ocr_to_lessons
+
+    isValid, errorMsg = validate_uploaded_image(uploadedFile)
+    if not isValid:
+        return JsonResponse({"error": errorMsg}, status=400)
+
+    ocrResult = extract_text_from_image(uploadedFile)
+    if ocrResult.status != "success":
+        return JsonResponse({"error": ocrResult.error or "OCR extraction failed"}, status=400)
+
+    lessons = ocr_to_lessons(ocrResult)
+    if lessons:
+        profile = get_or_create_profile_for_user(request.user)
+        memory, _ = Memory.objects.get_or_create(user=profile)
+        try:
+            memory.apply_lessons(lessons, learner_id=str(profile.pk), context_scope_id="ocr")
+        except Exception:
+            pass
+
+    truncatedText = ocrResult.raw_text[:500]
+    content = (
+        f"[Uploaded document: {uploadedFile.name}]\n\n"
+        f"Extracted text:\n{truncatedText}"
+    )
+
+    log_event("chat_document_upload", request=request, session_id=session.pk)
+
+    if not session.acquire_generation_lock():
+        return JsonResponse({"error": "generation_in_progress"}, status=409)
+
+    def event_stream():
+        try:
+            for payload in stream_user_message_with_agent_reply(session, content):
+                yield json.dumps(payload, ensure_ascii=False) + "\n"
+        finally:
+            session.release_generation_lock()
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="application/x-ndjson; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 @method_decorator(login_required(login_url="/"), name="dispatch")
@@ -314,4 +370,434 @@ def export_memory_bullets_report(request):
         csv_field_order=["content", "memory_type", "created_at"],
         json_key="memory_bullets",
     )
+
+
+@login_required(login_url="/")
+def agent_list_view(request):
+    from .agent_service import get_agents_for_user, create_agent_for_user
+
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        systemPrompt = (request.POST.get("system_prompt") or "").strip()
+        if name:
+            create_agent_for_user(
+                request.user,
+                name=name,
+                description=description,
+                system_prompt=systemPrompt,
+            )
+        return redirect("chat:agent_list")
+
+    agents = get_agents_for_user(request.user, include_inactive=True)
+    return render(request, "chat/agent_list.html", {"agents": agents})
+
+
+@login_required(login_url="/")
+def agent_detail_view(request, agent_id):
+    from .agent_service import get_agent_for_user, update_agent_for_user
+
+    agent = get_agent_for_user(request.user, str(agent_id))
+
+    if request.method == "POST":
+        fields = {}
+        name = (request.POST.get("name") or "").strip()
+        if name:
+            fields["name"] = name
+        description = request.POST.get("description")
+        if description is not None:
+            fields["description"] = description.strip()
+        if fields:
+            agent = update_agent_for_user(request.user, str(agent_id), **fields)
+        return redirect("chat:agent_detail", agent_id=agent_id)
+
+    return render(request, "chat/agent_detail.html", {"agent": agent})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_delete_view(request, agent_id):
+    from .agent_service import delete_agent_for_user
+    delete_agent_for_user(request.user, str(agent_id))
+    return redirect("chat:agent_list")
+
+
+@login_required(login_url="/")
+def agent_settings_view(request, agent_id):
+    from .agent_service import get_agent_for_user, update_agent_for_user
+
+    agent = get_agent_for_user(request.user, str(agent_id))
+
+    if request.method == "POST":
+        fields = {}
+        systemPrompt = request.POST.get("system_prompt")
+        if systemPrompt is not None:
+            fields["system_prompt"] = systemPrompt.strip()
+        temperature = request.POST.get("temperature")
+        if temperature:
+            try:
+                fields["temperature"] = max(0.0, min(2.0, float(temperature)))
+            except ValueError:
+                pass
+        maxTokens = request.POST.get("max_tokens")
+        if maxTokens:
+            try:
+                fields["max_tokens"] = max(64, min(8192, int(maxTokens)))
+            except ValueError:
+                pass
+        isActive = request.POST.get("is_active")
+        if isActive is not None:
+            fields["is_active"] = isActive == "on"
+        if fields:
+            agent = update_agent_for_user(request.user, str(agent_id), **fields)
+        return redirect("chat:agent_settings", agent_id=agent_id)
+
+    return render(request, "chat/agent_settings.html", {"agent": agent})
+
+
+@login_required(login_url="/")
+def agent_skills_view(request, agent_id):
+    from .agent_service import get_agent_for_user, get_agent_skills
+
+    agent = get_agent_for_user(request.user, str(agent_id))
+    groupFilter = (request.GET.get("group") or "").strip()
+    enabledOnly = request.GET.get("enabled_only") == "1"
+    skills = get_agent_skills(request.user, str(agent_id), enabled_only=enabledOnly)
+
+    if groupFilter:
+        skills = [s for s in skills if s.get("skillGroup", "") == groupFilter]
+
+    groups = sorted(set(s.get("skillGroup", "") for s in skills if s.get("skillGroup")))
+
+    return render(request, "chat/agent_skills.html", {
+        "agent": agent,
+        "skills": skills,
+        "groups": groups,
+        "activeGroup": groupFilter,
+        "enabledOnly": enabledOnly,
+    })
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def skill_toggle_view(request, bullet_id):
+    from .agent_service import toggle_skill
+    enabled = request.POST.get("enabled") == "1"
+    result = toggle_skill(request.user, bullet_id, enabled)
+    return JsonResponse(result)
+
+
+@login_required(login_url="/")
+def dashboard_view(request):
+    from .agent_service import get_agents_for_user
+    from .audit_service import get_activity_feed_for_user
+
+    agents = get_agents_for_user(request.user)
+    activityFeed = get_activity_feed_for_user(request.user, limit=10)
+    recentSessions = get_sidebar_sessions_for_user(request.user)[:5]
+
+    profile = get_or_create_profile_for_user(request.user)
+    from .models import Session
+    totalSessions = Session.objects.filter(user=profile).count()
+    totalBullets = MemoryBullet.objects.filter(memory__user=profile).count()
+    totalSkills = MemoryBullet.objects.filter(memory__user=profile, is_skill=True).count()
+
+    return render(request, "chat/dashboard.html", {
+        "agents": agents,
+        "activityFeed": activityFeed,
+        "recentSessions": recentSessions,
+        "totalAgents": len(agents),
+        "totalSessions": totalSessions,
+        "totalBullets": totalBullets,
+        "totalSkills": totalSkills,
+    })
+
+
+@login_required(login_url="/")
+def activity_log_view(request):
+    from .audit_service import get_audit_log_for_user
+
+    eventType = (request.GET.get("event_type") or "").strip()
+    logs = get_audit_log_for_user(request.user, event_type=eventType, limit=200)
+
+    eventTypes = [
+        "chat_message", "skill_execution", "memory_update",
+        "agent_created", "agent_updated", "agent_deleted",
+        "session_created", "skill_toggled",
+    ]
+
+    return render(request, "chat/activity_log.html", {
+        "logs": logs,
+        "eventTypes": eventTypes,
+        "activeEventType": eventType,
+    })
+
+
+@login_required(login_url="/")
+def admin_settings_view(request):
+    if request.method == "POST":
+        pass
+    return render(request, "chat/admin_settings.html", {})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def notification_mark_read_view(request, notification_id):
+    from .notification_service import mark_notification_read
+    mark_notification_read(request.user, str(notification_id))
+    return JsonResponse({"ok": True})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def notification_mark_all_read_view(request):
+    from .notification_service import mark_all_read
+    count = mark_all_read(request.user)
+    return JsonResponse({"ok": True, "count": count})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def pusher_auth_view(request):
+    from app.services import pusher_service
+
+    socketId = request.POST.get("socket_id", "")
+    channelName = request.POST.get("channel_name", "")
+
+    if not socketId or not channelName:
+        return JsonResponse({"error": "Missing parameters"}, status=400)
+
+    authResponse = pusher_service.authenticate_channel(channelName, socketId)
+    if authResponse is None:
+        return JsonResponse({"error": "Auth failed"}, status=403)
+    return JsonResponse(authResponse)
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def typing_view(request, session_id):
+    from app.services import pusher_service
+    profile = get_or_create_profile_for_user(request.user)
+    pusher_service.send_typing(session_id, profile.pk, request.user.username)
+    return JsonResponse({"ok": True})
+
+
+@login_required(login_url="/")
+def document_upload_view(request):
+    from .forms import DocumentUploadForm
+    from app.services.ocr import extract_text_from_image, ocr_to_lessons, parse_document_fields
+
+    if request.method == "POST":
+        form = DocumentUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            imageFile = form.cleaned_data["image"]
+            ocrResult = extract_text_from_image(imageFile)
+
+            if ocrResult.status != "success":
+                return render(request, "chat/document_upload.html", {
+                    "form": form,
+                    "error": ocrResult.error,
+                })
+
+            parsedFields = parse_document_fields(ocrResult.raw_text)
+            lessons = ocr_to_lessons(ocrResult)
+
+            bulletCount = 0
+            if lessons:
+                profile = get_or_create_profile_for_user(request.user)
+                memory, _ = Memory.objects.get_or_create(user=profile)
+                try:
+                    memory.apply_lessons(
+                        lessons,
+                        learner_id=str(profile.pk),
+                        context_scope_id="ocr",
+                    )
+                    bulletCount = len(lessons)
+                except Exception:
+                    pass
+
+            return render(request, "chat/document_results.html", {
+                "ocrResult": ocrResult,
+                "parsedFields": parsedFields,
+                "bulletCount": bulletCount,
+                "lessons": lessons,
+            })
+    else:
+        form = DocumentUploadForm()
+
+    return render(request, "chat/document_upload.html", {"form": form})
+
+
+@login_required(login_url="/")
+def skill_marketplace_view(request):
+    from .skill_catalog import get_all_skills, get_skills_by_category, search_skills, SKILL_CATEGORIES
+
+    categoryFilter = (request.GET.get("category") or "").strip()
+    searchQuery = (request.GET.get("q") or "").strip()
+
+    if searchQuery:
+        skills = search_skills(searchQuery)
+    elif categoryFilter:
+        skills = get_skills_by_category(categoryFilter)
+    else:
+        skills = get_all_skills()
+
+    return render(request, "chat/skill_marketplace.html", {
+        "skills": skills,
+        "categories": SKILL_CATEGORIES,
+        "activeCategory": categoryFilter,
+        "searchQuery": searchQuery,
+        "totalCount": len(get_all_skills()),
+    })
+
+
+@login_required(login_url="/")
+def skill_marketplace_detail_view(request, skill_id):
+    from .skill_catalog import get_skill_by_id
+
+    skill = get_skill_by_id(skill_id)
+    if skill is None:
+        from django.http import Http404
+        raise Http404("Skill template not found")
+
+    profile = get_or_create_profile_for_user(request.user)
+    from .models.agent import Agent
+    agents = Agent.objects.filter(user=profile, is_active=True).order_by("name")
+
+    return render(request, "chat/skill_marketplace_detail.html", {
+        "skill": skill,
+        "agents": agents,
+    })
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def skill_install_view(request, skill_id):
+    from .skill_catalog import get_skill_by_id
+
+    skill = get_skill_by_id(skill_id)
+    if skill is None:
+        return JsonResponse({"error": "Skill template not found"}, status=404)
+
+    agentId = (request.POST.get("agent_id") or "").strip()
+
+    profile = get_or_create_profile_for_user(request.user)
+    memory, _ = Memory.objects.get_or_create(user=profile)
+
+    existingBullet = MemoryBullet.objects.filter(
+        memory=memory,
+        is_skill=True,
+        skill_group=f"template:{skill['id']}",
+    ).first()
+
+    if existingBullet:
+        return JsonResponse({
+            "ok": False,
+            "error": "already_installed",
+            "message": f"Skill '{skill['name']}' is already installed.",
+        })
+
+    bullet = MemoryBullet.objects.create(
+        memory=memory,
+        content=skill["content"],
+        tags=["template", skill["category"], skill["id"]],
+        helpful_count=0,
+        harmful_count=0,
+        memory_type=3,
+        topic=skill["name"],
+        strength=100,
+        ttl_days=365,
+        is_skill=True,
+        skill_enabled=True,
+        skill_group=f"template:{skill['id']}",
+        learner_id=str(profile.pk),
+        context_scope_id="",
+        content_hash=MemoryBullet.compute_content_hash(skill["content"]),
+    )
+
+    try:
+        from .audit_service import log_audit
+        log_audit(
+            request.user,
+            event_type="skill_installed",
+            description=f"Installed template skill: {skill['name']}",
+            metadata={"skillId": skill["id"], "bulletId": bullet.pk},
+        )
+    except Exception:
+        pass
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "ok": True,
+            "message": f"Skill '{skill['name']}' installed successfully.",
+            "bulletId": bullet.pk,
+        })
+
+    if agentId:
+        return redirect("chat:agent_skills", agent_id=agentId)
+    return redirect("chat:skill_marketplace")
+
+
+@login_required(login_url="/")
+def agent_marketplace_view(request):
+    from .agent_catalog import get_all_template_agents, get_template_agents_by_category, search_template_agents, AGENT_CATEGORIES
+
+    categoryFilter = (request.GET.get("category") or "").strip()
+    searchQuery = (request.GET.get("q") or "").strip()
+
+    if searchQuery:
+        agents = search_template_agents(searchQuery)
+    elif categoryFilter:
+        agents = get_template_agents_by_category(categoryFilter)
+    else:
+        agents = get_all_template_agents()
+
+    return render(request, "chat/agent_marketplace.html", {
+        "templateAgents": agents,
+        "categories": AGENT_CATEGORIES,
+        "activeCategory": categoryFilter,
+        "searchQuery": searchQuery,
+        "totalCount": len(get_all_template_agents()),
+    })
+
+
+@login_required(login_url="/")
+def agent_marketplace_detail_view(request, template_id):
+    from .agent_catalog import get_template_agent_by_id
+
+    template = get_template_agent_by_id(template_id)
+    if template is None:
+        from django.http import Http404
+        raise Http404("Agent template not found")
+
+    return render(request, "chat/agent_marketplace_detail.html", {"template": template})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_template_install_view(request, template_id):
+    from .agent_catalog import get_template_agent_by_id
+    from .agent_service import create_agent_for_user
+
+    template = get_template_agent_by_id(template_id)
+    if template is None:
+        return JsonResponse({"error": "Agent template not found"}, status=404)
+
+    agent = create_agent_for_user(
+        request.user,
+        name=template["name"],
+        description=template["description"],
+        system_prompt=template["systemPrompt"],
+        temperature=template["temperature"],
+        max_tokens=template["maxTokens"],
+    )
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "ok": True,
+            "message": f"Agent '{template['name']}' created successfully.",
+            "agentId": agent.get("id"),
+        })
+
+    return redirect("chat:agent_list")
 

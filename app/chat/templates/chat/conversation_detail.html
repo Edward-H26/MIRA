@@ -9,49 +9,139 @@
 <link rel="stylesheet" href="{% static 'chat/conversation.css' %}?v={% now 'U' %}">
 {% endblock %}
 
-{% block content %}
-<div class="conversation-shell">
-  <div class="conversation-messages scroll-container" id="conversation-messages">
-    {% for message in session.messages.all %}
-      {% if message.role != 1 %}
-        <div class="message-row {% if message.role == 2 %}is-user{% else %}is-agent{% endif %}">
-          <div class="message-bubble {% if message.role == 2 %}bubble-user{% else %}bubble-agent{% endif %}">
-            {% if message.role == 2 %}
-              <span class="message-content">{{ message.content|linebreaksbr }}</span>
-            {% else %}
-              <div class="message-content message-content-markdown">{{ message.content|assistant_markdown }}</div>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-    {% empty %}
-      <div class="conversation-empty-state">No messages yet.</div>
-    {% endfor %}
-  </div>
+{% block page_body %}
+<div class="flex flex-1 overflow-hidden">
+  {% include "chat/includes/conversation_sidebar.html" %}
 
-  <form
-    class="conversation-input"
-    id="conversation-form"
-    method="post"
-    data-stream-url="{% url 'chat:conversation_detail' session.id %}"
-    data-lock-wait-url="{% url 'chat:conversation_lock_wait' session.id %}"
-    data-pending-prompt="{{ pending_prompt|default:''|escape }}"
-    data-generation-in-progress="{% if generation_in_progress %}1{% else %}0{% endif %}"
-  >
-    {% csrf_token %}
-    <input
-      type="text"
-      name="message"
-      id="conversation-message-input"
-      placeholder="Enter what you think here..."
-      aria-label="Message input"
-      autocomplete="off"
-    >
-    <div class="conversation-actions">
-      <button class="ghost-button" type="button" id="conversation-add-button">+ Add something...</button>
-      <button class="primary-button" type="submit" id="conversation-submit-button">Continue</button>
+  <main class="flex-1 flex flex-col h-full bg-white/50 backdrop-blur-md">
+    <!-- Chat Header -->
+    <div class="h-[72px] border-b border-mm-border flex items-center justify-between px-8 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 text-mm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="1"></circle>
+          <path d="M11 11a4 4 0 100-8 4 4 0 000 8zM21 21l-4.35-4.35"></path>
+        </svg>
+        <div class="flex items-center gap-2">
+          <div class="font-inter font-semibold text-mm-text text-[16px] leading-6">
+            {{ session.title|default:"Untitled" }}
+          </div>
+          {% if session.messages.count > 0 %}
+          <div class="bg-[#4edea3] px-2 py-0.5 rounded font-inter font-semibold text-white text-[10px] tracking-[0.5px] uppercase leading-4">
+            Agent Active
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Mobile conversation toggle -->
+      <button class="lg:hidden p-2 rounded-full hover:bg-mm-hover transition-colors" onclick="toggleConvSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
-  </form>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto px-8 py-6" id="conversation-messages">
+      <div class="flex flex-col gap-6 max-w-[900px] mx-auto">
+        {% for message in session.messages.all %}
+          {% if message.role != 1 %}
+            <div class="flex gap-4 {% if message.role == 2 %}flex-row-reverse{% endif %}">
+              <!-- Avatar -->
+              <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] {% if message.role == 2 %}bg-mm-primary{% else %}bg-mm-icon{% endif %}">
+                {% if message.role == 2 %}U{% elif message.sender_agent %}{{ message.sender_agent.name|truncatechars:1 }}{% else %}A{% endif %}
+              </div>
+
+              <!-- Message Content -->
+              <div class="flex-1 flex flex-col {% if message.role == 2 %}items-end{% endif %}">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="font-inter font-semibold text-mm-text text-[14px] leading-5">
+                    {% if message.role == 2 %}You{% elif message.sender_agent %}{{ message.sender_agent.name }}{% else %}Assistant{% endif %}
+                  </div>
+                  <div class="font-inter text-mm-light text-[12px] leading-4">
+                    {{ message.created_at|date:"g:i A" }}
+                  </div>
+                </div>
+                <div class="{% if message.role == 2 %}bg-mm-primary text-white{% else %}bg-mm-card text-mm-text{% endif %} rounded-xl px-5 py-4 max-w-[600px]">
+                  {% if message.role == 2 %}
+                    <span class="message-content font-inter text-[14px] leading-5 whitespace-pre-wrap">{{ message.content|linebreaksbr }}</span>
+                  {% else %}
+                    <div class="message-content message-content-markdown font-inter text-[14px] leading-5">{{ message.content|assistant_markdown }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% empty %}
+          <div class="flex items-center justify-center h-full py-20">
+            <div class="text-center">
+              <div class="font-inter font-semibold text-mm-muted text-[16px] mb-2">No messages yet</div>
+              <div class="font-inter text-mm-light text-[14px]">Start a conversation</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="conversation-typing-indicator" id="typing-indicator" style="display: none;">
+      <span class="typing-indicator-text" id="typing-indicator-text"></span>
+      <span class="conversation-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    </div>
+
+    <!-- Message Input -->
+    <div class="border-t border-mm-border px-8 py-5">
+      <div class="max-w-[900px] mx-auto">
+        <form
+          id="conversation-form"
+          method="post"
+          data-session-id="{{ session.id }}"
+          data-stream-url="{% url 'chat:conversation_detail' session.id %}"
+          data-upload-url="{% url 'chat:conversation_upload' session.id %}"
+          data-typing-url="{% url 'chat:typing' session.id %}"
+          data-lock-wait-url="{% url 'chat:conversation_lock_wait' session.id %}"
+          data-pending-prompt="{{ pending_prompt|default:''|escape }}"
+          data-generation-in-progress="{% if generation_in_progress %}1{% else %}0{% endif %}"
+        >
+          {% csrf_token %}
+          <div class="bg-mm-card rounded-xl border border-mm-border">
+            <input
+              type="text"
+              name="message"
+              id="conversation-message-input"
+              placeholder="Message {{ session.title|default:'the assistant' }}..."
+              aria-label="Message input"
+              autocomplete="off"
+              class="w-full bg-transparent border-none outline-none px-5 py-4 font-inter text-[14px] text-mm-text placeholder:text-mm-light"
+            >
+            <input
+              type="file"
+              id="conversation-file-input"
+              accept="image/jpeg,image/png,image/tiff,image/bmp,image/webp"
+              style="display: none;"
+            >
+            <div class="flex items-center justify-between px-4 pb-3">
+              <div class="flex gap-2">
+                <button type="button" id="conversation-add-button" class="p-1.5 rounded-md hover:bg-white transition-colors" title="Upload file">
+                  <svg class="w-[18px] h-[18px] text-mm-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                </button>
+              </div>
+              <button type="submit" id="conversation-submit-button" class="btn-gradient px-5 py-2.5 rounded-lg font-inter font-semibold text-[14px] transition-colors flex items-center gap-2">
+                Send
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
 </div>
 {% endblock %}
 
@@ -85,8 +175,8 @@
     };
 
     const removeEmptyState = () => {
-      const emptyState = messages.querySelector(".conversation-empty-state");
-      if (emptyState) {
+      const emptyState = messages.querySelector(".flex.items-center.justify-center");
+      if (emptyState && emptyState.querySelector(".text-center")) {
         emptyState.remove();
       }
     };
@@ -175,26 +265,49 @@
     const appendMessage = (role, content = "", options = {}) => {
       removeEmptyState();
 
+      const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+
       const row = document.createElement("div");
-      row.className = `message-row ${role === "user" ? "is-user" : "is-agent"}`;
+      row.className = `flex gap-4 ${role === "user" ? "flex-row-reverse" : ""}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = `flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] ${role === "user" ? "bg-mm-primary" : "bg-mm-icon"}`;
+      avatar.textContent = role === "user" ? "U" : "A";
+
+      const contentWrapper = document.createElement("div");
+      contentWrapper.className = `flex-1 flex flex-col ${role === "user" ? "items-end" : ""}`;
+
+      const meta = document.createElement("div");
+      meta.className = "flex items-center gap-2 mb-2";
+      const sender = document.createElement("div");
+      sender.className = "font-inter font-semibold text-mm-text text-[14px] leading-5";
+      sender.textContent = role === "user" ? "You" : "Assistant";
+      const time = document.createElement("div");
+      time.className = "font-inter text-mm-light text-[12px] leading-4";
+      time.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      meta.appendChild(sender);
+      meta.appendChild(time);
 
       const bubble = document.createElement("div");
-      bubble.className = `message-bubble ${role === "user" ? "bubble-user" : "bubble-agent"}`;
+      bubble.className = `${role === "user" ? "bg-mm-primary text-white" : "bg-mm-card text-mm-text"} rounded-xl px-5 py-4 max-w-[600px]`;
 
       const contentNode = document.createElement(role === "assistant" ? "div" : "span");
-      contentNode.className = role === "assistant" ? "message-content message-content-markdown" : "message-content";
+      contentNode.className = role === "assistant" ? "message-content message-content-markdown font-inter text-[14px] leading-5" : "message-content font-inter text-[14px] leading-5 whitespace-pre-wrap";
       contentNode.textContent = content;
       bubble.appendChild(contentNode);
 
       let dotsNode = null;
       if (options.pending) {
-        bubble.classList.add("is-pending");
         dotsNode = createTypingDots();
         bubble.appendChild(dotsNode);
       }
 
-      row.appendChild(bubble);
-      messages.appendChild(row);
+      contentWrapper.appendChild(meta);
+      contentWrapper.appendChild(bubble);
+      row.appendChild(avatar);
+      row.appendChild(contentWrapper);
+      container.appendChild(row);
+
       if (role === "assistant") {
         decorateCodeBlocks(contentNode);
       }
@@ -205,10 +318,14 @@
 
     const setStreamingState = (streaming) => {
       isStreaming = streaming;
-      form.classList.toggle("is-streaming", streaming);
       input.disabled = streaming;
       submitButton.disabled = streaming;
       addButton.disabled = streaming;
+      if (streaming) {
+        submitButton.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        submitButton.classList.remove("opacity-50", "cursor-not-allowed");
+      }
     };
 
     const updateAssistantBubble = (assistantUi, content, html = "") => {
@@ -219,7 +336,6 @@
         assistantUi.contentNode.textContent = content;
       }
       const hasContent = hasVisibleAssistantContent(content, html, assistantUi.contentNode);
-      assistantUi.bubble.classList.toggle("is-pending", !hasContent);
       if (assistantUi.dotsNode) {
         if (hasContent) {
           assistantUi.dotsNode.remove();
@@ -399,6 +515,197 @@
     const pendingPrompt = form.dataset.pendingPrompt || "";
     if (pendingPrompt && !initialGenerationInProgress) {
       submitMessage(pendingPrompt);
+    }
+
+    const fileInput = document.getElementById("conversation-file-input");
+    const uploadUrl = form.dataset.uploadUrl || "";
+
+    const handleFileUpload = async (file) => {
+      if (isStreaming || !file || !uploadUrl) return;
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
+        appendMessage("assistant", "Unsupported file type. Please upload JPEG, PNG, TIFF, BMP, or WebP images.");
+        return;
+      }
+
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        appendMessage("assistant", "File too large. Maximum size is 10 MB.");
+        return;
+      }
+
+      let assistantText = "";
+      let assistantHtml = "";
+
+      appendMessage("user", `[Uploaded: ${file.name}]`);
+      const assistantUi = appendMessage("assistant", "", { pending: true });
+      setStreamingState(true);
+      debugLog("upload-start", { fileName: file.name, size: file.size });
+
+      const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          let errorMsg = `Upload failed (${response.status})`;
+          try {
+            const errData = await response.json();
+            errorMsg = errData.error || errorMsg;
+          } catch (_) {}
+          throw new Error(errorMsg);
+        }
+
+        await readStream(response, (payload) => {
+          if (payload.type === "delta") {
+            assistantText += payload.content || "";
+            assistantHtml = payload.html || assistantHtml;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          } else if (payload.type === "done") {
+            assistantText = payload.content || assistantText;
+            assistantHtml = payload.html || assistantHtml;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          }
+        });
+
+        if (!hasVisibleAssistantContent(assistantText, assistantHtml, assistantUi.contentNode)) {
+          updateAssistantBubble(assistantUi, "Document processed, but no visible response was generated.");
+        }
+      } catch (error) {
+        debugLog("upload-error", String(error));
+        updateAssistantBubble(assistantUi, (error && error.message) || "Failed to process the uploaded document.");
+      } finally {
+        setStreamingState(false);
+        input.focus();
+      }
+    };
+
+    addButton.addEventListener("click", () => {
+      if (!isStreaming && fileInput) fileInput.click();
+    });
+
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+          handleFileUpload(fileInput.files[0]);
+          fileInput.value = "";
+        }
+      });
+    }
+
+    const sessionId = form.dataset.sessionId || "";
+    const typingUrl = form.dataset.typingUrl || "";
+    const typingIndicator = document.getElementById("typing-indicator");
+    const typingText = document.getElementById("typing-indicator-text");
+    let typingTimeout = null;
+    let typingDebounce = null;
+
+    const showTypingIndicator = (name) => {
+      if (typingIndicator && typingText) {
+        typingText.textContent = `${name} is typing`;
+        typingIndicator.style.display = "flex";
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          typingIndicator.style.display = "none";
+        }, 5000);
+      }
+    };
+
+    const hideTypingIndicator = () => {
+      if (typingIndicator) {
+        typingIndicator.style.display = "none";
+        clearTimeout(typingTimeout);
+      }
+    };
+
+    if (window.pusherClient && sessionId) {
+      const channel = window.pusherClient.subscribe(`group-${sessionId}`);
+
+      channel.bind("message:sent", (data) => {
+        if (isStreaming) return;
+        const row = document.createElement("div");
+        row.className = `flex gap-4 ${data.role === "user" ? "flex-row-reverse" : ""}`;
+        const avatar = document.createElement("div");
+        avatar.className = `flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] ${data.role === "user" ? "bg-mm-primary" : "bg-mm-icon"}`;
+        avatar.textContent = data.role === "user" ? "U" : (data.agentName ? data.agentName.charAt(0) : "A");
+        const contentWrapper = document.createElement("div");
+        contentWrapper.className = `flex-1 flex flex-col ${data.role === "user" ? "items-end" : ""}`;
+        const bubble = document.createElement("div");
+        bubble.className = `${data.role === "user" ? "bg-mm-primary text-white" : "bg-mm-card text-mm-text"} rounded-xl px-5 py-4 max-w-[600px]`;
+        const contentNode = document.createElement("div");
+        contentNode.className = "message-content message-content-markdown font-inter text-[14px] leading-5";
+        contentNode.textContent = data.content || "";
+        bubble.appendChild(contentNode);
+        contentWrapper.appendChild(bubble);
+        row.appendChild(avatar);
+        row.appendChild(contentWrapper);
+        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        container.appendChild(row);
+        scrollToBottom();
+        hideTypingIndicator();
+      });
+
+      channel.bind("user:typing", (data) => {
+        showTypingIndicator(data.userName || "Someone");
+      });
+
+      channel.bind("user:stop-typing", () => {
+        hideTypingIndicator();
+      });
+    }
+
+    if (typingUrl) {
+      input.addEventListener("keydown", () => {
+        clearTimeout(typingDebounce);
+        typingDebounce = setTimeout(() => {
+          const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+          fetch(typingUrl, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrfToken,
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          }).catch(() => {});
+        }, 800);
+      });
+    }
+
+    const chatMain = messages.closest("main");
+    if (chatMain) {
+      let dragCounter = 0;
+      chatMain.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        chatMain.classList.add("ring-2", "ring-mm-primary", "ring-inset");
+      });
+      chatMain.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          chatMain.classList.remove("ring-2", "ring-mm-primary", "ring-inset");
+        }
+      });
+      chatMain.addEventListener("dragover", (e) => {
+        e.preventDefault();
+      });
+      chatMain.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        chatMain.classList.remove("ring-2", "ring-mm-primary", "ring-inset");
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleFileUpload(file);
+      });
     }
   });
 </script>

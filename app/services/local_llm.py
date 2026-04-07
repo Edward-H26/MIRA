@@ -205,3 +205,60 @@ def preprocess_prompt(user_text: str, guidance: str = "", conversation_context: 
         from memoria.event_log import log_event
         log_event("local_llm_preprocess_error", error_type=exc.__class__.__name__)
         return None
+
+
+RESPONSE_TEMPLATE = """You are a helpful dietary AI assistant called Memoria. Answer the user's question clearly and concisely.
+
+## Relevant Memory Context
+{guidance}
+
+## Conversation History
+{conversation_context}
+
+## User Question
+{question}
+
+## Instructions
+Provide a direct, helpful answer. Use the memory context and conversation history when relevant. Be concise but thorough."""
+
+
+def generate_response(user_text: str, guidance: str = "", conversation_context: str = "") -> str | None:
+    trimmed = (user_text or "").strip()
+    if not trimmed:
+        return None
+
+    try:
+        import torch
+
+        model, tokenizer = _get_model_and_tokenizer()
+
+        guidance_block = guidance.strip() if guidance else "No prior context available."
+        context_block = conversation_context.strip() if conversation_context else "No prior conversation."
+        full_input = RESPONSE_TEMPLATE.format(
+            guidance=guidance_block,
+            conversation_context=context_block,
+            question=trimmed,
+        )
+
+        inputs = tokenizer(full_input, return_tensors="pt", truncation=True, max_length=2048)
+        model_device = _get_model_device(model)
+        inputs = {key: value.to(model_device) for key, value in inputs.items()}
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=512,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+            )
+
+        generated = outputs[0][inputs["input_ids"].shape[1]:]
+        response = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        return response or None
+    except Exception as exc:
+        from memoria.event_log import log_event
+        log_event("local_llm_generate_error", error_type=exc.__class__.__name__)
+        return None

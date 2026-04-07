@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ skill.name }} — Skill Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/skills.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <a href="{% url 'chat:skill_marketplace' %}" class="inline-flex items-center gap-1.5 text-[#00327d] hover:text-[#002561] font-semibold text-[14px] mb-6">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Marketplace
+    </a>
+
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px] mb-3">{{ skill.name }}</h1>
+        <div class="flex gap-2.5 items-center flex-wrap mb-4">
+            <span class="bg-[#00327d]/10 text-[#00327d] rounded-md px-2.5 py-1 text-[12px] font-semibold">Skill</span>
+            <span class="bg-mm-card text-[#64748b] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
+        </div>
+        <p class="font-inter text-[#64748b] text-[16px] leading-relaxed">{{ skill.description }}</p>
+    </div>
+
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">Install to Agent</h2>
+        <form method="post" action="{% url 'chat:skill_install' skill_id=skill.id %}" class="flex gap-3 items-center flex-wrap" id="install-form">
+            {% csrf_token %}
+            <select name="agent_id" class="flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white">
+                <option value="">All agents (global skill)</option>
+                {% for agent in agents %}
+                <option value="{{ agent.pk }}">{{ agent.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-gradient rounded-lg px-5 py-2.5 font-semibold font-inter text-[14px] transition-colors" id="install-btn">Install Skill</button>
+        </form>
+        <div id="install-msg" class="font-inter text-[13px] mt-3 hidden"></div>
+    </div>
+
+    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">Skill Content</h2>
+        <div class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#374151] leading-relaxed whitespace-pre-wrap border border-[#e2e8f0]">{{ skill.content }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("install-form");
+    const btn = document.getElementById("install-btn");
+    const msgEl = document.getElementById("install-msg");
+
+    if (form && btn) {
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            btn.disabled = true;
+            btn.textContent = "Installing...";
+
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: formData,
+            })
+            .then(r => r.json())
+            .then(data => {
+                msgEl.style.display = "block";
+                msgEl.classList.remove("hidden");
+                if (data.ok) {
+                    msgEl.className = "font-inter text-[13px] mt-3 text-emerald-500";
+                    msgEl.textContent = data.message;
+                    btn.textContent = "Installed";
+                } else {
+                    msgEl.className = "font-inter text-[13px] mt-3 text-red-500";
+                    msgEl.textContent = data.message || data.error;
+                    btn.disabled = false;
+                    btn.textContent = "Install Skill";
+                }
+            })
+            .catch(() => {
+                msgEl.style.display = "block";
+                msgEl.classList.remove("hidden");
+                msgEl.className = "font-inter text-[13px] mt-3 text-red-500";
+                msgEl.textContent = "Installation failed. Please try again.";
+                btn.disabled = false;
+                btn.textContent = "Install Skill";
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

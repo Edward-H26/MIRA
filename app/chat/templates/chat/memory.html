@@ -7,20 +7,22 @@
 {% endblock %}
 
 {% block content %}
-<div class="memory-shell" data-collapsed-offset="sidebar">
-    <form class="memory-toolbar" method="post">
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px] mb-6">Memory</h1>
+
+    <form class="flex items-center justify-between gap-4 flex-wrap mb-6" method="post">
         {% csrf_token %}
-        <div class="memory-search">
-            <span class="memory-search-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <div class="flex-1 min-w-[240px] max-w-[420px] flex items-center gap-3 border border-[#e2e8f0] rounded-lg bg-white px-4 py-2.5">
+            <span class="w-[18px] h-[18px] text-mm-light flex-shrink-0" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[18px] h-[18px]">
                     <circle cx="11" cy="11" r="7" stroke-width="2"></circle>
                     <path d="M20 20l-3.5-3.5" stroke-width="2" stroke-linecap="round"></path>
                 </svg>
             </span>
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search your AI LTM..." aria-label="Search memory">
-            <div class="memory-filter-wrap">
-                <button class="memory-filter{% if active_memory_type %} is-active{% endif %}" type="button" aria-label="Filter" id="memory-filter-btn" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search your AI LTM..." aria-label="Search memory" class="flex-1 border-none bg-transparent text-[13px] font-inter text-mm-text outline-none placeholder:text-mm-light">
+            <div class="memory-filter-wrap relative inline-flex items-center">
+                <button class="memory-filter{% if active_memory_type %} is-active{% endif %} border-none bg-transparent text-mm-light hover:text-mm-primary cursor-pointer inline-flex items-center justify-center p-0" type="button" aria-label="Filter" id="memory-filter-btn" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[18px] h-[18px]">
                         <path d="M4 6h16l-6 7v5l-4 2v-7L4 6z" stroke-width="2" stroke-linejoin="round"></path>
                     </svg>
                 </button>
@@ -34,10 +36,10 @@
         </div>
         <input type="hidden" name="type" id="memory-type-input" value="{{ active_memory_type }}">
         <input type="hidden" name="sort" id="memory-sort-input" value="{{ active_sort }}">
-        <div class="memory-sort-wrap">
-            <button class="memory-sort" type="button" id="memory-sort-btn" aria-expanded="false">
+        <div class="memory-sort-wrap relative inline-flex">
+            <button class="memory-sort-btn-style" type="button" id="memory-sort-btn" aria-expanded="false">
                 Sort by {{ sort_label }}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[14px] h-[14px]">
                     <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
             </button>
@@ -49,48 +51,48 @@
         </div>
     </form>
 
-    <div class="memory-stats">
-        <div class="memory-stat-card">
-            <div class="memory-stat-value">{{ total_count }}</div>
-            <div class="memory-stat-label">Total</div>
+    <div class="flex gap-3 flex-wrap mb-6">
+        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
+            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ total_count }}</div>
+            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Total</div>
         </div>
-        <div class="memory-stat-card">
-            <div class="memory-stat-value">{{ avg_strength|floatformat:1|default:"0" }}</div>
-            <div class="memory-stat-label">Avg Strength</div>
+        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
+            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ avg_strength|floatformat:1|default:"0" }}</div>
+            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Avg Strength</div>
         </div>
         {% for item in type_summary %}
-        <div class="memory-stat-card">
-            <div class="memory-stat-value">{{ item.count }}</div>
-            <div class="memory-stat-label">{{ item.label }}</div>
+        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
+            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ item.count }}</div>
+            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">{{ item.label }}</div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="memory-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for bullet in bullets %}
-        <div class="memory-card">
-            <div class="memory-card-top">
-                <span class="memory-pill">{{ bullet.get_memory_type_display }}</span>
-                <div class="memory-actions">
-                    <button type="button" aria-label="Helpful">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <div class="memory-card border border-[#e2e8f0] rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3">
+            <div class="flex items-start justify-between gap-3">
+                <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.get_memory_type_display }}</span>
+                <div class="inline-flex items-center gap-2 text-mm-light">
+                    <button type="button" aria-label="Helpful" class="border-none bg-transparent p-0 text-inherit hover:text-mm-primary cursor-pointer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-4 h-4">
                             <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h10.3a2 2 0 0 0 2-1.7l1.2-7A2 2 0 0 0 18.5 11H14z" stroke-width="1.6" stroke-linejoin="round"></path>
                         </svg>
                     </button>
-                    <button type="button" aria-label="Not helpful">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <button type="button" aria-label="Not helpful" class="border-none bg-transparent p-0 text-inherit hover:text-red-400 cursor-pointer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-4 h-4">
                             <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H6.7a2 2 0 0 0-2 1.7l-1.2 7A2 2 0 0 0 5.5 13H10z" stroke-width="1.6" stroke-linejoin="round"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <a href="{{ bullet.memory.get_absolute_url }}" class="memory-card-link">
-                <p class="memory-content">{{ bullet.content }}</p>
+            <a href="{{ bullet.memory.get_absolute_url }}" class="no-underline text-inherit">
+                <p class="m-0 font-inter text-[13px] leading-[1.6] text-mm-text break-words">{{ bullet.content }}</p>
             </a>
-            <div class="memory-meta">{{ bullet.last_accessed }}</div>
+            <div class="font-inter text-[12px] text-mm-muted mt-auto">{{ bullet.last_accessed }}</div>
         </div>
         {% empty %}
-        <div class="memory-empty">No memory bullets yet.</div>
+        <div class="col-span-full font-inter text-[14px] text-mm-muted py-8 text-center">No memory bullets yet.</div>
         {% endfor %}
     </div>
 </div>

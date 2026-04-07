@@ -1,0 +1,42 @@
+.activity-filter-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+.activity-badge-chat {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.activity-badge-memory {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+
+.activity-badge-agent {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.activity-badge-upload {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.activity-badge-login {
+    background: rgba(148, 163, 184, 0.1);
+    color: #64748b;
+}
+
+.activity-badge-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+@media (max-width: 768px) {
+    .max-w-\[1400px\] {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

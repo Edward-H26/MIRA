@@ -4,66 +4,55 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'chat/memory.css' %}?v={% now 'U' %}">
-<style>
-.memory-detail-shell { padding: 24px 32px; max-width: 900px; margin: 0 auto; }
-.memory-detail-breadcrumb { font-family: Inter, sans-serif; font-size: 13px; color: #999; margin-bottom: 20px; }
-.memory-detail-breadcrumb a { color: #8b5cf6; text-decoration: none; }
-.memory-detail-breadcrumb a:hover { text-decoration: underline; }
-.memory-detail-header { margin-bottom: 24px; }
-.memory-detail-title { font-family: Inter, sans-serif; font-size: 22px; font-weight: 600; color: #333; margin: 0 0 12px 0; }
-.memory-detail-meta { display: flex; gap: 20px; flex-wrap: wrap; }
-.memory-detail-meta-item { font-family: Inter, sans-serif; font-size: 13px; color: #777; }
-.memory-detail-meta-item strong { color: #555; font-weight: 500; }
-.memory-detail-bullets { display: flex; flex-direction: column; gap: 12px; }
-.memory-bullet-card { background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 16px; backdrop-filter: blur(8px); }
-.memory-bullet-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.memory-bullet-badges { display: flex; gap: 8px; align-items: center; }
-.memory-bullet-pill { font-family: Inter, sans-serif; font-size: 11px; font-weight: 500; padding: 2px 10px; border-radius: 12px; background: #ede9fe; color: #7c3aed; }
-.memory-bullet-topic { font-family: Inter, sans-serif; font-size: 11px; color: #999; }
-.memory-bullet-content { font-family: Inter, sans-serif; font-size: 14px; color: #444; line-height: 1.5; }
-.memory-bullet-footer { display: flex; gap: 16px; margin-top: 10px; font-family: Inter, sans-serif; font-size: 12px; color: #999; }
-.memory-bullet-footer span strong { color: #666; font-weight: 500; }
-.memory-detail-empty { text-align: center; padding: 48px 16px; color: #999; font-family: Inter, sans-serif; font-size: 15px; }
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="memory-detail-shell">
-    <div class="memory-detail-breadcrumb">
-        <a href="{% url 'chat:memory' %}">Memory</a> / Memory #{{ memory.id }}
+<div class="max-w-[900px] mx-auto px-12 py-8">
+    <div class="memory-detail-breadcrumb font-inter text-[13px] text-mm-muted mb-5">
+        <a href="{% url 'chat:memory' %}">Memory</a>
+        <span class="mx-1">/</span>
+        <span>Memory #{{ memory.id }}</span>
     </div>
 
-    <div class="memory-detail-header">
-        <h1 class="memory-detail-title">Memory #{{ memory.id }}</h1>
-        <div class="memory-detail-meta">
-            <span class="memory-detail-meta-item"><strong>Access Clock:</strong> {{ memory.access_clock }}</span>
-            <span class="memory-detail-meta-item"><strong>Created:</strong> {{ memory.created_at }}</span>
-            <span class="memory-detail-meta-item"><strong>Updated:</strong> {{ memory.updated_at }}</span>
+    <div class="mb-8">
+        <h1 class="font-manrope font-extrabold text-[#00327d] text-[28px] tracking-[-0.5px] m-0 mb-4">Memory #{{ memory.id }}</h1>
+        <div class="flex gap-5 flex-wrap">
+            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Access Clock:</span> {{ memory.access_clock }}</span>
+            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Created:</span> {{ memory.created_at }}</span>
+            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Updated:</span> {{ memory.updated_at }}</span>
         </div>
     </div>
 
-    <div class="memory-detail-bullets">
+    <div class="flex flex-col gap-4">
         {% for bullet in memory.memorybullet_set.all %}
-        <div class="memory-bullet-card">
-            <div class="memory-bullet-top">
-                <div class="memory-bullet-badges">
-                    <span class="memory-bullet-pill">{{ bullet.get_memory_type_display }}</span>
+        <div class="border border-[#e2e8f0] rounded-xl p-4 bg-white">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex gap-2 items-center">
+                    <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.get_memory_type_display }}</span>
                     {% if bullet.topic %}
-                    <span class="memory-bullet-topic">{{ bullet.topic }}</span>
+                    <span class="font-inter text-[12px] text-mm-muted">{{ bullet.topic }}</span>
                     {% endif %}
                 </div>
             </div>
-            <p class="memory-bullet-content">{{ bullet.content }}</p>
-            <div class="memory-bullet-footer">
-                <span><strong>Strength:</strong> {{ bullet.strength }}</span>
-                <span><strong>Helpful:</strong> {{ bullet.helpful_count }}</span>
-                <span><strong>Harmful:</strong> {{ bullet.harmful_count }}</span>
-                <span><strong>TTL:</strong> {{ bullet.ttl_days }} days</span>
-                <span><strong>Last accessed:</strong> {{ bullet.last_accessed }}</span>
+            <p class="font-inter text-[14px] text-mm-text leading-[1.6] m-0 mb-3">{{ bullet.content }}</p>
+            <div class="flex items-center gap-4 mb-3">
+                <span class="font-inter text-[12px] text-mm-muted">Strength</span>
+                <div class="flex-1 max-w-[200px]">
+                    <div class="memory-strength-track">
+                        <div class="memory-strength-fill" style="width: {{ bullet.strength }}%"></div>
+                    </div>
+                </div>
+                <span class="font-inter text-[12px] font-medium text-mm-text">{{ bullet.strength }}%</span>
+            </div>
+            <div class="flex gap-4 flex-wrap font-inter text-[12px] text-[#64748b]">
+                <span><span class="font-medium text-mm-text">Helpful:</span> {{ bullet.helpful_count }}</span>
+                <span><span class="font-medium text-mm-text">Harmful:</span> {{ bullet.harmful_count }}</span>
+                <span><span class="font-medium text-mm-text">TTL:</span> {{ bullet.ttl_days }} days</span>
+                <span><span class="font-medium text-mm-text">Last accessed:</span> {{ bullet.last_accessed }}</span>
             </div>
         </div>
         {% empty %}
-        <div class="memory-detail-empty">No memory bullets in this memory record.</div>
+        <div class="text-center py-12 font-inter text-[15px] text-mm-muted">No memory bullets in this memory record.</div>
         {% endfor %}
     </div>
 </div>

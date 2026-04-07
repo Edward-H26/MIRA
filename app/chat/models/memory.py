@@ -113,10 +113,34 @@ class Memory(models.Model):
             .order_by("-last_accessed")
         )
 
+        useSemanticScoring = False
+        queryEmbedding = None
+        bulletEmbeddings = {}
+        try:
+            from app.services import embedding as embeddingService
+            if embeddingService.is_available() and embeddingService.is_loaded():
+                queryEmbedding = embeddingService.encode_query(query)
+                if queryEmbedding is not None:
+                    for bullet in bullets:
+                        vec = embeddingService.json_to_embedding(getattr(bullet, "embedding_json", ""))
+                        if vec is not None:
+                            bulletEmbeddings[bullet.pk] = vec
+                    useSemanticScoring = bool(bulletEmbeddings)
+        except Exception:
+            pass
+
         scored = []
         for bullet in bullets:
             strength_score = MemoryBullet.compute_strength_score(bullet, self.access_clock)
-            relevance = MemoryBullet.text_similarity(query, bullet.content)
+
+            if useSemanticScoring and queryEmbedding is not None and bullet.pk in bulletEmbeddings:
+                from sklearn.metrics.pairwise import cosine_similarity
+                relevance = float(cosine_similarity(
+                    queryEmbedding, bulletEmbeddings[bullet.pk].reshape(1, -1)
+                )[0][0])
+            else:
+                relevance = MemoryBullet.text_similarity(query, bullet.content)
+
             type_priority = MemoryBullet.memory_type_priority(bullet.memory_type)
             tags = {tag.lower() for tag in (bullet.tags or [])}
             bonus = float(learned_bonus) if "meta_strategy" not in tags else -float(seed_penalty)
@@ -253,6 +277,15 @@ class Memory(models.Model):
                 new_bullet.semantic_access_index = access_index
                 new_bullet.semantic_last_access = now
             new_bullet.save()
+            try:
+                from app.services import embedding as embeddingService
+                if embeddingService.is_available():
+                    embs = embeddingService.encode_texts([content])
+                    if embs is not None:
+                        new_bullet.embedding_json = embeddingService.embedding_to_json(embs[0])
+                        new_bullet.save(update_fields=["embedding_json"])
+            except Exception:
+                pass
             created_count += 1
 
         self.save(update_fields=["access_clock"])

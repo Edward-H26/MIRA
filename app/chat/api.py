@@ -92,3 +92,108 @@ def api_public_daily_active_users_with_holidays(request):
             status=503,
             json_dumps_params=pretty_json,
         )
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def api_agents(request):
+    from .agent_service import get_agents_for_user
+    agents = get_agents_for_user(request.user, include_inactive=True)
+    return JsonResponse({"agents": agents, "count": len(agents)})
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def api_agent_skills(request, agent_id):
+    from .agent_service import get_agent_skills
+    enabledOnly = request.GET.get("enabled_only") == "1"
+    skills = get_agent_skills(request.user, str(agent_id), enabled_only=enabledOnly)
+    return JsonResponse({"skills": skills, "count": len(skills)})
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def api_notifications(request):
+    from .notification_service import get_recent_notifications, get_unread_count
+    notifications = get_recent_notifications(request.user, limit=20)
+    return JsonResponse({
+        "notifications": notifications,
+        "unreadCount": get_unread_count(request.user),
+    })
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def api_activity_feed(request):
+    from .audit_service import get_activity_feed_for_user
+    eventType = (request.GET.get("event_type") or "").strip()
+    limit = min(int(request.GET.get("limit", "20") or "20"), 100)
+    feed = get_activity_feed_for_user(request.user, limit=limit)
+    if eventType:
+        feed = [e for e in feed if e.get("eventType") == eventType]
+    return JsonResponse({"feed": feed, "count": len(feed)})
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def api_semantic_search(request):
+    query = (request.GET.get("q", "") or "").strip()
+    if not query:
+        return JsonResponse({"error": "query_required"}, status=400)
+
+    topK = min(int(request.GET.get("top_k", "10") or "10"), 50)
+
+    from app.services import embedding as embeddingService
+    if not embeddingService.is_available():
+        return JsonResponse({"mode": "unavailable", "results": [], "count": 0})
+
+    from .service import get_or_create_profile_for_user
+    from .models import MemoryBullet
+    import numpy as np
+
+    profile = get_or_create_profile_for_user(request.user)
+    bullets = list(
+        MemoryBullet.objects.filter(memory__user=profile)
+        .exclude(embedding_json="")
+        .values_list("pk", "content", "embedding_json", "memory_type", "topic")
+    )
+
+    if not bullets:
+        return JsonResponse({"mode": "semantic", "results": [], "count": 0, "indexedCount": 0})
+
+    queryEmbedding = embeddingService.encode_query(query)
+    if queryEmbedding is None:
+        return JsonResponse({"mode": "fallback", "results": [], "count": 0})
+
+    corpusEmbeddings = []
+    validBullets = []
+    for pk, content, embJson, memType, topic in bullets:
+        vec = embeddingService.json_to_embedding(embJson)
+        if vec is not None:
+            corpusEmbeddings.append(vec)
+            validBullets.append((pk, content, memType, topic))
+
+    if not corpusEmbeddings:
+        return JsonResponse({"mode": "semantic", "results": [], "count": 0, "indexedCount": 0})
+
+    corpusMatrix = np.array(corpusEmbeddings)
+    ranked = embeddingService.cosine_search(queryEmbedding, corpusMatrix, top_k=topK)
+
+    results = []
+    for idx, score in ranked:
+        pk, content, memType, topic = validBullets[idx]
+        results.append({
+            "id": pk,
+            "content": content,
+            "memoryType": memType,
+            "topic": topic or "",
+            "similarity": round(score, 4),
+        })
+
+    return JsonResponse({
+        "mode": "semantic",
+        "query": query,
+        "results": results,
+        "count": len(results),
+        "indexedCount": len(validBullets),
+    })

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Daily Messages (Vega-Lite){% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'chat/analytics.css' %}?v={% now 'U' %}">
-{% endblock %}
 
 {% block content %}
-<div class="analytics-shell" data-collapsed-offset="sidebar">
-    <h1 class="analytics-title">Daily Messages (Vega-Lite)</h1>
-    <div class="analytics-chart-section">
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <div class="mb-8">
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-2">Daily Messages</h1>
+        <p class="font-inter text-mm-muted text-[16px]">Interactive Vega-Lite visualization</p>
+    </div>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white">
         <div id="vis"></div>
     </div>
 </div>

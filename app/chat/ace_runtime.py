@@ -241,6 +241,17 @@ def _lesson_overlap_score(question, lesson_content):
 
 
 def _lesson_relevance_score(question, lesson_content):
+    try:
+        from app.services import embedding as embeddingService
+        if embeddingService.is_loaded():
+            qVec = embeddingService.encode_query(question)
+            lVec = embeddingService.encode_query(lesson_content)
+            if qVec is not None and lVec is not None:
+                from sklearn.metrics.pairwise import cosine_similarity
+                return float(cosine_similarity(qVec, lVec)[0][0])
+    except Exception:
+        pass
+
     question_tokens = set(_tokenize(question))
     lesson_tokens = set(_tokenize(lesson_content))
     if not question_tokens or not lesson_tokens:
@@ -486,7 +497,45 @@ def _extract_lessons(question, answer, trace):
     return _extract_heuristic_lessons(question, answer), "heuristic"
 
 
-def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None):
+def _build_semantic_context(query, memory_obj, learner_id, top_k=3):
+    try:
+        from app.services import embedding as embeddingService
+        if not embeddingService.is_loaded():
+            return ""
+        import numpy as np
+        bullets = list(
+            MemoryBullet.objects.filter(memory=memory_obj, learner_id=learner_id)
+            .exclude(embedding_json="")
+            .values_list("content", "embedding_json")
+        )
+        if not bullets:
+            return ""
+        queryEmb = embeddingService.encode_query(query)
+        if queryEmb is None:
+            return ""
+        corpusEmbs = []
+        validContents = []
+        for content, embJson in bullets:
+            vec = embeddingService.json_to_embedding(embJson)
+            if vec is not None:
+                corpusEmbs.append(vec)
+                validContents.append(content)
+        if not corpusEmbs:
+            return ""
+        corpusMatrix = np.array(corpusEmbs)
+        ranked = embeddingService.cosine_search(queryEmb, corpusMatrix, top_k=top_k)
+        if not ranked:
+            return ""
+        lines = ["=== Semantically Relevant Context ==="]
+        for rank, (idx, score) in enumerate(ranked, 1):
+            lines.append(f"{rank}. [sim={score:.2f}] {validContents[idx]}")
+        lines.append("===")
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
+def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None):
     profile = session.user
     learner_id = str(profile.user_id)
     context_scope_id = str(session.pk)
@@ -520,14 +569,21 @@ def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = Non
     log_event("ace_memory_retrieved", session_id=session.pk, bullet_count=len(bullets))
     guidance = guidance_from_bullets(bullets)
     conversation_context = _build_recent_conversation_context(session)
+    semanticContext = _build_semantic_context(user_text, memory_obj, learner_id, top_k=3)
     prompt_parts = []
     if guidance:
         prompt_parts.append(guidance)
+    if semanticContext:
+        prompt_parts.append(semanticContext)
     if conversation_context:
         prompt_parts.append(conversation_context)
     normalized_preprocessed_context = (preprocessed_context or "").strip()
     if normalized_preprocessed_context:
         prompt_parts.append(f"=== Preprocessed Analysis ===\n{normalized_preprocessed_context}\n===")
+    if agent:
+        agentPrompt = agent.get("systemPrompt", "") if isinstance(agent, dict) else getattr(agent, "system_prompt", "")
+        if agentPrompt:
+            prompt_parts.append(f"=== Agent Instructions ===\n{agentPrompt}\n===")
     prompt_parts.append(f"Latest user question:\n{user_text}")
     prompt_parts.append("Answer the latest user question while remaining consistent with the recent conversation.")
     base_prompt = "\n\n".join(prompt_parts)

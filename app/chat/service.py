@@ -16,8 +16,8 @@ from django.utils import timezone
 import math
 
 from memoria.event_log import log_event
-from app.services.gemini import generate_reply_stream
-from app.services.classifier import classify_prompt
+from app.services.gemini import generate_reply_stream, classify_prompt as gemini_classify
+from app.services.classifier import classify_prompt as regex_classify
 from app.services import local_llm
 from app.services.gemini import generate_reply_text
 from .ace_runtime import run_ace_chat_turn, guidance_from_bullets
@@ -122,22 +122,73 @@ def _get_memory_bullets_queryset_for_user(user):
     return MemoryBullet.objects.select_related("memory").filter(memory__user=profile)
 
 
+def _semantic_memory_bullet_search(queryset, query, top_k=50):
+    from app.services import embedding as embeddingService
+    if not embeddingService.is_available():
+        return None
+
+    import numpy as np
+
+    bullets = list(
+        queryset.exclude(embedding_json="")
+        .values_list("pk", "embedding_json")
+    )
+    if not bullets:
+        return None
+
+    queryEmbedding = embeddingService.encode_query(query)
+    if queryEmbedding is None:
+        return None
+
+    corpus = []
+    validPks = []
+    for pk, embJson in bullets:
+        vec = embeddingService.json_to_embedding(embJson)
+        if vec is not None:
+            corpus.append(vec)
+            validPks.append(pk)
+
+    if not corpus:
+        return None
+
+    corpusMatrix = np.array(corpus)
+    ranked = embeddingService.cosine_search(queryEmbedding, corpusMatrix, top_k=top_k)
+
+    orderedPks = [validPks[idx] for idx, score in ranked if score >= 0.25]
+    if not orderedPks:
+        return None
+
+    from django.db.models import Case, When, IntegerField
+    ordering = Case(
+        *[When(pk=pk, then=pos) for pos, pk in enumerate(orderedPks)],
+        output_field=IntegerField(),
+    )
+    return queryset.filter(pk__in=orderedPks).annotate(
+        semantic_rank=ordering
+    ).order_by("semantic_rank")
+
+
 def _apply_memory_bullet_filters(queryset, q="", memory_type="", topic="", strength_min=""):
     normalized_q = (q or "").strip()
     normalized_memory_type = (memory_type or "").strip()
     normalized_topic = (topic or "").strip()
     normalized_strength_min = (strength_min or "").strip()
 
-    if normalized_q:
-        terms = [term for term in re.split(r"\s+", normalized_q) if term]
-        for term in terms:
-            queryset = queryset.filter(content__icontains=term)
     if normalized_memory_type.isdigit():
         queryset = queryset.filter(memory_type=int(normalized_memory_type))
     if normalized_topic:
         queryset = queryset.filter(topic__icontains=normalized_topic)
     if normalized_strength_min.isdigit():
         queryset = queryset.filter(strength__gte=int(normalized_strength_min))
+
+    if normalized_q:
+        semantic_result = _semantic_memory_bullet_search(queryset, normalized_q)
+        if semantic_result is not None:
+            return semantic_result
+        terms = [term for term in re.split(r"\s+", normalized_q) if term]
+        for term in terms:
+            queryset = queryset.filter(content__icontains=term)
+
     return queryset
 
 
@@ -207,16 +258,12 @@ def build_agent_reply_from_stream(content):
     return "".join(chunks).strip() or FALLBACK_TEXT
 
 
-def _should_run_local_preprocess(prompt_text, classification):
-    if classification != "complex":
-        return False
-    if not _safe_env_bool("CHAT_ENABLE_LOCAL_PREPROCESS", True):
+def _should_use_local_model(prompt_text, classification):
+    if classification != "simple":
         return False
     if not local_llm.is_available():
         return False
-    if _safe_env_bool("CHAT_LOCAL_PREPROCESS_WARM_ONLY", True) and not local_llm.is_loaded():
-        return False
-    token_limit = _safe_env_int("CHAT_LOCAL_PREPROCESS_MAX_TOKENS", 220)
+    token_limit = _safe_env_int("CHAT_LOCAL_MAX_TOKENS", 220)
     return len((prompt_text or "").split()) <= token_limit
 
 
@@ -234,14 +281,25 @@ def stream_user_message_with_agent_reply(session, content):
         content=trimmed,
     )
 
-    recent_count = session.messages.values("id").order_by()[:15].count()
-    classification = classify_prompt(trimmed, message_count=recent_count)
-    log_event("chat_classify", session_id=session.pk, classification=classification)
-
-    use_local_ace_pipeline = _should_run_local_preprocess(trimmed, classification)
+    responding_agent = None
+    try:
+        from .agent_service import resolve_responding_agents
+        agents = resolve_responding_agents(session.user.user, str(session.pk), trimmed)
+        if agents:
+            responding_agent = agents[0]
+    except Exception:
+        pass
 
     try:
-        if use_local_ace_pipeline:
+        classification = gemini_classify(trimmed)
+    except Exception:
+        classification = regex_classify(trimmed)
+    log_event("chat_classify", session_id=session.pk, classification=classification)
+
+    use_local = _should_use_local_model(trimmed, classification)
+
+    try:
+        if use_local:
             profile = get_or_create_profile_for_user(session.user.user)
             memory_obj, _ = Memory.get_or_create_for_profile(profile)
             bullets = memory_obj.retrieve_ranked_bullets(
@@ -253,31 +311,32 @@ def stream_user_message_with_agent_reply(session, content):
             guidance = guidance_from_bullets(bullets)
             conversation_context = _build_local_preprocess_context(session)
 
-            ace_plan = local_llm.preprocess_prompt(
+            local_response = local_llm.generate_response(
                 trimmed,
                 guidance=guidance,
                 conversation_context=conversation_context,
             )
-            if ace_plan:
-                log_event("chat_local_ace_ok", session_id=session.pk, plan_len=len(ace_plan), bullets_retrieved=len(bullets))
-                assistant_text = (generate_reply_text(ace_plan) or "").strip() or FALLBACK_TEXT
+            if local_response:
+                log_event("chat_local_response_ok", session_id=session.pk, answer_len=len(local_response), bullets_retrieved=len(bullets))
+                assistant_text = local_response
             else:
-                ace_result = run_ace_chat_turn(session, trimmed)
+                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent)
                 assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
         else:
-            ace_result = run_ace_chat_turn(session, trimmed)
+            ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent)
             assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
 
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
             answer_len=len(assistant_text),
-            pipeline="local_ace" if use_local_ace_pipeline else "standard_ace",
+            pipeline="local_qwen" if use_local else "gemini_ace",
+            agent_name=responding_agent.get("name") if responding_agent else None,
         )
         _stream_debug_log(
             "ace_ok "
             f"session_id={session.pk} answer_len={len(assistant_text)} "
-            f"pipeline={'local_ace' if use_local_ace_pipeline else 'standard_ace'} "
+            f"pipeline={'local_qwen' if use_local else 'gemini_ace'} "
             f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
         )
     except Exception as exc:
@@ -335,20 +394,46 @@ def stream_user_message_with_agent_reply(session, content):
             "html": str(render_assistant_markdown_html(FALLBACK_TEXT)),
         }
 
+    sender_agent_orm = None
+    if responding_agent:
+        try:
+            from .models.agent import Agent
+            sender_agent_orm = Agent.objects.filter(name=responding_agent.get("name", "")).first()
+        except Exception:
+            pass
+
     assistant_message = Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
         content=assistant_text,
+        sender_agent=sender_agent_orm,
     )
     session.updated_at = timezone.now()
     session.save(update_fields=["updated_at"])
 
-    yield {
+    donePayload = {
         "type": "done",
         "message_id": assistant_message.id,
         "content": assistant_text,
         "html": str(render_assistant_markdown_html(assistant_text)),
     }
+    if responding_agent:
+        donePayload["agentName"] = responding_agent.get("name", "")
+        donePayload["agentId"] = responding_agent.get("id", "")
+
+    yield donePayload
+
+    try:
+        from app.services import pusher_service
+        pusher_service.send_message(session.pk, {
+            "messageId": assistant_message.id,
+            "content": assistant_text,
+            "role": "assistant",
+            "agentName": responding_agent.get("name", "") if responding_agent else None,
+            "agentId": responding_agent.get("id", "") if responding_agent else None,
+        })
+    except Exception:
+        pass
     log_event(
         "chat_stream_done",
         session_id=session.pk,
