@@ -2,8 +2,12 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ["miramemoria.com", "www.miramemoria.com"]
-CSRF_TRUSTED_ORIGINS = ["https://miramemoria.com", "https://www.miramemoria.com"]
+ALLOWED_HOSTS = ["miramemoria.com", "www.miramemoria.com", "mira-ydqq.onrender.com"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://miramemoria.com",
+    "https://www.miramemoria.com",
+    "https://mira-ydqq.onrender.com",
+]
 
 CORS_ALLOWED_ORIGINS = ["https://vega.github.io"]
 
