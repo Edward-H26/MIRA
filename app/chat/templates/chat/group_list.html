@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Groups - Memoria Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Groups</h1>
+            <p class="font-inter text-mm-muted text-[16px]">Create and join group conversations</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="toggle-join" class="border border-mm-border rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] text-mm-text hover:bg-mm-hover transition-colors">
+                Join Group
+            </button>
+            <button id="toggle-create" class="btn-gradient px-5 py-2.5 rounded-lg font-inter font-semibold text-[14px]">
+                + Create Group
+            </button>
+        </div>
+    </div>
+
+    <!-- Join Group Section -->
+    <div id="join-group-section" class="hidden border border-mm-border rounded-2xl p-8 bg-white/70 backdrop-blur-sm mb-8">
+        <h3 class="font-inter font-bold text-mm-text text-[18px] mb-4">Join a Group</h3>
+        <form method="post" action="{% url 'chat:group_join' %}" class="flex gap-4 items-end">
+            {% csrf_token %}
+            <div class="flex-1">
+                <label class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px] mb-1.5 block">Access Key</label>
+                <input type="text" name="access_key" required placeholder="Enter the group access key" class="w-full border border-mm-border rounded-lg px-4 py-3 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none bg-white/80">
+            </div>
+            <button type="submit" class="btn-gradient px-5 py-3 rounded-lg font-inter font-semibold text-[14px]">Join</button>
+        </form>
+    </div>
+
+    <!-- Create Group Section -->
+    <div id="create-group-section" class="hidden border border-mm-border rounded-2xl p-8 bg-white/70 backdrop-blur-sm mb-8">
+        <h3 class="font-inter font-bold text-mm-text text-[18px] mb-4">Create a New Group</h3>
+        <form method="post" action="{% url 'chat:group_create' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px] mb-1.5 block">Group Name</label>
+                <input type="text" name="title" required placeholder="e.g., Study Group Alpha" class="w-full border border-mm-border rounded-lg px-4 py-3 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none bg-white/80">
+            </div>
+            <div>
+                <label class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px] mb-1.5 block">Description</label>
+                <textarea name="description" rows="2" placeholder="What is this group about?" class="w-full border border-mm-border rounded-lg px-4 py-3 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none resize-none bg-white/80"></textarea>
+            </div>
+            <div>
+                <label class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px] mb-1.5 block">Access Key</label>
+                <input type="text" name="access_key" required placeholder="A unique key for others to join" class="w-full border border-mm-border rounded-lg px-4 py-3 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none bg-white/80">
+            </div>
+            <button type="submit" class="btn-gradient px-5 py-3 rounded-lg font-inter font-semibold text-[14px]">Create Group</button>
+        </form>
+    </div>
+
+    <!-- Group Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for group in groups %}
+        <a href="{{ group.url }}" class="border border-mm-border rounded-2xl p-6 bg-white/70 backdrop-blur-sm hover:shadow-lg transition-shadow block no-underline">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="bg-mm-primary rounded-lg w-10 h-10 flex items-center justify-center text-white font-semibold text-[14px]">
+                    {{ group.title|truncatechars:1 }}
+                </div>
+                <div>
+                    <div class="font-inter font-bold text-mm-text text-[16px]">{{ group.title }}</div>
+                    <div class="font-inter text-mm-muted text-[12px]">{{ group.member_count }} member{{ group.member_count|pluralize }}</div>
+                </div>
+            </div>
+            {% if group.description %}
+            <p class="font-inter text-mm-muted text-[14px] leading-relaxed mb-3 line-clamp-2">{{ group.description }}</p>
+            {% endif %}
+            <div class="flex items-center justify-between">
+                <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ group.role }}</span>
+                <span class="font-inter text-mm-light text-[11px] font-mono">Key: {{ group.access_key }}</span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-16">
+            <div class="font-inter font-semibold text-mm-muted text-[16px] mb-2">No groups yet</div>
+            <div class="font-inter text-mm-light text-[14px]">Create a group or join one using an access key</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById("toggle-join").addEventListener("click", function() {
+        document.getElementById("join-group-section").classList.toggle("hidden");
+        document.getElementById("create-group-section").classList.add("hidden");
+    });
+    document.getElementById("toggle-create").addEventListener("click", function() {
+        document.getElementById("create-group-section").classList.toggle("hidden");
+        document.getElementById("join-group-section").classList.add("hidden");
+    });
+</script>
+{% endblock %}

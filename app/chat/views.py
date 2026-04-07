@@ -3,8 +3,8 @@ import json
 import time
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
-from django.shortcuts import redirect, render
+from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.views import View
@@ -69,7 +69,14 @@ class MemoryListView(ListView):
 @method_decorator(login_required(login_url="/"), name="dispatch")
 class ConversationMessagesView(View):
     def get(self, request, session_id):
-        session = get_session_for_user(request.user, session_id, with_messages=True)
+        try:
+            session = get_session_for_user(request.user, session_id, with_messages=True)
+        except Http404:
+            from .models import Session, SessionMember
+            session = get_object_or_404(Session, pk=session_id, is_group=True)
+            profile = get_or_create_profile_for_user(request.user)
+            if not SessionMember.objects.filter(session=session, user=profile).exists():
+                raise Http404
         is_generating = session.ensure_generation_lock_fresh()
         pending_prompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
         pending_prompt = pending_prompts.pop(str(session.pk), "")
@@ -583,6 +590,15 @@ def typing_view(request, session_id):
 
 
 @login_required(login_url="/")
+@require_http_methods(["POST"])
+def stop_typing_view(request, session_id):
+    from app.services import pusher_service
+    profile = get_or_create_profile_for_user(request.user)
+    pusher_service.send_stop_typing(session_id, profile.pk)
+    return JsonResponse({"ok": True})
+
+
+@login_required(login_url="/")
 def document_upload_view(request):
     from .forms import DocumentUploadForm
     from app.services.ocr import extract_text_from_image, ocr_to_lessons, parse_document_fields
@@ -771,6 +787,98 @@ def agent_marketplace_detail_view(request, template_id):
         raise Http404("Agent template not found")
 
     return render(request, "chat/agent_marketplace_detail.html", {"template": template})
+
+
+@login_required(login_url="/")
+def group_list_view(request):
+    from .models import SessionMember
+    profile = get_or_create_profile_for_user(request.user)
+    memberships = SessionMember.objects.filter(user=profile).select_related("session")
+    groups = []
+    for m in memberships:
+        s = m.session
+        groups.append({
+            "id": s.pk,
+            "title": s.title,
+            "description": s.description,
+            "access_key": s.access_key,
+            "member_count": s.members.count(),
+            "role": m.role,
+            "url": s.get_absolute_url(),
+        })
+    return render(request, "chat/group_list.html", {"groups": groups})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def group_create_view(request):
+    from .models import Session, SessionMember
+    profile = get_or_create_profile_for_user(request.user)
+    title = request.POST.get("title", "").strip()
+    description = request.POST.get("description", "").strip()
+    access_key = request.POST.get("access_key", "").strip()
+    if not title or not access_key:
+        return JsonResponse({"error": "Title and access key are required."}, status=400)
+    if Session.objects.filter(access_key=access_key).exists():
+        return JsonResponse({"error": "Access key already in use."}, status=400)
+    session = Session.objects.create(
+        user=profile, title=title, description=description,
+        access_key=access_key, is_group=True,
+    )
+    SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_ADMIN)
+    try:
+        from app.services import pusher_service
+        pusher_service.send_member_joined(session.pk, {
+            "userId": profile.pk,
+            "userName": request.user.username,
+            "role": "admin",
+        })
+    except Exception:
+        pass
+    return redirect("chat:group_list")
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def group_join_view(request):
+    from .models import Session, SessionMember
+    profile = get_or_create_profile_for_user(request.user)
+    access_key = request.POST.get("access_key", "").strip()
+    if not access_key:
+        return JsonResponse({"error": "Access key is required."}, status=400)
+    session = Session.objects.filter(access_key=access_key, is_group=True).first()
+    if not session:
+        return JsonResponse({"error": "Invalid access key."}, status=404)
+    if SessionMember.objects.filter(session=session, user=profile).exists():
+        return redirect("chat:conversation_detail", session_id=session.pk)
+    SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_MEMBER)
+    try:
+        from app.services import pusher_service
+        pusher_service.send_member_joined(session.pk, {
+            "userId": profile.pk,
+            "userName": request.user.username,
+            "role": "member",
+        })
+    except Exception:
+        pass
+    return redirect("chat:conversation_detail", session_id=session.pk)
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def group_leave_view(request, session_id):
+    from .models import SessionMember
+    profile = get_or_create_profile_for_user(request.user)
+    SessionMember.objects.filter(session_id=session_id, user=profile).delete()
+    try:
+        from app.services import pusher_service
+        pusher_service.send_member_left(session_id, {
+            "userId": profile.pk,
+            "userName": request.user.username,
+        })
+    except Exception:
+        pass
+    return redirect("chat:group_list")
 
 
 @login_required(login_url="/")

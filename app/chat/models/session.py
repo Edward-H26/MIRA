@@ -8,21 +8,18 @@ from datetime import timedelta
 # Create your models here.
 class Session(models.Model):
     """
-    Real-world entity: Chat session belonging to a user
+    Real-world entity: Chat session belonging to a user (or a group)
     Why it exists: Group messages into a single conversation context
     """
-    # The user who owns this chat session; cascade to remove sessions if the user is deleted
     user = models.ForeignKey("users.UserProfile", on_delete=models.CASCADE, related_name="chat_session")
-    # Session title displayed in the UI
     title = models.CharField(max_length=200, blank=True, default="")
-    # Timestamp when the session was created
     created_at = models.DateTimeField(auto_now_add=True)
-    # Timestamp when the session was last updated
     updated_at = models.DateTimeField(auto_now=True)
-    # Server-side lock to prevent concurrent user submits while assistant generation is running
     generation_in_progress = models.BooleanField(default=False)
-    # Timestamp when the current generation lock was acquired
     generation_started_at = models.DateTimeField(null=True, blank=True)
+    is_group = models.BooleanField(default=False)
+    access_key = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["user", "-created_at"])]

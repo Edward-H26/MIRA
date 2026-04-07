@@ -281,6 +281,8 @@ def stream_user_message_with_agent_reply(session, content):
         content=trimmed,
     )
 
+    # TODO: Support multiple agent responses when multiple @mentions are used
+    # Currently uses the first mentioned agent's system prompt for the response
     responding_agent = None
     try:
         from .agent_service import resolve_responding_agents
@@ -428,6 +430,7 @@ def stream_user_message_with_agent_reply(session, content):
         pusher_service.send_message(session.pk, {
             "messageId": assistant_message.id,
             "content": assistant_text,
+            "html": str(render_assistant_markdown_html(assistant_text)),
             "role": "assistant",
             "agentName": responding_agent.get("name", "") if responding_agent else None,
             "agentId": responding_agent.get("id", "") if responding_agent else None,

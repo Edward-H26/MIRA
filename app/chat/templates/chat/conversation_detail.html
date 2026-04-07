@@ -15,7 +15,7 @@
 
   <main class="flex-1 flex flex-col h-full bg-white/50 backdrop-blur-md">
     <!-- Chat Header -->
-    <div class="h-[72px] border-b border-mm-border flex items-center justify-between px-8 flex-shrink-0">
+    <div class="min-h-[72px] border-b border-mm-border flex items-center justify-between px-8 flex-shrink-0 flex-wrap gap-2">
       <div class="flex items-center gap-3">
         <svg class="w-5 h-5 text-mm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="1"></circle>
@@ -32,6 +32,16 @@
           {% endif %}
         </div>
       </div>
+      {% if session.is_group %}
+      <div class="flex items-center gap-3">
+        <span class="font-inter text-mm-muted text-[13px]">{{ session.members.count }} member{{ session.members.count|pluralize }}</span>
+        <span class="font-inter text-mm-light text-[11px] font-mono bg-mm-hover px-2 py-1 rounded">Key: {{ session.access_key }}</span>
+        <form method="post" action="{% url 'chat:group_leave' session.id %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="font-inter text-[12px] text-red-500 hover:text-red-700 font-semibold transition-colors" onclick="return confirm('Leave this group?')">Leave</button>
+        </form>
+      </div>
+      {% endif %}
       <!-- Mobile conversation toggle -->
       <button class="lg:hidden p-2 rounded-full hover:bg-mm-hover transition-colors" onclick="toggleConvSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -158,6 +168,9 @@
     }
 
     let isStreaming = false;
+    let lastStreamedMessageId = null;
+    let streamCooldown = false;
+    const currentUserId = "{{ request.user.pk }}";
     const initialGenerationInProgress = form.dataset.generationInProgress === "1";
     const lockWaitUrl = form.dataset.lockWaitUrl || "";
     const streamDebug =
@@ -270,9 +283,12 @@
       const row = document.createElement("div");
       row.className = `flex gap-4 ${role === "user" ? "flex-row-reverse" : ""}`;
 
+      const senderName = options.senderName || (role === "user" ? "You" : "Assistant");
+      const senderInitial = role === "user" ? "U" : senderName.charAt(0).toUpperCase();
+
       const avatar = document.createElement("div");
       avatar.className = `flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] ${role === "user" ? "bg-mm-primary" : "bg-mm-icon"}`;
-      avatar.textContent = role === "user" ? "U" : "A";
+      avatar.textContent = senderInitial;
 
       const contentWrapper = document.createElement("div");
       contentWrapper.className = `flex-1 flex flex-col ${role === "user" ? "items-end" : ""}`;
@@ -281,7 +297,8 @@
       meta.className = "flex items-center gap-2 mb-2";
       const sender = document.createElement("div");
       sender.className = "font-inter font-semibold text-mm-text text-[14px] leading-5";
-      sender.textContent = role === "user" ? "You" : "Assistant";
+      sender.textContent = senderName;
+      sender.dataset.senderLabel = "true";
       const time = document.createElement("div");
       time.className = "font-inter text-mm-light text-[12px] leading-4";
       time.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -298,8 +315,23 @@
 
       let dotsNode = null;
       if (options.pending) {
-        dotsNode = createTypingDots();
-        bubble.appendChild(dotsNode);
+        const thinkingWrap = document.createElement("div");
+        thinkingWrap.className = "flex items-center gap-3";
+        const dotsWrap = document.createElement("div");
+        dotsWrap.className = "flex items-center gap-1";
+        for (let i = 0; i < 3; i++) {
+          const dot = document.createElement("div");
+          dot.className = "h-2 w-2 animate-bounce rounded-full bg-mm-light";
+          dot.style.animationDelay = `${-0.3 + i * 0.15}s`;
+          dotsWrap.appendChild(dot);
+        }
+        const thinkText = document.createElement("span");
+        thinkText.className = "text-sm text-mm-muted font-inter";
+        thinkText.textContent = "is thinking...";
+        thinkingWrap.appendChild(dotsWrap);
+        thinkingWrap.appendChild(thinkText);
+        bubble.appendChild(thinkingWrap);
+        dotsNode = thinkingWrap;
       }
 
       contentWrapper.appendChild(meta);
@@ -450,6 +482,13 @@
             assistantText = payload.content || assistantText;
             assistantHtml = payload.html || assistantHtml;
             updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            if (payload.message_id) {
+              lastStreamedMessageId = payload.message_id;
+            }
+            if (payload.agentName) {
+              const senderLabel = assistantUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+              if (senderLabel) senderLabel.textContent = payload.agentName;
+            }
           }
         });
         if (!hasVisibleAssistantContent(assistantText, assistantHtml, assistantUi.contentNode)) {
@@ -468,7 +507,9 @@
         );
       } finally {
         debugLog("request-end");
+        streamCooldown = true;
         setStreamingState(false);
+        setTimeout(() => { streamCooldown = false; }, 3000);
         input.focus();
       }
     };
@@ -617,7 +658,7 @@
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
           typingIndicator.style.display = "none";
-        }, 5000);
+        }, 3000);
       }
     };
 
@@ -632,53 +673,239 @@
       const channel = window.pusherClient.subscribe(`group-${sessionId}`);
 
       channel.bind("message:sent", (data) => {
-        if (isStreaming) return;
+        if (isStreaming || streamCooldown) return;
+        const sName = data.agentName || (data.role === "user" ? "User" : "Assistant");
         const row = document.createElement("div");
         row.className = `flex gap-4 ${data.role === "user" ? "flex-row-reverse" : ""}`;
         const avatar = document.createElement("div");
         avatar.className = `flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-[14px] ${data.role === "user" ? "bg-mm-primary" : "bg-mm-icon"}`;
-        avatar.textContent = data.role === "user" ? "U" : (data.agentName ? data.agentName.charAt(0) : "A");
+        avatar.textContent = data.role === "user" ? "U" : sName.charAt(0);
         const contentWrapper = document.createElement("div");
         contentWrapper.className = `flex-1 flex flex-col ${data.role === "user" ? "items-end" : ""}`;
+        const meta = document.createElement("div");
+        meta.className = "flex items-center gap-2 mb-2";
+        const senderEl = document.createElement("div");
+        senderEl.className = "font-inter font-semibold text-mm-text text-[14px] leading-5";
+        senderEl.textContent = sName;
+        meta.appendChild(senderEl);
+        contentWrapper.appendChild(meta);
         const bubble = document.createElement("div");
         bubble.className = `${data.role === "user" ? "bg-mm-primary text-white" : "bg-mm-card text-mm-text"} rounded-xl px-5 py-4 max-w-[600px]`;
         const contentNode = document.createElement("div");
         contentNode.className = "message-content message-content-markdown font-inter text-[14px] leading-5";
-        contentNode.textContent = data.content || "";
+        if (data.html) {
+          contentNode.innerHTML = data.html;
+        } else {
+          contentNode.textContent = data.content || "";
+        }
         bubble.appendChild(contentNode);
         contentWrapper.appendChild(bubble);
         row.appendChild(avatar);
         row.appendChild(contentWrapper);
         const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
         container.appendChild(row);
+        decorateCodeBlocks(contentNode);
         scrollToBottom();
         hideTypingIndicator();
       });
 
       channel.bind("user:typing", (data) => {
+        if (String(data.userId) === currentUserId) return;
         showTypingIndicator(data.userName || "Someone");
       });
 
-      channel.bind("user:stop-typing", () => {
+      channel.bind("user:stop-typing", (data) => {
+        if (String(data.userId) === currentUserId) return;
         hideTypingIndicator();
+      });
+
+      channel.bind("member:joined", (data) => {
+        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        const systemMsg = document.createElement("div");
+        systemMsg.className = "flex justify-center py-2";
+        const badge = document.createElement("div");
+        badge.className = "bg-mm-hover text-mm-muted font-inter text-[12px] font-medium px-4 py-1.5 rounded-full";
+        badge.textContent = (data.userName || "Someone") + " joined the group";
+        systemMsg.appendChild(badge);
+        container.appendChild(systemMsg);
+        scrollToBottom();
+      });
+
+      channel.bind("member:left", (data) => {
+        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        const systemMsg = document.createElement("div");
+        systemMsg.className = "flex justify-center py-2";
+        const badge = document.createElement("div");
+        badge.className = "bg-mm-hover text-mm-muted font-inter text-[12px] font-medium px-4 py-1.5 rounded-full";
+        badge.textContent = (data.userName || "Someone") + " left the group";
+        systemMsg.appendChild(badge);
+        container.appendChild(systemMsg);
+        scrollToBottom();
       });
     }
 
     if (typingUrl) {
-      input.addEventListener("keydown", () => {
+      const stopTypingUrl = typingUrl.replace("/typing/", "/stop-typing/");
+      let typingStopTimer = null;
+      let isTypingActive = false;
+
+      const sendTypingEvent = () => {
+        const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+        fetch(typingUrl, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+        }).catch(() => {});
+      };
+
+      const sendStopTypingEvent = () => {
+        isTypingActive = false;
+        const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+        fetch(stopTypingUrl, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+        }).catch(() => {});
+      };
+
+      input.addEventListener("input", () => {
         clearTimeout(typingDebounce);
-        typingDebounce = setTimeout(() => {
-          const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
-          fetch(typingUrl, {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": csrfToken,
-              "X-Requested-With": "XMLHttpRequest",
-            },
-          }).catch(() => {});
-        }, 800);
+        clearTimeout(typingStopTimer);
+
+        if (!isTypingActive) {
+          isTypingActive = true;
+          sendTypingEvent();
+        }
+
+        typingDebounce = setTimeout(sendTypingEvent, 2000);
+        typingStopTimer = setTimeout(sendStopTypingEvent, 3000);
+      });
+
+      form.addEventListener("submit", () => {
+        clearTimeout(typingDebounce);
+        clearTimeout(typingStopTimer);
+        if (isTypingActive) sendStopTypingEvent();
       });
     }
+
+    // @Mention autocomplete
+    let mentionDropdown = null;
+    let cachedAgents = null;
+
+    const fetchAgents = async () => {
+      if (cachedAgents) return cachedAgents;
+      try {
+        const resp = await fetch("/chat/api/agents/");
+        const data = await resp.json();
+        cachedAgents = data.agents || [];
+        return cachedAgents;
+      } catch (_) {
+        return [];
+      }
+    };
+
+    const closeMentionDropdown = () => {
+      if (mentionDropdown) {
+        mentionDropdown.remove();
+        mentionDropdown = null;
+      }
+    };
+
+    const showMentionDropdown = async (query) => {
+      const agents = await fetchAgents();
+      const filtered = agents.filter(a =>
+        a.name.toLowerCase().includes(query.toLowerCase())
+      );
+      if (filtered.length === 0) {
+        closeMentionDropdown();
+        return;
+      }
+
+      closeMentionDropdown();
+      mentionDropdown = document.createElement("div");
+      mentionDropdown.className = "absolute bottom-full left-0 mb-2 w-64 bg-white border border-mm-border rounded-xl shadow-lg overflow-hidden z-50";
+      mentionDropdown.id = "mention-dropdown";
+
+      const header = document.createElement("div");
+      header.className = "px-3 py-2 font-inter font-semibold text-mm-muted text-[11px] uppercase tracking-[0.5px] border-b border-mm-border";
+      header.textContent = "Mention an Agent";
+      mentionDropdown.appendChild(header);
+
+      filtered.forEach((agent, idx) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mm-hover transition-colors text-left";
+        if (idx === 0) item.classList.add("bg-mm-hover");
+
+        const avatar = document.createElement("div");
+        avatar.className = "w-7 h-7 rounded-full bg-mm-primary flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0";
+        avatar.textContent = agent.name.charAt(0).toUpperCase();
+
+        const info = document.createElement("div");
+        info.className = "flex-1 min-w-0";
+        const nameEl = document.createElement("div");
+        nameEl.className = "font-inter font-semibold text-mm-text text-[13px] truncate";
+        nameEl.textContent = agent.name;
+        const descEl = document.createElement("div");
+        descEl.className = "font-inter text-mm-light text-[11px] truncate";
+        descEl.textContent = agent.is_active ? "Active" : "Inactive";
+        info.appendChild(nameEl);
+        info.appendChild(descEl);
+
+        item.appendChild(avatar);
+        item.appendChild(info);
+
+        item.addEventListener("click", () => {
+          insertMention(agent.name);
+        });
+        mentionDropdown.appendChild(item);
+      });
+
+      const inputContainer = form.closest(".max-w-\\[900px\\]") || form.parentElement;
+      inputContainer.style.position = "relative";
+      inputContainer.appendChild(mentionDropdown);
+    };
+
+    const insertMention = (agentName) => {
+      const val = input.value;
+      const atIdx = val.lastIndexOf("@");
+      if (atIdx >= 0) {
+        input.value = val.substring(0, atIdx) + "@" + agentName + " ";
+      }
+      closeMentionDropdown();
+      input.focus();
+    };
+
+    input.addEventListener("input", () => {
+      const val = input.value;
+      const cursorPos = input.selectionStart || val.length;
+      const textBeforeCursor = val.substring(0, cursorPos);
+      const atMatch = textBeforeCursor.match(/@(\w*)$/);
+
+      if (atMatch) {
+        showMentionDropdown(atMatch[1]);
+      } else {
+        closeMentionDropdown();
+      }
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (mentionDropdown && e.key === "Escape") {
+        e.preventDefault();
+        closeMentionDropdown();
+      }
+      if (mentionDropdown && (e.key === "Tab" || e.key === "Enter")) {
+        const firstItem = mentionDropdown.querySelector("button");
+        if (firstItem) {
+          e.preventDefault();
+          firstItem.click();
+        }
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (mentionDropdown && !mentionDropdown.contains(e.target) && e.target !== input) {
+        closeMentionDropdown();
+      }
+    });
 
     const chatMain = messages.closest("main");
     if (chatMain) {

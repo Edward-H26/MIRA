@@ -86,6 +86,8 @@ function initSidebarNav() {
             isActive = path.startsWith(routes.chatActivityLog)
         } else if (key === "documents") {
             isActive = path.startsWith(routes.chatDocumentUpload)
+        } else if (key === "groups") {
+            isActive = path.startsWith("/chat/groups")
         }
 
         link.classList.toggle("is-active", isActive)

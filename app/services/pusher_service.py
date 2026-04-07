@@ -153,6 +153,21 @@ def send_member_joined(session_id: str | int, agent: dict) -> bool:
         return False
 
 
+def send_member_left(session_id: str | int, data: dict) -> bool:
+    client = _get_client()
+    if client is None:
+        return False
+    try:
+        client.trigger(
+            _channel_for_session(session_id),
+            EVENTS["MEMBER_LEFT"],
+            data,
+        )
+        return True
+    except Exception:
+        return False
+
+
 def send_notification(user_id: str | int, notification: dict) -> bool:
     client = _get_client()
     if client is None:
