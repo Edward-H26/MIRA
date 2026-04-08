@@ -144,9 +144,10 @@ class Memory(models.Model):
             type_priority = MemoryBullet.memory_type_priority(bullet.memory_type)
             tags = {tag.lower() for tag in (bullet.tags or [])}
             bonus = float(learned_bonus) if "meta_strategy" not in tags else -float(seed_penalty)
+            normalized_strength = min(strength_score / 100.0, 1.0) if strength_score > 0 else 0.0
             combined = (
                 float(relevance_w) * relevance
-                + float(strength_w) * (strength_score / max(float(base_strength), 1.0))
+                + float(strength_w) * normalized_strength
                 + float(type_w) * type_priority
                 + bonus
             )
@@ -212,8 +213,32 @@ class Memory(models.Model):
             content_hash = MemoryBullet.compute_content_hash(content)
             match = MemoryBullet.objects.filter(memory=self, content_hash=content_hash).first()
             if not match:
-                for bullet in MemoryBullet.objects.filter(memory=self, learner_id=learner_id)[:120]:
-                    if MemoryBullet.text_similarity(content, bullet.content) >= 0.9:
+                try:
+                    from app.services import embedding as embeddingService
+                    if embeddingService.is_available():
+                        import numpy as np
+                        from sklearn.metrics.pairwise import cosine_similarity as cos_sim
+                        new_emb = embeddingService.encode_query(content)
+                        existing = list(MemoryBullet.objects.filter(memory=self, learner_id=learner_id).exclude(embedding_json="").exclude(embedding_json__isnull=True)[:200])
+                        if existing and new_emb is not None:
+                            vecs = []
+                            valid = []
+                            for b in existing:
+                                vec = embeddingService.json_to_embedding(b.embedding_json)
+                                if vec is not None:
+                                    vecs.append(vec)
+                                    valid.append(b)
+                            if vecs:
+                                corpus = np.array(vecs)
+                                sims = cos_sim(new_emb, corpus)[0]
+                                best_idx = int(np.argmax(sims))
+                                if sims[best_idx] >= 0.85:
+                                    match = valid[best_idx]
+                except Exception:
+                    pass
+            if not match:
+                for bullet in MemoryBullet.objects.filter(memory=self, learner_id=learner_id)[:60]:
+                    if MemoryBullet.text_similarity(content, bullet.content) >= 0.75:
                         match = bullet
                         break
 
@@ -290,10 +315,75 @@ class Memory(models.Model):
 
         self.save(update_fields=["access_clock"])
 
+        if created_count > 0:
+            self.consolidate_similar_bullets(learner_id)
+
         try:
             from app.services.neo4j_memory import sync_memory_to_neo4j
             sync_memory_to_neo4j(learner_id, self)
         except Exception:
             pass
+
+    def consolidate_similar_bullets(self, learner_id, threshold=0.85):
+        from .memory_bullet import MemoryBullet
+        try:
+            from app.services import embedding as embeddingService
+            if not embeddingService.is_available():
+                return 0
+            import numpy as np
+            from sklearn.metrics.pairwise import cosine_similarity as cos_sim
+
+            bullets = list(
+                MemoryBullet.objects.filter(memory=self, learner_id=learner_id)
+                .exclude(embedding_json="").exclude(embedding_json__isnull=True)
+                .order_by("-strength")
+            )
+            if len(bullets) < 2:
+                return 0
+
+            vecs = []
+            valid = []
+            for b in bullets:
+                vec = embeddingService.json_to_embedding(b.embedding_json)
+                if vec is not None:
+                    vecs.append(vec)
+                    valid.append(b)
+
+            if len(valid) < 2:
+                return 0
+
+            corpus = np.array(vecs)
+            sim_matrix = cos_sim(corpus, corpus)
+
+            merged_ids = set()
+            merge_count = 0
+
+            for i in range(len(valid)):
+                if valid[i].pk in merged_ids:
+                    continue
+                for j in range(i + 1, len(valid)):
+                    if valid[j].pk in merged_ids:
+                        continue
+                    if sim_matrix[i][j] >= threshold:
+                        keeper = valid[i]
+                        duplicate = valid[j]
+                        keeper.helpful_count += duplicate.helpful_count
+                        keeper.strength = max(keeper.strength, duplicate.strength)
+                        keeper.semantic_strength = max(keeper.semantic_strength, duplicate.semantic_strength)
+                        keeper.episodic_strength = max(keeper.episodic_strength, duplicate.episodic_strength)
+                        keeper.procedural_strength = max(keeper.procedural_strength, duplicate.procedural_strength)
+                        if len(duplicate.content) > len(keeper.content):
+                            keeper.content = duplicate.content
+                            keeper.content_hash = MemoryBullet.compute_content_hash(keeper.content)
+                        keeper.save()
+                        merged_ids.add(duplicate.pk)
+                        merge_count += 1
+
+            if merged_ids:
+                MemoryBullet.objects.filter(pk__in=merged_ids).delete()
+
+            return merge_count
+        except Exception:
+            return 0
 
         return {"num_new_bullets": created_count, "num_updates": updated_count, "num_removals": 0}

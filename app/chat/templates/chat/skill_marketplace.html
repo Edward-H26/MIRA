@@ -9,7 +9,7 @@
 {% block content %}
 <div class="max-w-[1400px] mx-auto px-12 py-8">
     <div class="mb-8">
-        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px]">Skill Marketplace</h1>
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Skill Marketplace</h1>
         <p class="font-inter text-[#64748b] text-[16px] mt-1">Pre-built template skills to supercharge your agents</p>
     </div>
 
@@ -17,7 +17,7 @@
         <input
             type="text"
             name="q"
-            class="flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white outline-none focus:border-[#00327d] focus:ring-2 focus:ring-[#00327d]/10 transition"
+            class="flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white outline-none focus:border-mm-primary focus:ring-2 focus:ring-mm-primary/10 transition"
             placeholder="Search skills..."
             value="{{ searchQuery }}"
             autocomplete="off"
@@ -40,8 +40,8 @@
             </div>
             <p class="font-inter text-[#64748b] text-[14px] line-clamp-3 mb-4 leading-relaxed">{{ skill.description }}</p>
             <div class="flex items-center justify-between">
-                <span class="bg-[#00327d]/10 text-[#00327d] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
-                <span class="text-[#00327d] hover:text-[#002561] font-semibold text-[13px]">View details &rarr;</span>
+                <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
+                <span class="text-mm-primary hover:text-mm-primary-hover font-semibold text-[13px]">View details &rarr;</span>
             </div>
         </a>
         {% empty %}

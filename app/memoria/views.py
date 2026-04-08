@@ -51,5 +51,15 @@ def landing(request):
     return HttpResponse(template.render({}, request))
 
 
+def help_view(request):
+    template = loader.get_template("memoria/help.html")
+    return HttpResponse(template.render({}, request))
+
+
+def privacy_view(request):
+    template = loader.get_template("memoria/privacy.html")
+    return HttpResponse(template.render({}, request))
+
+
 def not_found_view(request, exception):
     return redirect("memoria:home")

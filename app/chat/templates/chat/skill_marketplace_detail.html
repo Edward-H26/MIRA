@@ -8,15 +8,15 @@
 
 {% block content %}
 <div class="max-w-[1400px] mx-auto px-12 py-8">
-    <a href="{% url 'chat:skill_marketplace' %}" class="inline-flex items-center gap-1.5 text-[#00327d] hover:text-[#002561] font-semibold text-[14px] mb-6">
+    <a href="{% url 'chat:skill_marketplace' %}" class="inline-flex items-center gap-1.5 text-mm-primary hover:text-mm-primary-hover font-semibold text-[14px] mb-6">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Marketplace
     </a>
 
     <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
-        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px] mb-3">{{ skill.name }}</h1>
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-3">{{ skill.name }}</h1>
         <div class="flex gap-2.5 items-center flex-wrap mb-4">
-            <span class="bg-[#00327d]/10 text-[#00327d] rounded-md px-2.5 py-1 text-[12px] font-semibold">Skill</span>
+            <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">Skill</span>
             <span class="bg-mm-card text-[#64748b] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
         </div>
         <p class="font-inter text-[#64748b] text-[16px] leading-relaxed">{{ skill.description }}</p>

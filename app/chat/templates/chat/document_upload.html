@@ -9,7 +9,7 @@
 {% block content %}
 <div class="max-w-[1400px] mx-auto px-12 py-8">
     <div class="mb-6">
-        <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px]">Scan Document</h1>
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Scan Document</h1>
         <p class="font-inter text-[#64748b] text-[16px] mt-1">Upload an image to extract text using OCR</p>
     </div>
 
@@ -25,7 +25,7 @@
         <form method="post" enctype="multipart/form-data" class="flex flex-col gap-6">
             {% csrf_token %}
 
-            <div class="upload-dropzone border-2 border-dashed border-[#e2e8f0] rounded-2xl p-12 text-center hover:border-[#00327d] transition-colors cursor-pointer" id="drop-area">
+            <div class="upload-dropzone border-2 border-dashed border-[#e2e8f0] rounded-2xl p-12 text-center hover:border-mm-primary transition-colors cursor-pointer" id="drop-area">
                 <div class="flex justify-center mb-4 text-[#64748b]">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>

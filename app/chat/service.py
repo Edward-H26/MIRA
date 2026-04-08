@@ -37,6 +37,64 @@ INITIAL_STREAM_CHUNK_SIZE = 5
 FALLBACK_TEXT = "Sorry, I couldn't reach the AI service just now."
 
 
+def retrieve_relevant_document_chunks(user_profile, query, agent_id=None, top_k=5):
+    from .models import Document
+    try:
+        from app.services import embedding as embedding_service
+        if not embedding_service.is_available():
+            return []
+    except Exception:
+        return []
+
+    docs = Document.objects.filter(user=user_profile)
+    if agent_id:
+        docs = docs.filter(agent_id=agent_id)
+    docs = list(docs)
+    if not docs:
+        return []
+
+    all_chunks = []
+    for doc in docs:
+        if not doc.raw_text or len(doc.raw_text.strip()) < 20:
+            continue
+        cached = doc.parsed_fields.get("chunk_embeddings") if isinstance(doc.parsed_fields, dict) else None
+        if cached:
+            for item in cached:
+                all_chunks.append({"filename": doc.filename, "text": item["text"], "embedding": item["embedding"]})
+        else:
+            text = doc.raw_text
+            chunk_size = 500
+            overlap = 50
+            chunks = []
+            for i in range(0, len(text), chunk_size - overlap):
+                chunk = text[i:i + chunk_size].strip()
+                if len(chunk) > 20:
+                    chunks.append(chunk)
+            if chunks:
+                try:
+                    embeddings = embedding_service.encode_texts(chunks)
+                    for idx, chunk in enumerate(chunks):
+                        all_chunks.append({"filename": doc.filename, "text": chunk, "embedding": embeddings[idx].tolist()})
+                except Exception:
+                    for chunk in chunks:
+                        all_chunks.append({"filename": doc.filename, "text": chunk, "embedding": None})
+
+    if not all_chunks:
+        return []
+
+    try:
+        import numpy as np
+        query_emb = embedding_service.encode_query(query)
+        valid_chunks = [c for c in all_chunks if c["embedding"] is not None]
+        if not valid_chunks:
+            return []
+        corpus = np.array([c["embedding"] for c in valid_chunks])
+        results = embedding_service.cosine_search(query_emb, corpus, top_k=top_k)
+        return [{"filename": valid_chunks[idx]["filename"], "chunk": valid_chunks[idx]["text"], "similarity": float(score)} for idx, score in results if score > 0.2]
+    except Exception:
+        return []
+
+
 def _is_stream_debug_enabled():
     return (os.getenv("CHAT_STREAM_DEBUG", "0") or "").strip().lower() in {"1", "true", "yes", "on"}
 
@@ -67,6 +125,29 @@ def _safe_env_int(name, default):
     except Exception:
         return default
     return parsed if parsed > 0 else default
+
+
+def _build_conversation_context(session, max_messages=12):
+    messages = list(
+        Message.objects.filter(session=session)
+        .order_by("-created_at")[:max_messages]
+    )
+    messages.reverse()
+    lines = []
+    for msg in messages:
+        role = "User" if msg.role == 2 else "Assistant"
+        if msg.role != 1:
+            lines.append(f"{role}: {msg.content[:500]}")
+    return "\n".join(lines[-max_messages:])
+
+
+def _build_guidance_from_bullets(bullets):
+    if not bullets:
+        return ""
+    lines = []
+    for b in bullets[:5]:
+        lines.append(f"- [{b.topic}] {b.content}")
+    return "\n".join(lines)
 
 
 def _build_local_preprocess_context(session):
@@ -219,7 +300,22 @@ def _get_analytics_metrics_for_user(user):
     }
 
 
+DEFAULT_CHANNELS = ["General", "HR team"]
+DEFAULT_PROJECTS = ["Project X", "Project Y", "Project Z"]
+
+
+def ensure_default_groups_for_user(user):
+    profile = get_or_create_profile_for_user(user)
+    existing = set(
+        Session.objects.filter(user=profile, is_group=True).values_list("title", flat=True)
+    )
+    for name in DEFAULT_CHANNELS + DEFAULT_PROJECTS:
+        if name not in existing:
+            Session.objects.create(user=profile, title=name, is_group=True)
+
+
 def get_sidebar_sessions_for_user(user):
+    ensure_default_groups_for_user(user)
     return _get_session_queryset_for_user(user).order_by("-updated_at")
 
 
@@ -292,10 +388,35 @@ def stream_user_message_with_agent_reply(session, content):
     except Exception:
         pass
 
+    from concurrent.futures import ThreadPoolExecutor
+
+    doc_chunks = []
+    classification = "complex"
+
+    def _classify():
+        try:
+            return gemini_classify(trimmed)
+        except Exception:
+            return regex_classify(trimmed)
+
+    def _retrieve_docs():
+        profile = session.user
+        agent_id = responding_agent.get("id") if responding_agent else None
+        return retrieve_relevant_document_chunks(profile, trimmed, agent_id=agent_id, top_k=5)
+
     try:
-        classification = gemini_classify(trimmed)
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_classify = executor.submit(_classify)
+            future_docs = executor.submit(_retrieve_docs)
+            classification = future_classify.result(timeout=10)
+            doc_chunks = future_docs.result(timeout=15)
     except Exception:
-        classification = regex_classify(trimmed)
+        if classification == "complex":
+            try:
+                classification = _classify()
+            except Exception:
+                classification = "complex"
+
     log_event("chat_classify", session_id=session.pk, classification=classification)
 
     use_local = _should_use_local_model(trimmed, classification)
@@ -311,6 +432,9 @@ def stream_user_message_with_agent_reply(session, content):
                 top_k=10,
             )
             guidance = guidance_from_bullets(bullets)
+            if doc_chunks:
+                doc_text = "\n".join([f"[{c['filename']}]: {c['chunk']}" for c in doc_chunks[:3]])
+                guidance = guidance + "\n\n[Relevant Documents]\n" + doc_text
             conversation_context = _build_local_preprocess_context(session)
 
             local_response = local_llm.generate_response(
@@ -322,23 +446,63 @@ def stream_user_message_with_agent_reply(session, content):
                 log_event("chat_local_response_ok", session_id=session.pk, answer_len=len(local_response), bullets_retrieved=len(bullets))
                 assistant_text = local_response
             else:
-                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent)
+                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
                 assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
         else:
-            ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent)
-            assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
+            profile = get_or_create_profile_for_user(session.user.user)
+            memory_obj, _ = Memory.get_or_create_for_profile(profile)
+            bullets = memory_obj.retrieve_ranked_bullets(
+                query=trimmed,
+                learner_id=str(profile.user_id),
+                context_scope_id=str(session.pk),
+                top_k=10,
+                min_learned=2,
+                base_strength=100.0,
+                relevance_w=0.60,
+                strength_w=0.20,
+                type_w=0.20,
+                seed_penalty=0.25,
+                learned_bonus=0.08,
+            )
+            guidance = _build_guidance_from_bullets(bullets)
+            conversation_context = _build_conversation_context(session)
+
+            system_prompt = ""
+            if responding_agent:
+                system_prompt = responding_agent.get("systemPrompt", "") if isinstance(responding_agent, dict) else getattr(responding_agent, "system_prompt", "")
+
+            context_parts = []
+            if system_prompt:
+                context_parts.append(f"[System Instructions]\n{system_prompt}")
+            if guidance:
+                context_parts.append(f"[Relevant Knowledge]\n{guidance}")
+            if doc_chunks:
+                doc_text = "\n".join([f"From \"{c['filename']}\":\n  {c['chunk']}" for c in doc_chunks[:5]])
+                context_parts.append(f"[Relevant Documents]\n{doc_text}")
+            context_parts.append(f"[Recent Conversation]\n{conversation_context}")
+            context_parts.append(f"[User Message]\n{trimmed}")
+            full_prompt = "\n\n".join(context_parts)
+
+            chunks_buf = []
+            try:
+                for chunk in generate_reply_stream(full_prompt):
+                    if chunk:
+                        chunks_buf.append(chunk)
+            except Exception:
+                pass
+            assistant_text = "".join(chunks_buf).strip() or FALLBACK_TEXT
 
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
             answer_len=len(assistant_text),
-            pipeline="local_qwen" if use_local else "gemini_ace",
+            pipeline="local_qwen" if use_local else "gemini_direct",
             agent_name=responding_agent.get("name") if responding_agent else None,
         )
         _stream_debug_log(
             "ace_ok "
             f"session_id={session.pk} answer_len={len(assistant_text)} "
-            f"pipeline={'local_qwen' if use_local else 'gemini_ace'} "
+            f"pipeline={'local_qwen' if use_local else 'gemini_direct'} "
             f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
         )
     except Exception as exc:
@@ -450,6 +614,16 @@ def stream_user_message_with_agent_reply(session, content):
         f"delta_count={delta_count or 1} answer_len={len(assistant_text)} "
         f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
     )
+
+    try:
+        ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
+        log_event(
+            "chat_post_response_memory",
+            session_id=session.pk,
+            ace_delta=ace_result.get("ace_delta"),
+        )
+    except Exception:
+        pass
 
 
 def get_memory_list_data(user, search_query="", memory_type="", sort_key="created"):

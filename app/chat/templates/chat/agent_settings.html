@@ -16,7 +16,7 @@
         Back to {{ agent.name }}
     </a>
 
-    <h1 class="font-manrope font-extrabold text-[#00327d] text-[32px] tracking-[-1px] mb-8">Settings</h1>
+    <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-8">Settings</h1>
 
     <form method="post" class="flex flex-col gap-6">
         {% csrf_token %}
@@ -33,7 +33,7 @@
                     </svg>
                     Instructions
                 </label>
-                <textarea name="system_prompt" rows="6" placeholder="Provide system-level instructions for this agent..." class="border border-mm-border rounded-lg px-4 py-3 font-inter text-mm-text text-[15px] focus:ring-2 focus:ring-[#00327d] focus:border-transparent outline-none transition-all resize-y min-h-[140px]">{{ agent.systemPrompt }}</textarea>
+                <textarea name="system_prompt" rows="6" placeholder="Provide system-level instructions for this agent..." class="border border-mm-border rounded-lg px-4 py-3 font-inter text-mm-text text-[15px] focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all resize-y min-h-[140px]">{{ agent.systemPrompt }}</textarea>
             </div>
         </div>
 
@@ -58,7 +58,7 @@
                             <span class="font-inter text-mm-muted text-[12px]">Creativity level</span>
                             <span id="temperature-label" class="font-inter font-bold text-mm-primary text-[15px]">{{ agent.temperature }}</span>
                         </div>
-                        <input type="range" name="temperature" id="settings-temperature" min="0" max="2" step="0.1" value="{{ agent.temperature }}" class="w-full h-2 rounded-full appearance-none cursor-pointer accent-[#00327d]">
+                        <input type="range" name="temperature" id="settings-temperature" min="0" max="2" step="0.1" value="{{ agent.temperature }}" class="w-full h-2 rounded-full appearance-none cursor-pointer accent-mm-primary">
                         <div class="flex justify-between mt-1">
                             <span class="font-inter text-mm-muted text-[11px]">Precise</span>
                             <span class="font-inter text-mm-muted text-[11px]">Creative</span>
@@ -75,7 +75,7 @@
                         </svg>
                         Max Tokens
                     </label>
-                    <input type="number" name="max_tokens" min="64" max="8192" value="{{ agent.maxTokens }}" class="border border-mm-border rounded-lg px-4 py-3 font-inter text-mm-text text-[15px] focus:ring-2 focus:ring-[#00327d] focus:border-transparent outline-none transition-all">
+                    <input type="number" name="max_tokens" min="64" max="8192" value="{{ agent.maxTokens }}" class="border border-mm-border rounded-lg px-4 py-3 font-inter text-mm-text text-[15px] focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all">
                 </div>
             </div>
         </div>
@@ -88,7 +88,7 @@
             <label class="flex items-center gap-3 cursor-pointer">
                 <div class="relative">
                     <input type="checkbox" name="is_active" {% if agent.isActive %}checked{% endif %} class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-[#00327d] transition-colors"></div>
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-mm-primary transition-colors"></div>
                     <div class="absolute left-[2px] top-[2px] w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
                 </div>
                 <div>

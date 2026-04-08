@@ -46,7 +46,7 @@
 }
 
 .skill-toggle input:checked + .skill-toggle-track {
-    background: #00327d;
+    background: var(--primary-blue);
 }
 
 .skill-toggle input:checked + .skill-toggle-track::after {
@@ -54,7 +54,7 @@
 }
 
 .skill-toggle input:focus-visible + .skill-toggle-track {
-    box-shadow: 0 0 0 3px rgba(0, 50, 125, 0.2);
+    box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.2);
 }
 
 input[type="range"] {
@@ -72,7 +72,7 @@ input[type="range"]::-webkit-slider-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #00327d;
+    background: var(--primary-blue);
     cursor: pointer;
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
@@ -82,7 +82,7 @@ input[type="range"]::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #00327d;
+    background: var(--primary-blue);
     cursor: pointer;
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);

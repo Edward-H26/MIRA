@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+{% load chat_extras %}
+{% block title %}{{ agent.name }} - Files{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chat/agents.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto px-12 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-2">
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">My Agent</h1>
+        <div class="flex items-center gap-2 px-4 py-2 rounded-full {% if agent.isActive %}bg-emerald-50 border border-emerald-200{% else %}bg-red-50 border border-red-200{% endif %}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if agent.isActive %}#10b981{% else %}#ef4444{% endif %}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 11-12.73 0"></path>
+                <line x1="12" y1="2" x2="12" y2="12"></line>
+            </svg>
+            <span class="font-inter font-semibold text-[13px] {% if agent.isActive %}text-emerald-700{% else %}text-red-700{% endif %}">
+                {% if agent.isActive %}Active{% else %}Inactive{% endif %}
+            </span>
+        </div>
+    </div>
+    <p class="font-inter text-mm-muted text-[15px] mb-6">Configure your AI agent's behavior, skills, and collaboration settings</p>
+
+    <!-- Tabs -->
+    <div class="flex items-center gap-1 border-b border-mm-border mb-8">
+        <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-muted hover:text-mm-primary transition-colors border-b-2 border-transparent hover:border-mm-primary/30">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Overview
+        </a>
+        <a href="{% url 'chat:agent_skills' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-muted hover:text-mm-primary transition-colors border-b-2 border-transparent hover:border-mm-primary/30">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            Skills ({{ agent.skills_count|default:"0" }})
+        </a>
+        <a href="{% url 'chat:agent_files' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-primary border-b-2 border-mm-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            Files ({{ documents|length }})
+        </a>
+        <a href="{% url 'chat:agent_memory' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-muted hover:text-mm-primary transition-colors border-b-2 border-transparent hover:border-mm-primary/30">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+            </svg>
+            Memory
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="border border-mm-border rounded-[12px] p-5 bg-white">
+            <div class="font-inter font-semibold text-mm-muted text-[11px] tracking-[0.5px] uppercase mb-1">Total Files</div>
+            <div class="font-inter font-bold text-mm-text text-[28px]">{{ documents|length }}</div>
+        </div>
+    </div>
+
+    <!-- Search + Upload -->
+    <div class="flex items-center gap-4 mb-6">
+        <div class="flex-1 relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mm-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="file-search" placeholder="Search files..." class="w-full pl-10 pr-4 py-2.5 border border-mm-border rounded-[8px] font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all">
+        </div>
+        <button type="button" onclick="document.getElementById('file-upload-modal').classList.remove('hidden')" class="btn-gradient rounded-[8px] px-5 py-2.5 font-inter font-semibold text-[14px] transition-all duration-300 flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Upload File
+        </button>
+    </div>
+
+    <!-- File List -->
+    <div class="flex flex-col gap-4" id="file-list">
+        {% for doc in documents %}
+        <div class="border border-mm-border rounded-[12px] p-6 bg-white file-card" data-filename="{{ doc.filename|lower }}">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-mm-primary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span class="font-inter font-bold text-mm-text text-[16px]">{{ doc.filename }}</span>
+                    {% if doc.file_size %}
+                    <span class="font-inter text-mm-primary text-[12px] font-medium">{{ doc.file_size }}</span>
+                    {% endif %}
+                    <span class="font-inter text-mm-muted text-[12px] flex items-center gap-1">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        {{ doc.created_at|relative_time }}
+                    </span>
+                </div>
+                <form method="post" action="{% url 'chat:agent_file_delete' agent_id=agent.id document_id=doc.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-400 hover:text-red-600 hover:bg-red-50 rounded p-1 transition-colors" onclick="return confirm('Delete this file?')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+                <div class="font-inter font-semibold text-mm-muted text-[12px] mb-1.5">Description</div>
+                <form method="post" action="{% url 'chat:agent_file_update_description' agent_id=agent.id document_id=doc.id %}">
+                    {% csrf_token %}
+                    <textarea name="description" rows="2" placeholder="Add a description to help the agent understand this file..." class="w-full border border-mm-border rounded-[8px] px-3 py-2 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all resize-none" onblur="this.form.submit()">{{ doc.description }}</textarea>
+                </form>
+            </div>
+
+            <!-- Agent Access Info -->
+            <div class="bg-[#f8fafc] rounded-[8px] p-3">
+                <div class="font-inter font-semibold text-mm-muted text-[12px] mb-2">Agent can access this file to:</div>
+                <ul class="flex flex-col gap-1">
+                    <li class="flex items-center gap-2 font-inter text-mm-muted text-[13px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-mm-primary flex-shrink-0"></span>
+                        Answer questions about the content
+                    </li>
+                    <li class="flex items-center gap-2 font-inter text-mm-muted text-[13px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-mm-primary flex-shrink-0"></span>
+                        Reference information during conversations
+                    </li>
+                    <li class="flex items-center gap-2 font-inter text-mm-muted text-[13px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-mm-primary flex-shrink-0"></span>
+                        Provide context-aware responses
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12">
+            <div class="font-inter font-semibold text-mm-muted text-[16px] mb-2">No files found</div>
+            <div class="font-inter text-mm-light text-[14px]">Upload files to give your agent access to reference materials</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="file-upload-modal" class="hidden fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+    <div class="absolute bg-white rounded-2xl border border-mm-border shadow-2xl overflow-hidden p-8" style="top: 20%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px;">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="font-inter font-bold text-mm-text text-[18px]">Upload File</h3>
+            <button type="button" onclick="document.getElementById('file-upload-modal').classList.add('hidden')" class="text-mm-muted hover:text-mm-text p-1 rounded transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="flex flex-col gap-4">
+                <div class="border-2 border-dashed border-mm-border rounded-xl p-8 text-center hover:border-mm-primary transition-colors cursor-pointer" onclick="document.getElementById('agent-file-input').click()">
+                    <svg class="w-8 h-8 text-mm-muted mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <div class="font-inter text-mm-muted text-[14px] mb-1">Click to choose a file</div>
+                    <div class="font-inter text-mm-light text-[12px]">PDF, DOCX, TXT, CSV, XLSX, PPT</div>
+                    <div id="selected-file-name" class="font-inter font-semibold text-mm-primary text-[14px] mt-2 hidden"></div>
+                </div>
+                <input type="file" id="agent-file-input" name="file" accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.csv,.ppt,.pptx" class="hidden" onchange="showSelectedFile(this)">
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px]">Description (optional)</label>
+                    <textarea name="description" rows="2" placeholder="Describe this file to help the agent use it effectively..." class="border border-mm-border rounded-[8px] px-3 py-2 font-inter text-[14px] text-mm-text placeholder:text-mm-light focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="document.getElementById('file-upload-modal').classList.add('hidden')" class="px-4 py-2.5 rounded-[8px] border border-mm-border font-inter font-semibold text-[14px] text-mm-muted hover:bg-mm-hover transition-colors">Cancel</button>
+                    <button type="submit" class="btn-gradient rounded-[8px] px-5 py-2.5 font-inter font-semibold text-[14px] transition-all duration-300">Upload</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showSelectedFile(input) {
+        var nameEl = document.getElementById("selected-file-name");
+        if (input.files && input.files[0]) {
+            nameEl.textContent = input.files[0].name;
+            nameEl.classList.remove("hidden");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var searchInput = document.getElementById("file-search");
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                var query = this.value.trim().toLowerCase();
+                var cards = document.querySelectorAll(".file-card");
+                cards.forEach(function(card) {
+                    var filename = card.dataset.filename || "";
+                    card.style.display = (!query || filename.includes(query)) ? "" : "none";
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

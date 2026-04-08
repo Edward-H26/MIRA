@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
 from PIL import Image
 
 ALLOWED_CONTENT_TYPES = {
@@ -9,6 +10,16 @@ ALLOWED_CONTENT_TYPES = {
 }
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 MIN_IMAGE_DIMENSION = 50
+
+_easyocr_reader = None
+
+
+def _get_reader():
+    global _easyocr_reader
+    if _easyocr_reader is None:
+        import easyocr
+        _easyocr_reader = easyocr.Reader(["en"], gpu=False)
+    return _easyocr_reader
 
 RECEIPT_PATTERNS = {
     "total": re.compile(r"(?:total|amount|sum|grand\s*total)[:\s]*\$?([\d,]+\.?\d*)", re.IGNORECASE),
@@ -59,10 +70,10 @@ def validate_image_dimensions(image: Image.Image) -> tuple[bool, str]:
 
 
 def extract_text_from_image(imageFile) -> OcrResult:
-    """Extract text from an image using pytesseract."""
     result = OcrResult()
 
     try:
+        imageFile.seek(0)
         image = Image.open(imageFile)
         if image.mode != "RGB":
             image = image.convert("RGB")
@@ -78,18 +89,15 @@ def extract_text_from_image(imageFile) -> OcrResult:
         return result
 
     try:
-        import pytesseract
-        rawText = pytesseract.image_to_string(image, lang="eng", timeout=30)
-    except ImportError:
-        result.status = "failed"
-        result.error = "OCR engine (tesseract) is not installed. Install via: brew install tesseract"
-        return result
+        reader = _get_reader()
+        imageArray = np.array(image)
+        detections = reader.readtext(imageArray)
+        rawText = "\n".join(text for _, text, _ in detections).strip()
     except Exception as exc:
         result.status = "failed"
         result.error = f"OCR extraction failed: {exc}"
         return result
 
-    rawText = rawText.strip()
     if not rawText:
         result.status = "failed"
         result.error = "No text could be extracted from the image."

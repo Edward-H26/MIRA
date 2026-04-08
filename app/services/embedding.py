@@ -11,11 +11,11 @@ _load_lock = threading.Lock()
 _load_failed = False
 _availability_cached: bool | None = None
 
-MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384
+MODEL_ID = "BAAI/bge-base-en-v1.5"
+EMBEDDING_DIM = 768
 _CACHE_DIR_NAMES = (
-    "sentence-transformers_all-MiniLM-L6-v2",
-    "models--sentence-transformers--all-MiniLM-L6-v2",
+    "BAAI_bge-base-en-v1.5",
+    "models--BAAI--bge-base-en-v1.5",
 )
 
 

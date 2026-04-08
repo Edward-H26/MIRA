@@ -16,8 +16,9 @@
             theme: {
                 extend: {
                     colors: {
-                        "mm-primary": "#00327d",
-                        "mm-primary-hover": "#002561",
+                        "mm-primary": "#5B5FEF",
+                        "mm-primary-hover": "#4D4FD9",
+                        "mm-primary-end": "#7B61FF",
                         "mm-header": "#f6fafe",
                         "mm-sidebar": "#f0f4f8",
                         "mm-border": "#e2e8f0",
@@ -55,21 +56,6 @@
                     Memoria&nbsp;&nbsp;Agent
                 </a>
 
-                <!-- Center Nav -->
-                <nav class="hidden lg:flex items-center gap-8">
-                    {% if user.is_authenticated %}
-                    <a href="{% url 'chat:agent_list' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-semibold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="agents">
-                        Agent Hub
-                    </a>
-                    <a href="{% url 'memoria:home' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-bold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="chat">
-                        Chat
-                    </a>
-                    <a href="{% url 'chat:analytics' %}" class="header-nav-link px-2 py-1 rounded font-manrope font-semibold text-[14px] tracking-[-0.4px] transition-colors text-mm-muted hover:text-mm-primary" data-header-nav="analytics">
-                        Analytics
-                    </a>
-                    {% endif %}
-                </nav>
-
                 <!-- Right Side -->
                 <div class="flex items-center gap-3">
                     <!-- Mobile Hamburger -->
@@ -84,7 +70,7 @@
                     {% if user.is_authenticated %}
                     <!-- Notifications -->
                     <div class="relative" id="notification-wrapper">
-                        <button id="notification-bell" type="button" class="p-2 rounded-full hover:bg-white/50 transition-colors relative" onclick="toggleNotificationDropdown()">
+                        <button id="notification-bell" type="button" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300 relative" onclick="toggleNotificationDropdown()">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 01-3.46 0"></path>
@@ -93,14 +79,14 @@
                             <span id="notification-badge" class="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">{{ unreadNotificationCount }}</span>
                             {% endif %}
                         </button>
-                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 rounded-xl border border-mm-border bg-white shadow-lg overflow-hidden" style="z-index: 100;">
-                            <div class="flex items-center justify-between px-4 py-3 border-b border-mm-border">
+                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 rounded-xl border border-white/30 bg-white/90 backdrop-blur-md shadow-lg overflow-hidden" style="z-index: 100;">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-white/20">
                                 <span class="font-inter font-semibold text-sm text-mm-text">Notifications</span>
                                 <button onclick="markAllNotificationsRead()" class="text-xs font-medium text-mm-primary hover:text-mm-primary-hover transition-colors">Mark all read</button>
                             </div>
                             <div id="notification-list" class="max-h-64 overflow-y-auto">
                                 {% for notif in recentNotifications %}
-                                <div class="px-4 py-3 border-b border-mm-border/50 hover:bg-mm-card transition-colors {% if not notif.isRead %}bg-mm-primary/5{% endif %}">
+                                <div class="px-4 py-3 border-b border-white/20 hover:bg-mm-card transition-colors {% if not notif.isRead %}bg-mm-primary/5{% endif %}">
                                     <div class="font-inter text-sm font-medium text-mm-text">{{ notif.title }}</div>
                                     <div class="font-inter text-xs text-mm-muted mt-0.5">{{ notif.message|truncatechars:80 }}</div>
                                 </div>
@@ -112,7 +98,7 @@
                     </div>
 
                     <!-- Settings -->
-                    <a href="{% url 'users:profile' %}" class="p-2 rounded-full hover:bg-white/50 transition-colors">
+                    <a href="{% url 'users:profile' %}" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
@@ -121,13 +107,13 @@
 
                     <!-- Avatar -->
                     <div class="relative">
-                        <button id="avatar-menu-trigger" type="button" class="w-8 h-8 rounded-full overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative" aria-haspopup="true" aria-expanded="false">
+                        <button id="avatar-menu-trigger" type="button" class="w-8 h-8 rounded-full overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 relative" aria-haspopup="true" aria-expanded="false">
                             {% if user.is_authenticated and user.profile.profile_img %}
                                 <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" class="w-full h-full object-cover" />
                             {% else %}
                                 <img src="{% static 'images/avatar.png' %}" alt="Avatar" class="w-full h-full object-cover" />
                             {% endif %}
-                            <div aria-hidden="true" class="absolute inset-0 border-2 border-mm-primary rounded-full"></div>
+                            <div aria-hidden="true" class="absolute inset-0 border-2 border-white/60 rounded-full"></div>
                         </button>
                         <div id="avatar-menu" class="hidden absolute right-0 mt-2 w-44 rounded-xl border border-mm-border bg-white shadow-lg" role="menu" style="z-index: 100;">
                             <div class="menu-header">
@@ -164,20 +150,20 @@
         <div class="flex flex-1 overflow-hidden">
             <!-- Left Sidebar -->
             {% if user.is_authenticated %}
-            <aside id="left-sidebar" class="hidden lg:flex flex-col h-full px-3 py-6 gap-4">
+            <aside id="left-sidebar" class="hidden md:flex flex-col h-full px-3 py-6 gap-4">
                 <!-- Integration Status Card -->
-                <div class="bg-[rgba(176,191,250,0.48)] rounded-xl p-3 flex gap-3 items-start">
-                    <div class="bg-mm-primary flex items-center justify-center rounded-lg w-10 h-10 flex-shrink-0">
+                <div class="bg-gradient-to-br from-purple-400/20 to-blue-400/20 backdrop-blur-sm rounded-[16px] p-3 flex gap-3 items-start border border-white/30 shadow-[0_4px_16px_rgba(139,92,246,0.1)]">
+                    <div class="bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center rounded-[12px] w-10 h-10 flex-shrink-0 shadow-lg">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
                             <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
                         </svg>
                     </div>
                     <div class="flex flex-col">
-                        <div class="font-inter font-semibold text-[#171c1f] text-[14px] leading-5">Integrations</div>
+                        <div class="font-inter font-semibold text-slate-700 text-[14px] leading-5">Integrations</div>
                         <div class="flex gap-1 items-center">
-                            <div class="bg-[#4edea3] rounded-full w-1.5 h-1.5"></div>
-                            <div class="font-inter font-medium text-mm-icon text-[12px] leading-4">Connected</div>
+                            <div class="bg-emerald-400 rounded-full w-1.5 h-1.5 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
+                            <div class="font-inter font-medium text-slate-600 text-[12px] leading-4">Connected</div>
                         </div>
                     </div>
                 </div>
@@ -194,89 +180,82 @@
                             </svg>
                             <span class="sidebar-nav-label">Chat</span>
                         </a>
-                        <a href="{% url 'chat:group_list' %}" class="sidebar-nav-link" data-sidebar-nav="groups">
-                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 010 7.75"></path>
-                            </svg>
-                            <span class="sidebar-nav-label">Groups</span>
-                        </a>
-                        <a href="{% url 'chat:agent_list' %}" class="sidebar-nav-link" data-sidebar-nav="agents">
+                        <a href="{% url 'chat:my_agent' %}" class="sidebar-nav-link" data-sidebar-nav="agents">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
                             </svg>
                             <span class="sidebar-nav-label">My Agent</span>
                         </a>
-                        <a href="{% url 'chat:memory' %}" class="sidebar-nav-link" data-sidebar-nav="memory">
+                        <a href="{% url 'chat:agent_marketplace' %}" class="sidebar-nav-link" data-sidebar-nav="directory">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M12 16v-4"></path>
-                                <path d="M12 8h.01"></path>
+                                <path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18Z"></path>
+                                <path d="M6 12H4a2 2 0 00-2 2v6a2 2 0 002 2h2"></path>
+                                <path d="M18 9h2a2 2 0 012 2v9a2 2 0 01-2 2h-2"></path>
                             </svg>
-                            <span class="sidebar-nav-label">Memory</span>
-                        </a>
-                        <a href="{% url 'chat:dashboard' %}" class="sidebar-nav-link" data-sidebar-nav="dashboard">
-                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="3" width="7" height="7"></rect>
-                                <rect x="3" y="14" width="7" height="7"></rect>
-                                <rect x="14" y="14" width="7" height="7"></rect>
-                            </svg>
-                            <span class="sidebar-nav-label">Dashboard</span>
-                        </a>
-                        <a href="{% url 'chat:activity_log' %}" class="sidebar-nav-link" data-sidebar-nav="activity">
-                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                            </svg>
-                            <span class="sidebar-nav-label">Activity</span>
-                        </a>
-                        <a href="{% url 'chat:document_upload' %}" class="sidebar-nav-link" data-sidebar-nav="documents">
-                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="12" y1="18" x2="12" y2="12"></line>
-                                <line x1="9" y1="15" x2="15" y2="15"></line>
-                            </svg>
-                            <span class="sidebar-nav-label">Documents</span>
+                            <span class="sidebar-nav-label">Agent Directory</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- Footer -->
                 <div class="mt-auto flex flex-col pb-4">
-                    <button class="sidebar-nav-link" onclick="window.open('https://github.com/','_blank')">
+                    <a href="{% url 'memoria:help' %}" class="sidebar-nav-link">
                         <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"></path>
                             <line x1="12" y1="17" x2="12.01" y2="17"></line>
                         </svg>
-                        <span class="font-inter font-medium text-[14px] leading-5 text-mm-nav">Help</span>
-                    </button>
-                    <button class="sidebar-nav-link">
+                        <span class="font-inter font-medium text-[14px] leading-5 text-slate-600/60">Help</span>
+                    </a>
+                    <a href="{% url 'memoria:privacy' %}" class="sidebar-nav-link">
                         <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         </svg>
-                        <span class="font-inter font-medium text-[14px] leading-5 text-mm-nav">Privacy</span>
-                    </button>
+                        <span class="font-inter font-medium text-[14px] leading-5 text-slate-600/60">Privacy</span>
+                    </a>
                 </div>
             </aside>
             {% endif %}
 
             <!-- Page Body (overridable by chat pages to inject ConversationSidebar) -->
             {% block page_body %}
-            <main id="main-content" class="flex-1 overflow-auto bg-white/70 backdrop-blur-sm">
+            <main id="main-content" class="flex-1 overflow-auto backdrop-blur-[20px] bg-white/20">
                 {% block content %}{% endblock %}
             </main>
             {% endblock %}
         </div>
+
+        {% if user.is_authenticated %}
+        <!-- Mobile Bottom Nav -->
+        <nav class="mobile-bottom-nav">
+            <a href="{% url 'memoria:home' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                </svg>
+                <span class="text-[10px] font-inter font-medium">Chat</span>
+            </a>
+            <a href="{% url 'chat:my_agent' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="agent">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
+                </svg>
+                <span class="text-[10px] font-inter font-medium">My Agent</span>
+            </a>
+            <a href="{% url 'chat:agent_marketplace' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="directory">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18Z"></path>
+                    <path d="M6 12H4a2 2 0 00-2 2v6a2 2 0 002 2h2"></path>
+                    <path d="M18 9h2a2 2 0 012 2v9a2 2 0 01-2 2h-2"></path>
+                </svg>
+                <span class="text-[10px] font-inter font-medium">Directory</span>
+            </a>
+        </nav>
+        {% endif %}
     </div>
     {% endblock %}
 
     <!-- Search Modal -->
     <div id="search-modal" class="hidden fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
-        <div id="search-modal-panel" class="absolute bg-white rounded-2xl border border-mm-border shadow-2xl overflow-hidden" style="top: 20%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px;">
+        <div id="search-modal-panel" class="absolute bg-white/90 backdrop-blur-md rounded-2xl border border-white/30 shadow-2xl overflow-hidden" style="top: 20%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 520px;">
             <div class="flex items-center px-4 py-3 border-b border-mm-border gap-2.5">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>

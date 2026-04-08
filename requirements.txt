@@ -72,5 +72,5 @@ trl==0.29.0
 neo4j==5.28.1
 sentence-transformers>=3.0.0
 scikit-learn>=1.5.0
-pytesseract>=0.3.13
+easyocr>=1.7.0
 pusher>=3.3.4

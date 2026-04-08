@@ -19,7 +19,7 @@
     line-height: 34px;
     font-weight: 800;
     margin: 0 0 20px;
-    color: #00327d;
+    color: var(--primary-blue);
 }
 .profile-avatar-row {
     display: flex;
@@ -32,7 +32,7 @@
     height: 80px;
     border-radius: 999px;
     overflow: hidden;
-    border: 2px solid #00327d;
+    border: 2px solid var(--primary-blue);
     background: #ffffff;
     display: flex;
     align-items: center;
@@ -41,7 +41,7 @@
     transition: border-color 0.15s;
 }
 .profile-avatar:hover {
-    border-color: #002561;
+    border-color: var(--primary-hover);
 }
 .profile-avatar img {
     width: 100%;
@@ -88,7 +88,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 32px;
-    box-shadow: 0 4px 12px rgba(0, 50, 125, 0.04);
+    box-shadow: 0 4px 12px rgba(91, 95, 239, 0.04);
     margin-bottom: 20px;
 }
 
@@ -105,7 +105,7 @@
     line-height: 24px;
     font-weight: 700;
     margin: 0 0 16px;
-    color: #00327d;
+    color: var(--primary-blue);
 }
 .profile-grid {
     display: grid;
@@ -140,7 +140,7 @@
 }
 .profile-input:focus {
     border-color: transparent;
-    box-shadow: 0 0 0 2px #00327d;
+    box-shadow: 0 0 0 2px var(--primary-blue);
 }
 .profile-input-disabled {
     cursor: default;
@@ -149,7 +149,7 @@
     background: #f8fafc;
 }
 .profile-primary-button {
-    background: #00327d;
+    background: var(--primary-blue);
     color: #ffffff;
     border: 0;
     border-radius: 8px;
@@ -161,10 +161,10 @@
     transition: background-color 0.15s;
 }
 .profile-primary-button:hover {
-    background: #002561;
+    background: var(--primary-hover);
 }
 .profile-secondary-button {
-    background: #00327d;
+    background: var(--primary-blue);
     color: #ffffff;
     border: 0;
     border-radius: 8px;
@@ -181,7 +181,7 @@
     transition: background-color 0.15s;
 }
 .profile-secondary-button:hover {
-    background: #002561;
+    background: var(--primary-hover);
 }
 .profile-security {
     display: flex;
@@ -226,7 +226,7 @@
     padding: 0;
     max-width: 520px;
     width: min(92vw, 520px);
-    box-shadow: 0 30px 70px rgba(0, 50, 125, 0.18);
+    box-shadow: 0 30px 70px rgba(91, 95, 239, 0.18);
     position: fixed;
     inset: 0;
     margin: auto;

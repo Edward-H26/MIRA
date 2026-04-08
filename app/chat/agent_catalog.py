@@ -1,9 +1,11 @@
 TEMPLATE_AGENTS = [
     {
         "id": "executive-assistant",
-        "name": "Executive Assistant",
+        "name": "Sarah Chen's Agent",
         "category": "productivity",
-        "description": "Manages scheduling, drafts correspondence, prepares briefing documents, and tracks action items across meetings and projects.",
+        "department": "Engineering",
+        "projects": ["Project X", "Project Z"],
+        "description": "Scheduling, briefing docs, and action item tracking",
         "systemPrompt": (
             "You are an executive assistant agent. Your responsibilities include:\n"
             "- Drafting professional emails, memos, and briefing documents\n"
@@ -19,9 +21,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "content-strategist",
-        "name": "Content Strategist",
+        "name": "Marcus Rivera's Agent",
         "category": "marketing",
-        "description": "Plans and creates content calendars, blog outlines, social media copy, and marketing materials aligned with brand voice and business goals.",
+        "department": "Marketing",
+        "projects": ["Project Y"],
+        "description": "Content calendars, blog outlines, and social copy",
         "systemPrompt": (
             "You are a content strategy agent. Your responsibilities include:\n"
             "- Building content calendars with topics, formats, and publish dates\n"
@@ -37,9 +41,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "hr-onboarding-specialist",
-        "name": "HR Onboarding Specialist",
+        "name": "Priya Sharma's Agent",
         "category": "human-resources",
-        "description": "Guides new employee onboarding with checklists, welcome materials, training schedules, and first-week plans tailored to each role.",
+        "department": "HR",
+        "projects": ["Project X", "Project Y"],
+        "description": "Onboarding checklists and first-week planning",
         "systemPrompt": (
             "You are an HR onboarding specialist agent. Your responsibilities include:\n"
             "- Creating role-specific onboarding checklists\n"
@@ -55,9 +61,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "project-coordinator",
-        "name": "Project Coordinator",
+        "name": "David Kim's Agent",
         "category": "project-management",
-        "description": "Tracks project milestones, manages task dependencies, sends status updates, and flags risks before they become blockers.",
+        "department": "Engineering",
+        "projects": ["Project X", "Project Y", "Project Z"],
+        "description": "Milestone tracking and status updates",
         "systemPrompt": (
             "You are a project coordination agent. Your responsibilities include:\n"
             "- Breaking projects into milestones with clear deliverables\n"
@@ -73,9 +81,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "data-analyst",
-        "name": "Data Analyst",
+        "name": "Elena Volkov's Agent",
         "category": "analytics",
-        "description": "Interprets datasets, creates summaries of key metrics, recommends visualizations, and translates numbers into business insights.",
+        "department": "Data",
+        "projects": ["Project Z"],
+        "description": "Dataset analysis and business insights",
         "systemPrompt": (
             "You are a data analysis agent. Your responsibilities include:\n"
             "- Analyzing datasets to identify trends, outliers, and patterns\n"
@@ -91,9 +101,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "legal-reviewer",
-        "name": "Legal Reviewer",
+        "name": "James O'Brien's Agent",
         "category": "compliance",
-        "description": "Reviews contracts, policies, and internal documents for compliance issues, unclear language, and missing clauses. Flags risks for legal team review.",
+        "department": "Legal",
+        "projects": ["Project X"],
+        "description": "Contract review and compliance checks",
         "systemPrompt": (
             "You are a legal review assistant agent. Your responsibilities include:\n"
             "- Reviewing contracts for ambiguous language, missing clauses, and risk areas\n"
@@ -109,9 +121,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "customer-success-agent",
-        "name": "Customer Success Agent",
+        "name": "Aisha Patel's Agent",
         "category": "customer-support",
-        "description": "Drafts customer responses, prepares account review materials, tracks satisfaction metrics, and identifies upsell opportunities.",
+        "department": "Sales",
+        "projects": ["Project Y", "Project Z"],
+        "description": "Customer responses and account reviews",
         "systemPrompt": (
             "You are a customer success agent. Your responsibilities include:\n"
             "- Drafting professional, empathetic responses to customer inquiries\n"
@@ -127,9 +141,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "technical-writer",
-        "name": "Technical Writer",
+        "name": "Lucas Zhang's Agent",
         "category": "documentation",
-        "description": "Writes clear documentation including API guides, user manuals, release notes, and knowledge base articles for technical and non-technical audiences.",
+        "department": "Engineering",
+        "projects": ["Project X"],
+        "description": "API docs, user guides, and release notes",
         "systemPrompt": (
             "You are a technical writing agent. Your responsibilities include:\n"
             "- Writing API documentation with request/response examples\n"
@@ -145,9 +161,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "operations-analyst",
-        "name": "Operations Analyst",
+        "name": "Rachel Foster's Agent",
         "category": "operations",
-        "description": "Analyzes business processes, identifies inefficiencies, maps workflows, and recommends automation opportunities to improve team productivity.",
+        "department": "Operations",
+        "projects": ["Project Y"],
+        "description": "Workflow analysis and automation recommendations",
         "systemPrompt": (
             "You are an operations analysis agent. Your responsibilities include:\n"
             "- Mapping current-state workflows with steps, owners, and time estimates\n"
@@ -163,9 +181,11 @@ TEMPLATE_AGENTS = [
     },
     {
         "id": "meeting-facilitator",
-        "name": "Meeting Facilitator",
+        "name": "Tom Nakamura's Agent",
         "category": "collaboration",
-        "description": "Prepares meeting agendas, captures real-time notes, generates action items, and ensures discussions stay focused and productive.",
+        "department": "Engineering",
+        "projects": ["Project X", "Project Y", "Project Z"],
+        "description": "Meeting agendas, notes, and action items",
         "systemPrompt": (
             "You are a meeting facilitation agent. Your responsibilities include:\n"
             "- Creating structured agendas with time allocations and owners\n"

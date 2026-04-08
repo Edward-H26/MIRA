@@ -3,8 +3,8 @@
 }
 
 .upload-dropzone.is-dragover {
-    border-color: #00327d !important;
-    background-color: rgba(0, 50, 125, 0.05);
+    border-color: var(--primary-blue) !important;
+    background-color: rgba(91, 95, 239, 0.05);
 }
 
 @media (max-width: 768px) {

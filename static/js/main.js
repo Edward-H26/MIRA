@@ -81,7 +81,9 @@ function initSidebarNav() {
         } else if (key === "dashboard") {
             isActive = path.startsWith(routes.chatDashboard)
         } else if (key === "agents") {
-            isActive = path.startsWith(routes.chatAgentList)
+            isActive = path.startsWith(routes.chatAgentList) && !path.includes("/marketplace")
+        } else if (key === "directory") {
+            isActive = path.includes("/marketplace")
         } else if (key === "activity") {
             isActive = path.startsWith(routes.chatActivityLog)
         } else if (key === "documents") {
@@ -175,10 +177,89 @@ function deleteConversation(id) {
             const pattern = new RegExp(`^${conversationPrefix.replace(/\//g, "\\/")}(\\d+)\\/`)
             const match = window.location.pathname.match(pattern)
             if (match && match[1] === String(id)) {
+                const remaining = document.querySelectorAll(".conv-sidebar-item")
+                if (remaining.length > 0) {
+                    const firstLink = remaining[0].querySelector("a")
+                    if (firstLink) {
+                        window.location.href = firstLink.href
+                        return
+                    }
+                }
                 window.location.href = routes.home
             }
         }
     }).catch(() => {})
+}
+
+function initContextMenu() {
+    const sidebar = document.querySelector("[data-conv-sidebar]")
+    const menu = document.getElementById("conv-context-menu")
+    const overlay = document.getElementById("conv-context-overlay")
+    if (!sidebar || !menu || !overlay) return
+
+    let activeConversationId = null
+
+    function showContextMenu(e, conversationId) {
+        e.preventDefault()
+        e.stopPropagation()
+        activeConversationId = conversationId
+
+        const sidebarRect = sidebar.getBoundingClientRect()
+        const menuWidth = 180
+        const menuHeight = 90
+        const padding = 8
+
+        let x = e.clientX - sidebarRect.left
+        let y = e.clientY - sidebarRect.top
+
+        if (x + menuWidth > sidebarRect.width) {
+            x = sidebarRect.width - menuWidth - padding
+        }
+        if (y + menuHeight > sidebarRect.height) {
+            y = sidebarRect.height - menuHeight - padding
+        }
+
+        menu.style.left = x + "px"
+        menu.style.top = y + "px"
+        menu.classList.remove("hidden")
+        overlay.classList.remove("hidden")
+    }
+
+    function hideContextMenu() {
+        menu.classList.add("hidden")
+        overlay.classList.add("hidden")
+        activeConversationId = null
+    }
+
+    window.showContextMenu = showContextMenu
+    window.hideContextMenu = hideContextMenu
+
+    overlay.addEventListener("click", hideContextMenu)
+
+    document.addEventListener("click", (e) => {
+        if (!menu.classList.contains("hidden") && !menu.contains(e.target)) {
+            hideContextMenu()
+        }
+    })
+
+    menu.querySelector("[data-action='rename']").addEventListener("click", () => {
+        const id = activeConversationId
+        hideContextMenu()
+        renameConversation(id)
+    })
+
+    menu.querySelector("[data-action='delete']").addEventListener("click", () => {
+        const id = activeConversationId
+        hideContextMenu()
+        deleteConversation(id)
+    })
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !menu.classList.contains("hidden")) {
+            e.stopPropagation()
+            hideContextMenu()
+        }
+    })
 }
 
 function createNewChat() {
@@ -302,6 +383,29 @@ function initSearchModal() {
     window.closeSearchModal = close
 }
 
+function initMobileNav() {
+    const path = window.location.pathname
+    const routes = getAppRoutes()
+    const mobileLinks = document.querySelectorAll("[data-mobile-nav]")
+
+    mobileLinks.forEach(link => {
+        const key = link.dataset.mobileNav
+        let isActive = false
+
+        if (key === "chat") {
+            const homeNoSlash = routes.home.endsWith("/") ? routes.home.slice(0, -1) : routes.home
+            const convPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
+            isActive = path === routes.home || path === homeNoSlash || path.startsWith(convPrefix)
+        } else if (key === "agent") {
+            isActive = path.startsWith(routes.chatAgentList) && !path.includes("/marketplace")
+        } else if (key === "directory") {
+            isActive = path.includes("/marketplace")
+        }
+
+        link.classList.toggle("is-active", isActive)
+    })
+}
+
 function initConversationSidebarSearch() {
     const searchInput = document.getElementById("conv-sidebar-search")
     if (!searchInput) return
@@ -332,10 +436,11 @@ function toggleConvSidebar() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    initHeaderNav()
     initSidebarNav()
+    initMobileNav()
     initSearchModal()
     initConversationSidebarSearch()
+    initContextMenu()
 
     document.addEventListener("keydown", function(e) {
         if ((e.ctrlKey || e.metaKey) && e.key === "n") {

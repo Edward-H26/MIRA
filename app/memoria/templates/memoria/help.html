@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Help{% endblock %}
+
+{% block content %}
+<div class="max-w-[800px] mx-auto px-12 py-8">
+    <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-2">Help</h1>
+    <p class="font-inter text-[#64748b] text-[16px] mb-8">Getting started with Memoria</p>
+
+    <div class="flex flex-col gap-6">
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Conversations</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Start a conversation by typing a message on the home page or clicking the "+ Chat" button in the sidebar.
+                Your AI agent remembers context within each conversation and learns from your interactions over time.
+            </p>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Groups</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Create group conversations to collaborate with others in real time. Share an access key to invite members.
+                Use the "Group" button in the sidebar or visit the Groups page.
+            </p>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Documents</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Upload images of documents to extract text using OCR. Scanned documents are saved to your document hub
+                for future reference. You can also upload files directly in a conversation using the paperclip button.
+            </p>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Memory</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Your agent builds a memory of important facts, preferences, and domain knowledge from your conversations.
+                Visit the Memory page to review what your agent has learned.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

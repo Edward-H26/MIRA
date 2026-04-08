@@ -474,6 +474,10 @@ def agent_skills_view(request, agent_id):
     if groupFilter:
         skills = [s for s in skills if s.get("skillGroup", "") == groupFilter]
 
+    allSkills = get_agent_skills(request.user, str(agent_id))
+    enabledCount = sum(1 for s in allSkills if s.get("skillEnabled"))
+    disabledCount = len(allSkills) - enabledCount
+
     groups = sorted(set(s.get("skillGroup", "") for s in skills if s.get("skillGroup")))
 
     return render(request, "chat/agent_skills.html", {
@@ -482,6 +486,8 @@ def agent_skills_view(request, agent_id):
         "groups": groups,
         "activeGroup": groupFilter,
         "enabledOnly": enabledOnly,
+        "enabled_count": enabledCount,
+        "disabled_count": disabledCount,
     })
 
 
@@ -492,6 +498,120 @@ def skill_toggle_view(request, bullet_id):
     enabled = request.POST.get("enabled") == "1"
     result = toggle_skill(request.user, bullet_id, enabled)
     return JsonResponse(result)
+
+
+@login_required(login_url="/")
+def my_agent_redirect_view(request):
+    from .agent_service import get_agents_for_user
+    agents = get_agents_for_user(request.user)
+    if agents:
+        return redirect("chat:agent_detail", agent_id=agents[0]["id"])
+    return redirect("chat:agent_list")
+
+
+@login_required(login_url="/")
+def agent_files_view(request, agent_id):
+    from .agent_service import get_agent_for_user
+    from .models import Document
+
+    agent = get_agent_for_user(request.user, str(agent_id))
+    profile = request.user.profile
+
+    if request.method == "POST":
+        uploaded = request.FILES.get("file")
+        if uploaded:
+            size = uploaded.size
+            if size < 1024:
+                sizeLabel = f"{size} B"
+            elif size < 1024 * 1024:
+                sizeLabel = f"{size / 1024:.1f} KB"
+            else:
+                sizeLabel = f"{size / (1024 * 1024):.1f} MB"
+
+            rawText = ""
+            try:
+                rawText = uploaded.read().decode("utf-8", errors="replace")
+                uploaded.seek(0)
+            except Exception:
+                rawText = "(binary file)"
+
+            Document.objects.create(
+                user=profile,
+                agent_id=agent_id,
+                filename=uploaded.name,
+                description=request.POST.get("description", ""),
+                file=uploaded,
+                file_size=sizeLabel,
+                raw_text=rawText,
+            )
+        return redirect("chat:agent_files", agent_id=agent_id)
+
+    documents = Document.objects.filter(user=profile, agent_id=agent_id)
+    return render(request, "chat/agent_files.html", {
+        "agent": agent,
+        "documents": documents,
+    })
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_file_delete_view(request, agent_id, document_id):
+    from .agent_service import get_agent_for_user
+    from .models import Document
+
+    get_agent_for_user(request.user, str(agent_id))
+    profile = request.user.profile
+    Document.objects.filter(id=document_id, user=profile, agent_id=agent_id).delete()
+    return redirect("chat:agent_files", agent_id=agent_id)
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_file_update_description_view(request, agent_id, document_id):
+    from .agent_service import get_agent_for_user
+    from .models import Document
+
+    get_agent_for_user(request.user, str(agent_id))
+    profile = request.user.profile
+    description = request.POST.get("description", "")
+    Document.objects.filter(id=document_id, user=profile, agent_id=agent_id).update(description=description)
+    return redirect("chat:agent_files", agent_id=agent_id)
+
+
+@login_required(login_url="/")
+def agent_memory_view(request, agent_id):
+    from .agent_service import get_agent_for_user
+
+    agent = get_agent_for_user(request.user, str(agent_id))
+    profile = request.user.profile
+    bullets = MemoryBullet.objects.filter(memory__user=profile).order_by("-strength", "-created_at")
+
+    return render(request, "chat/agent_memory.html", {
+        "agent": agent,
+        "bullets": bullets,
+    })
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def memory_vote_view(request, bullet_id):
+    direction = request.POST.get("direction", "up")
+    profile = request.user.profile
+    bullet = MemoryBullet.objects.filter(id=bullet_id, memory__user=profile).first()
+    if not bullet:
+        return JsonResponse({"error": "Not found"}, status=404)
+    if direction == "up":
+        bullet.strength = min(100, bullet.strength + 10)
+        bullet.helpful_count += 1
+    else:
+        bullet.strength = max(0, bullet.strength - 10)
+        bullet.harmful_count += 1
+    bullet.save()
+    return JsonResponse({
+        "strength": bullet.strength,
+        "helpful": bullet.helpful_count,
+        "harmful": bullet.harmful_count,
+    })
 
 
 @login_required(login_url="/")
@@ -599,8 +719,17 @@ def stop_typing_view(request, session_id):
 
 
 @login_required(login_url="/")
+def document_hub_view(request):
+    from .models import Document
+    profile = get_or_create_profile_for_user(request.user)
+    documents = Document.objects.filter(user=profile)
+    return render(request, "chat/document_hub.html", {"documents": documents})
+
+
+@login_required(login_url="/")
 def document_upload_view(request):
     from .forms import DocumentUploadForm
+    from .models import Document
     from app.services.ocr import extract_text_from_image, ocr_to_lessons, parse_document_fields
 
     if request.method == "POST":
@@ -618,9 +747,17 @@ def document_upload_view(request):
             parsedFields = parse_document_fields(ocrResult.raw_text)
             lessons = ocr_to_lessons(ocrResult)
 
+            profile = get_or_create_profile_for_user(request.user)
+
+            Document.objects.create(
+                user=profile,
+                filename=imageFile.name,
+                raw_text=ocrResult.raw_text,
+                parsed_fields=parsedFields,
+            )
+
             bulletCount = 0
             if lessons:
-                profile = get_or_create_profile_for_user(request.user)
                 memory, _ = Memory.objects.get_or_create(user=profile)
                 try:
                     memory.apply_lessons(
@@ -755,6 +892,35 @@ def skill_install_view(request, skill_id):
 
 
 @login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_start_chat_view(request, template_id):
+    from .agent_catalog import get_template_agent_by_id as get_template_agent
+    from .models import Session, Agent
+
+    template = get_template_agent(template_id)
+    if not template:
+        return redirect("chat:agent_marketplace")
+
+    profile = request.user.profile
+    agents = Agent.objects.filter(user=profile)
+    agent = agents.first() if agents.exists() else None
+
+    session = Session.objects.create(
+        user=profile,
+        title=f"Chat with {template['name']}",
+    )
+
+    from .models import Message
+    Message.objects.create(
+        session=session,
+        role=1,
+        content=template.get("systemPrompt", f"You are {template['name']}. {template['description']}"),
+    )
+
+    return redirect("chat:conversation_detail", session_id=session.id)
+
+
+@login_required(login_url="/")
 def agent_marketplace_view(request):
     from .agent_catalog import get_all_template_agents, get_template_agents_by_category, search_template_agents, AGENT_CATEGORIES
 
@@ -812,15 +978,18 @@ def group_list_view(request):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def group_create_view(request):
+    import uuid
     from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
     title = request.POST.get("title", "").strip()
     description = request.POST.get("description", "").strip()
     access_key = request.POST.get("access_key", "").strip()
-    if not title or not access_key:
-        return JsonResponse({"error": "Title and access key are required."}, status=400)
+    if not title:
+        return redirect("memoria:home")
+    if not access_key:
+        access_key = uuid.uuid4().hex[:12]
     if Session.objects.filter(access_key=access_key).exists():
-        return JsonResponse({"error": "Access key already in use."}, status=400)
+        access_key = uuid.uuid4().hex[:12]
     session = Session.objects.create(
         user=profile, title=title, description=description,
         access_key=access_key, is_group=True,
@@ -835,7 +1004,7 @@ def group_create_view(request):
         })
     except Exception:
         pass
-    return redirect("chat:group_list")
+    return redirect("chat:conversation_detail", session_id=session.id)
 
 
 @login_required(login_url="/")
@@ -845,10 +1014,10 @@ def group_join_view(request):
     profile = get_or_create_profile_for_user(request.user)
     access_key = request.POST.get("access_key", "").strip()
     if not access_key:
-        return JsonResponse({"error": "Access key is required."}, status=400)
+        return redirect("memoria:home")
     session = Session.objects.filter(access_key=access_key, is_group=True).first()
     if not session:
-        return JsonResponse({"error": "Invalid access key."}, status=404)
+        return redirect("memoria:home")
     if SessionMember.objects.filter(session=session, user=profile).exists():
         return redirect("chat:conversation_detail", session_id=session.pk)
     SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_MEMBER)
@@ -878,7 +1047,7 @@ def group_leave_view(request, session_id):
         })
     except Exception:
         pass
-    return redirect("chat:group_list")
+    return redirect("memoria:home")
 
 
 @login_required(login_url="/")

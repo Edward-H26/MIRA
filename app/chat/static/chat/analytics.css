@@ -100,7 +100,7 @@
 
 .analytics-picker-item.is-selected {
     background: #eef2ff;
-    color: #00327d;
+    color: var(--primary-blue);
     font-weight: 600;
 }
 
@@ -149,7 +149,7 @@
     border-radius: 8px;
     padding: 8px 16px;
     background: #ffffff;
-    color: #00327d;
+    color: var(--primary-blue);
     font-family: "Inter", sans-serif;
     font-size: 13px;
     font-weight: 600;

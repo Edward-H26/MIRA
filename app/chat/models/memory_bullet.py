@@ -37,7 +37,7 @@ class MemoryBullet(models.Model):
     # Concept of the memory
     concept = models.TextField(null=True)
     # Days of time before deletion
-    ttl_days = models.IntegerField()
+    ttl_days = models.IntegerField(default=30)
     # ACE stable bullet identifier for dedup and delta update mapping
     bullet_key = models.CharField(max_length=32, blank=True, default="", db_index=True)
     # Scoped retrieval dimension to avoid cross-session contamination

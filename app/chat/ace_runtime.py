@@ -535,7 +535,7 @@ def _build_semantic_context(query, memory_obj, learner_id, top_k=3):
         return ""
 
 
-def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None):
+def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None, doc_chunks=None):
     profile = session.user
     learner_id = str(profile.user_id)
     context_scope_id = str(session.pk)
@@ -575,6 +575,12 @@ def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = Non
         prompt_parts.append(guidance)
     if semanticContext:
         prompt_parts.append(semanticContext)
+    if doc_chunks:
+        doc_context_parts = []
+        for chunk in doc_chunks:
+            doc_context_parts.append(f"From \"{chunk['filename']}\":\n  {chunk['chunk']}")
+        doc_context = "\n\n".join(doc_context_parts)
+        prompt_parts.append(f"=== Relevant Documents ===\n{doc_context}\n===")
     if conversation_context:
         prompt_parts.append(conversation_context)
     normalized_preprocessed_context = (preprocessed_context or "").strip()

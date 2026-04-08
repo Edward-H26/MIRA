@@ -7,3 +7,4 @@ from .session_participant import SessionParticipant
 from .session_member import SessionMember
 from .audit_log import AuditLog
 from .notification import Notification, NotificationType
+from .document import Document
