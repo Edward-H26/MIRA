@@ -1,3 +1,79 @@
+.analytics-tab-bar {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0;
+}
+
+.analytics-tab {
+    border: none;
+    background: transparent;
+    padding: 10px 4px 12px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.analytics-tab::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    border-radius: 2px 2px 0 0;
+    transition: background 0.15s ease;
+}
+
+.analytics-tab.is-active::after {
+    background: #5B5FEF;
+}
+
+.analytics-tab:hover {
+    opacity: 0.85;
+}
+
+.analytics-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s ease;
+}
+
+.analytics-tab:not(.is-active) .analytics-badge {
+    opacity: 0.55;
+}
+
+.analytics-section {
+    display: none;
+}
+
+.analytics-section.is-visible {
+    display: block;
+}
+
+.analytics-section-header {
+    padding-top: 4px;
+}
+
+.analytics-chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 900px) {
+    .analytics-chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .analytics-chart-wrap {
     display: flex;
     justify-content: center;

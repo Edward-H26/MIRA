@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Memory, MemoryBullet, Message, Session, Agent, SessionParticipant, AuditLog, Notification
+from .models import Memory, MemoryBullet, Message, Session, Agent, SessionParticipant, AuditLog, Notification, RequestLog
 
 
 @admin.register(Session)
@@ -77,5 +77,14 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "title", "notification_type", "is_read", "created_at")
     list_filter = ("notification_type", "is_read")
     search_fields = ("user__user__username", "title", "message")
+    list_select_related = ("user",)
+    ordering = ("-created_at",)
+
+
+@admin.register(RequestLog)
+class RequestLogAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "request_type", "model_name", "status", "latency_ms", "total_tokens", "estimated_cost_usd", "created_at")
+    list_filter = ("status", "model_name", "request_type")
+    search_fields = ("user__user__username", "model_name", "error_type")
     list_select_related = ("user",)
     ordering = ("-created_at",)

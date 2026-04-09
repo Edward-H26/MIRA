@@ -186,6 +186,14 @@
                             </svg>
                             <span class="sidebar-nav-label">My Agent</span>
                         </a>
+                        <a href="{% url 'dashboard' %}" class="sidebar-nav-link" data-sidebar-nav="dashboard">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 20V10"></path>
+                                <path d="M12 20V4"></path>
+                                <path d="M6 20v-6"></path>
+                            </svg>
+                            <span class="sidebar-nav-label">Dashboard</span>
+                        </a>
                     </div>
                 </div>
 
@@ -232,6 +240,14 @@
                 </svg>
                 <span class="text-[10px] font-inter font-medium">My Agent</span>
             </a>
+            <a href="{% url 'dashboard' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 20V10"></path>
+                    <path d="M12 20V4"></path>
+                    <path d="M6 20v-6"></path>
+                </svg>
+                <span class="text-[10px] font-inter font-medium">Dashboard</span>
+            </a>
         </nav>
         {% endif %}
     </div>
@@ -265,7 +281,7 @@
             chatSessionDeleteTemplate: "{% url 'chat:session_delete' 0 %}",
             chatMemoryDetailTemplate: "{% url 'chat:memory_detail' 0 %}",
             chatDashboard: "{% url 'chat:dashboard' %}",
-            chatAgentList: "{% url 'chat:agent_list' %}",
+            chatMyAgent: "{% url 'chat:my_agent' %}",
             chatActivityLog: "{% url 'chat:activity_log' %}",
             chatDocumentUpload: "{% url 'chat:document_upload' %}",
             chatNotificationsApi: "{% url 'chat:api_notifications' %}",

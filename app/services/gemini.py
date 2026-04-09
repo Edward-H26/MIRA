@@ -56,16 +56,27 @@ def generate_reply_stream(user_text: str):
         contents=user_text,
         config=_build_generation_config(),
     )
+    usage = None
     for chunk in response:
         text = getattr(chunk, "text", None)
         if text:
             yield text
+        meta = getattr(chunk, "usage_metadata", None)
+        if meta:
+            usage = meta
+    if usage:
+        yield {
+            "_type": "usage_metadata",
+            "prompt_tokens": getattr(usage, "prompt_token_count", 0) or 0,
+            "completion_tokens": getattr(usage, "candidates_token_count", 0) or 0,
+            "total_tokens": getattr(usage, "total_token_count", 0) or 0,
+        }
 
 
 def generate_reply_text(user_text: str):
     chunks = []
     for chunk in generate_reply_stream(user_text):
-        if chunk:
+        if isinstance(chunk, str) and chunk:
             chunks.append(chunk)
     return "".join(chunks).strip()
 

@@ -10,248 +10,531 @@
 <div class="max-w-[1400px] mx-auto px-12 py-8">
     <div class="mb-8">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] leading-tight">Analytics Dashboard</h1>
-        <p class="font-inter text-[#64748b] text-[16px] mt-1">Track your memory system health and conversation activity.</p>
+        <p class="font-inter text-[#64748b] text-[16px] mt-1">Monitor system performance, user behavior, and cost efficiency across your AI system.</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 16v-4"></path>
-                    <path d="M12 8h.01"></path>
-                </svg>
-            </div>
-            <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_memories }}</span>
-            <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Memories</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#f0fdf4] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
-                </svg>
-            </div>
-            <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_sessions }}</span>
-            <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Conversations</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#fef3c7] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
-                </svg>
-            </div>
-            <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_messages }}</span>
-            <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Messages</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#fce4ec] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-            </div>
-            <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ avg_strength|floatformat:1|default:"0" }}</span>
-            <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Strength</span>
-        </div>
-        {% for item in type_summary %}
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                </svg>
-            </div>
-            <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ item.count }}</span>
-            <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">{{ item.label }}</span>
-        </div>
-        {% empty %}
-        {% endfor %}
+    <div class="analytics-tab-bar mb-8">
+        <button class="analytics-tab is-active" data-tab="performance" type="button">
+            <span class="analytics-badge bg-blue-100 text-blue-700">System Performance</span>
+        </button>
+        <button class="analytics-tab" data-tab="behavior" type="button">
+            <span class="analytics-badge bg-green-100 text-green-700">User Behavior</span>
+        </button>
+        <button class="analytics-tab" data-tab="cost" type="button">
+            <span class="analytics-badge bg-amber-100 text-amber-700">Cost</span>
+        </button>
     </div>
 
-    <div class="flex flex-col gap-8">
-        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Type Distribution</h2>
-            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
-                Shows the balance of Semantic, Episodic, and Procedural memories. If one type dominates, consider adjusting your interactions so the AI captures a broader range of knowledge.
-            </p>
-            <div class="analytics-chart-wrap">
-                <img src="{% url 'chat:memory_type_chart' %}" alt="Pie chart showing distribution of memory bullets across Semantic, Episodic, and Procedural types">
+    {# ── SYSTEM PERFORMANCE SECTION ── #}
+    <div class="analytics-section is-visible" data-section="performance">
+        <div class="analytics-section-header mb-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[22px]">System Performance</h2>
+            <p class="font-inter text-[#64748b] text-[14px] mt-1">Response latency, error rates, and throughput metrics for AI requests.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ perf_avg_latency|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Latency (ms)</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ perf_p95_latency|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">P95 Latency (ms)</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ perf_total_requests|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Requests</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ perf_error_rate|floatformat:1|default:"0" }}%</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Error Rate</span>
             </div>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Strength Distribution</h2>
-            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
-                Reveals the health of your memory system. A cluster of low-strength memories suggests the AI needs more reinforcement through user feedback. Strong memories confirm the system is learning effectively.
-            </p>
-            <div class="analytics-chart-wrap">
-                <img src="{% url 'chat:memory_strength_chart' %}" alt="Bar chart showing the count of memory bullets in each strength range from 0 to 100">
+        <div class="analytics-chart-grid mb-8">
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Latency Over Time</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Average response latency per day over the last 30 days. Spikes indicate potential bottlenecks or high-complexity queries.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:latency_over_time_chart' %}" alt="Line chart showing average response latency per day over the last 30 days" loading="lazy">
+                </div>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Latency by Model</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Compares average response time across AI models. Helps identify which model contributes most to overall latency.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:latency_by_model_chart' %}" alt="Bar chart showing average latency per AI model" loading="lazy">
+                </div>
             </div>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Conversation Activity</h2>
+        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-8">
+            <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Request Status Distribution</h3>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                Breakdown of request outcomes (success, error, fallback). A high error rate may signal API instability or rate limiting.
+            </p>
+            <div class="analytics-chart-wrap">
+                <img src="{% url 'chat:error_rate_chart' %}" alt="Pie chart showing distribution of request statuses" loading="lazy">
+            </div>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="request-log">
+            <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Request Status Breakdown</h3>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                Detailed count of requests by status category.
+            </p>
+            <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in perf_requests_by_status %}
+                        <tr>
+                            <td>
+                                <span class="inline-flex items-center gap-2">
+                                    {% if item.status == "success" %}
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    {% elif item.status == "error" %}
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    {% else %}
+                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    {% endif %}
+                                    {{ item.status|title }}
+                                </span>
+                            </td>
+                            <td>{{ item.count }}</td>
+                            <td>{% widthratio item.count perf_total_requests 100 %}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">No request data found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 font-inter text-[12px] text-[#64748b]">
+                Total requests: {{ perf_total_requests|default:"0" }}. Avg throughput: {{ perf_throughput|floatformat:1|default:"0" }} requests/day.
+            </div>
+            <form method="get" action="{% url 'chat:export_request_log_report' %}" class="analytics-export-form">
+                <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
+                <label class="font-inter text-[12px] font-semibold text-[#64748b]">Download</label>
+                <div class="analytics-export-picker-wrap">
+                    <button class="analytics-picker-btn" type="button" aria-expanded="false">
+                        <span class="analytics-export-picker-text">CSV</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                    <div class="analytics-picker-menu" role="menu">
+                        <button type="button" class="analytics-picker-item is-selected" data-value="csv">CSV</button>
+                        <button type="button" class="analytics-picker-item" data-value="json">JSON</button>
+                    </div>
+                </div>
+                <button type="submit" class="analytics-export-btn">Download</button>
+            </form>
+        </div>
+    </div>
+
+    {# ── USER BEHAVIOR SECTION ── #}
+    <div class="analytics-section" data-section="behavior">
+        <div class="analytics-section-header mb-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[22px]">User Behavior</h2>
+            <p class="font-inter text-[#64748b] text-[14px] mt-1">Memory health, conversation patterns, and engagement metrics.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_memories }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Memories</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#f0fdf4] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_sessions }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Conversations</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#fef3c7] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ total_messages }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Messages</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#fce4ec] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ avg_strength|floatformat:1|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Strength</span>
+            </div>
+            {% for item in type_summary %}
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ item.count }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">{{ item.label }}</span>
+            </div>
+            {% empty %}
+            {% endfor %}
+        </div>
+
+        <div class="analytics-chart-grid mb-8">
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Type Distribution</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Shows the balance of Semantic, Episodic, and Procedural memories. If one type dominates, consider adjusting your interactions so the AI captures a broader range of knowledge.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:memory_type_chart' %}" alt="Pie chart showing distribution of memory bullets across Semantic, Episodic, and Procedural types" loading="lazy">
+                </div>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Strength Distribution</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Reveals the health of your memory system. A cluster of low-strength memories suggests the AI needs more reinforcement through user feedback.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:memory_strength_chart' %}" alt="Bar chart showing the count of memory bullets in each strength range from 0 to 100" loading="lazy">
+                </div>
+            </div>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-8">
+            <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Conversation Activity</h3>
             <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
                 Tracks your engagement over the last 30 days. Identify when you are most active and understand how your memory store grows with continued usage.
             </p>
             <div class="analytics-chart-wrap">
-                <img src="{% url 'chat:activity_chart' %}" alt="Line chart showing the number of conversation sessions created per day over the past 30 days">
+                <img src="{% url 'chat:activity_chart' %}" alt="Line chart showing the number of conversation sessions created per day over the past 30 days" loading="lazy">
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-8">
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="sessions">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Conversation Sessions Summary</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Grouped conversation summary with session and message totals.
+                </p>
+
+                <form method="get" class="analytics-filter-form">
+                    <input type="hidden" name="session_group" value="{{ session_group }}" class="analytics-group-filter-input">
+                    <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
+                        <button class="analytics-picker-btn analytics-group-picker-btn" type="button" id="session-group-filter" aria-expanded="false">
+                            <span class="analytics-group-picker-text">
+                                Group by {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
+                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                        <div class="analytics-picker-menu analytics-group-picker-menu" role="menu">
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'day' %} is-selected{% endif %}" data-value="day">Day</button>
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'week' %} is-selected{% endif %}" data-value="week">Week</button>
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="memory_group" value="{{ memory_group }}">
+                </form>
+
+                <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
+                                </th>
+                                <th>Sessions</th>
+                                <th>Message Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in session_grouped_rows %}
+                            <tr>
+                                <td>{{ item.group_label }}</td>
+                                <td>{{ item.session_count }}</td>
+                                <td>{{ item.message_count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3">No sessions found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 font-inter text-[12px] text-[#64748b]">
+                    {{ session_group_count }} groups. Total sessions: {{ total_sessions }}. Total messages: {{ total_messages }}.
+                </div>
+
+                <form method="get" action="{% url 'chat:export_sessions_report' %}" class="analytics-export-form">
+                    <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
+                    <label for="session-export-format" class="font-inter text-[12px] font-semibold text-[#64748b]">Download</label>
+                    <div class="analytics-export-picker-wrap">
+                        <button class="analytics-picker-btn" type="button" id="session-export-format" aria-expanded="false">
+                            <span class="analytics-export-picker-text">CSV</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                        <div class="analytics-picker-menu" role="menu">
+                            <button type="button" class="analytics-picker-item is-selected" data-value="csv">CSV</button>
+                            <button type="button" class="analytics-picker-item" data-value="json">JSON</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="analytics-export-btn">Download</button>
+                </form>
+            </div>
+
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="memory-bullets">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Bullets Summary</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Grouped memory summary with counts and average strength.
+                </p>
+
+                <form method="get" class="analytics-filter-form">
+                    <input type="hidden" name="session_group" value="{{ session_group }}">
+                    <input type="hidden" name="memory_group" value="{{ memory_group }}" class="analytics-group-filter-input">
+                    <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
+                        <button class="analytics-picker-btn analytics-group-picker-btn" type="button" id="memory-group-filter" aria-expanded="false">
+                            <span class="analytics-group-picker-text">
+                                Group by {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
+                            </span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                        <div class="analytics-picker-menu analytics-group-picker-menu" role="menu">
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'memory_type' %} is-selected{% endif %}" data-value="memory_type">Memory Type</button>
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'topic' %} is-selected{% endif %}" data-value="topic">Topic</button>
+                            <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
+                                </th>
+                                <th>Memory Bullets</th>
+                                <th>Avg Strength</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in memory_grouped_rows %}
+                            <tr>
+                                <td>{{ item.group_label }}</td>
+                                <td>{{ item.bullet_count }}</td>
+                                <td>{{ item.avg_strength|floatformat:1|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3">No memory bullets found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 font-inter text-[12px] text-[#64748b]">
+                    {{ memory_group_count }} groups. Total memory bullets: {{ total_memories }}.
+                </div>
+
+                <form method="get" action="{% url 'chat:export_memory_bullets_report' %}" class="analytics-export-form">
+                    <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
+                    <label for="memory-export-format" class="font-inter text-[12px] font-semibold text-[#64748b]">Download</label>
+                    <div class="analytics-export-picker-wrap">
+                        <button class="analytics-picker-btn" type="button" id="memory-export-format" aria-expanded="false">
+                            <span class="analytics-export-picker-text">CSV</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                        </button>
+                        <div class="analytics-picker-menu" role="menu">
+                            <button type="button" class="analytics-picker-item is-selected" data-value="csv">CSV</button>
+                            <button type="button" class="analytics-picker-item" data-value="json">JSON</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="analytics-export-btn">Download</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <div class="flex flex-col gap-8 mt-10">
-        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="sessions">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Conversation Sessions Summary</h2>
-            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
-                Grouped conversation summary with session and message totals.
-            </p>
-
-            <form method="get" class="analytics-filter-form">
-                <input type="hidden" name="session_group" value="{{ session_group }}" class="analytics-group-filter-input">
-                <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
-                    <button class="analytics-picker-btn analytics-group-picker-btn" type="button" id="session-group-filter" aria-expanded="false">
-                        <span class="analytics-group-picker-text">
-                            Group by {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
-                        </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                    </button>
-                    <div class="analytics-picker-menu analytics-group-picker-menu" role="menu">
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'day' %} is-selected{% endif %}" data-value="day">Day</button>
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'week' %} is-selected{% endif %}" data-value="week">Week</button>
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if session_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
-                    </div>
-                </div>
-                <input type="hidden" name="memory_group" value="{{ memory_group }}">
-            </form>
-
-            <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
-                <table class="analytics-table">
-                    <thead>
-                        <tr>
-                            <th>
-                                {% if session_group == "day" %}Day{% elif session_group == "week" %}Week{% else %}Month{% endif %}
-                            </th>
-                            <th>Sessions</th>
-                            <th>Message Count</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in session_grouped_rows %}
-                        <tr>
-                            <td>{{ item.group_label }}</td>
-                            <td>{{ item.session_count }}</td>
-                            <td>{{ item.message_count }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3">No sessions found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-3 font-inter text-[12px] text-[#64748b]">
-                {{ session_group_count }} groups. Total sessions: {{ total_sessions }}. Total messages: {{ total_messages }}.
-            </div>
-
-            <form method="get" action="{% url 'chat:export_sessions_report' %}" class="analytics-export-form">
-                <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
-                <label for="session-export-format" class="font-inter text-[12px] font-semibold text-[#64748b]">Download</label>
-                <div class="analytics-export-picker-wrap">
-                    <button class="analytics-picker-btn" type="button" id="session-export-format" aria-expanded="false">
-                        <span class="analytics-export-picker-text">CSV</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                    </button>
-                    <div class="analytics-picker-menu" role="menu">
-                        <button type="button" class="analytics-picker-item is-selected" data-value="csv">CSV</button>
-                        <button type="button" class="analytics-picker-item" data-value="json">JSON</button>
-                    </div>
-                </div>
-                <button type="submit" class="analytics-export-btn">Download</button>
-            </form>
+    {# ── COST SECTION ── #}
+    <div class="analytics-section" data-section="cost">
+        <div class="analytics-section-header mb-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[22px]">Cost</h2>
+            <p class="font-inter text-[#64748b] text-[14px] mt-1">Token consumption, API costs, and spending trends across models.</p>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="memory-bullets">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Memory Bullets Summary</h2>
-            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
-                Grouped memory summary with counts and average strength.
-            </p>
-
-            <form method="get" class="analytics-filter-form">
-                <input type="hidden" name="session_group" value="{{ session_group }}">
-                <input type="hidden" name="memory_group" value="{{ memory_group }}" class="analytics-group-filter-input">
-                <div class="analytics-export-picker-wrap analytics-group-picker-wrap">
-                    <button class="analytics-picker-btn analytics-group-picker-btn" type="button" id="memory-group-filter" aria-expanded="false">
-                        <span class="analytics-group-picker-text">
-                            Group by {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
-                        </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                    </button>
-                    <div class="analytics-picker-menu analytics-group-picker-menu" role="menu">
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'memory_type' %} is-selected{% endif %}" data-value="memory_type">Memory Type</button>
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'topic' %} is-selected{% endif %}" data-value="topic">Topic</button>
-                        <button type="button" class="analytics-picker-item analytics-group-picker-item{% if memory_group == 'month' %} is-selected{% endif %}" data-value="month">Month</button>
-                    </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path>
+                    </svg>
                 </div>
-            </form>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">${{ cost_total|floatformat:4|default:"0.00" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Cost</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="4 17 10 11 4 5"></polyline>
+                        <line x1="12" y1="19" x2="20" y2="19"></line>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">{{ cost_total_tokens|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Tokens</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[28px] leading-none">${{ cost_avg_per_request|floatformat:6|default:"0.00" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Cost/Request</span>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 20V10"></path>
+                        <path d="M12 20V4"></path>
+                        <path d="M6 20v-6"></path>
+                    </svg>
+                </div>
+                <span class="font-inter font-bold text-[#0f172a] text-[24px] leading-none">{{ cost_prompt_tokens|default:"0" }} / {{ cost_completion_tokens|default:"0" }}</span>
+                <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Prompt / Completion</span>
+            </div>
+        </div>
 
+        <div class="analytics-chart-grid mb-8">
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Daily Cost Trend</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Cumulative daily spending over the last 30 days. Rising trends may indicate increased usage or more complex queries.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:daily_cost_chart' %}" alt="Area chart showing daily cost trend over the last 30 days" loading="lazy">
+                </div>
+            </div>
+            <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
+                <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Cost by Model</h3>
+                <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                    Compares total spending across AI models. Identifies which model is most expensive to operate.
+                </p>
+                <div class="analytics-chart-wrap">
+                    <img src="{% url 'chat:cost_by_model_chart' %}" alt="Bar chart showing total cost per AI model" loading="lazy">
+                </div>
+            </div>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-8">
+            <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Token Usage Breakdown</h3>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                Stacked view of prompt (input) vs completion (output) tokens per day. Helps assess whether costs are driven by long inputs or verbose outputs.
+            </p>
+            <div class="analytics-chart-wrap">
+                <img src="{% url 'chat:token_usage_chart' %}" alt="Stacked bar chart showing prompt vs completion tokens per day" loading="lazy">
+            </div>
+        </div>
+
+        <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white analytics-report-section" data-report-section="cost-by-model">
+            <h3 class="font-inter font-bold text-[#0f172a] text-[18px] mb-2">Cost by Model Breakdown</h3>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed mb-5">
+                Detailed cost and token usage per model.
+            </p>
             <div class="border border-[#e2e8f0] rounded-xl overflow-hidden">
                 <table class="analytics-table">
                     <thead>
                         <tr>
-                            <th>
-                                {% if memory_group == "topic" %}Topic{% elif memory_group == "month" %}Month{% else %}Memory Type{% endif %}
-                            </th>
-                            <th>Memory Bullets</th>
-                            <th>Avg Strength</th>
+                            <th>Model</th>
+                            <th>Requests</th>
+                            <th>Tokens</th>
+                            <th>Cost (USD)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for item in memory_grouped_rows %}
+                        {% for item in cost_by_model %}
                         <tr>
-                            <td>{{ item.group_label }}</td>
-                            <td>{{ item.bullet_count }}</td>
-                            <td>{{ item.avg_strength|floatformat:1|default:"-" }}</td>
+                            <td>{{ item.model_name }}</td>
+                            <td>{{ item.request_count }}</td>
+                            <td>{{ item.tokens|default:"0" }}</td>
+                            <td>${{ item.total_cost|floatformat:4|default:"0.00" }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="3">No memory bullets found.</td>
+                            <td colspan="4">No cost data found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
             <div class="mt-3 font-inter text-[12px] text-[#64748b]">
-                {{ memory_group_count }} groups. Total memory bullets: {{ total_memories }}.
+                Total cost: ${{ cost_total|floatformat:4|default:"0.00" }}. Total tokens: {{ cost_total_tokens|default:"0" }}.
             </div>
-
-            <form method="get" action="{% url 'chat:export_memory_bullets_report' %}" class="analytics-export-form">
-                <input type="hidden" name="format" value="csv" class="analytics-export-format-input">
-                <label for="memory-export-format" class="font-inter text-[12px] font-semibold text-[#64748b]">Download</label>
-                <div class="analytics-export-picker-wrap">
-                    <button class="analytics-picker-btn" type="button" id="memory-export-format" aria-expanded="false">
-                        <span class="analytics-export-picker-text">CSV</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M7 10l5 5 5-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                    </button>
-                    <div class="analytics-picker-menu" role="menu">
-                        <button type="button" class="analytics-picker-item is-selected" data-value="csv">CSV</button>
-                        <button type="button" class="analytics-picker-item" data-value="json">JSON</button>
-                    </div>
-                </div>
-                <button type="submit" class="analytics-export-btn">Download</button>
-            </form>
         </div>
     </div>
 </div>
@@ -260,6 +543,20 @@
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        const tabs = document.querySelectorAll(".analytics-tab");
+        const sections = document.querySelectorAll(".analytics-section");
+
+        tabs.forEach((tab) => {
+            tab.addEventListener("click", () => {
+                const target = tab.dataset.tab;
+                tabs.forEach((t) => t.classList.remove("is-active"));
+                tab.classList.add("is-active");
+                sections.forEach((s) => {
+                    s.classList.toggle("is-visible", s.dataset.section === target);
+                });
+            });
+        });
+
         const closeAllMenus = () => {
             document.querySelectorAll(".analytics-picker-menu").forEach((menu) => {
                 menu.classList.remove("is-open");
@@ -378,7 +675,7 @@
                     section.replaceWith(replacement);
                     initReportSection(replacement);
                 } catch (err) {
-                    console.error(err);
+                    // silently fail
                 }
             });
         };

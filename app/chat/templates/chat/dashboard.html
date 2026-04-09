@@ -7,79 +7,158 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
-    <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-8">Dashboard</h1>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalAgents }}</span>
-            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Agents</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalSessions }}</span>
-            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Sessions</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalBullets }}</span>
-            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Memories</span>
-        </div>
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <span class="block font-inter font-bold text-[#0f172a] text-[28px]">{{ totalSkills }}</span>
-            <span class="block font-inter text-[#64748b] text-[14px] mt-1">Total Skills</span>
+<div class="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Dashboard</h1>
+        <div class="flex gap-3">
+            <a href="{% url 'memoria:home' %}" class="btn-gradient rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] no-underline">New Chat</a>
+            <a href="{% url 'chat:my_agent' %}" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] no-underline transition-colors">My Agent</a>
+            <a href="{% url 'chat:document_upload' %}" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] no-underline transition-colors">Scan Document</a>
         </div>
     </div>
 
-    <div class="flex gap-3 flex-wrap mb-8">
-        <a href="{% url 'memoria:home' %}" class="inline-flex items-center btn-gradient rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">New Chat</a>
-        <a href="{% url 'chat:agent_list' %}" class="inline-flex items-center bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">Create Agent</a>
-        <a href="{% url 'chat:document_upload' %}" class="inline-flex items-center bg-white hover:bg-[#f8fafc] border border-[#e2e8f0] text-[#0f172a] rounded-lg px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors no-underline">Scan Document</a>
-    </div>
-
-    {% if agents %}
-    <div class="mb-8">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Your Agents</h2>
-        <div class="flex gap-2.5 flex-wrap">
-            {% for agent in agents %}
-            <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="inline-flex items-center gap-2 bg-[#f0f4f8] rounded-md px-3 py-1.5 no-underline transition-colors hover:bg-[#e2e8f0]">
-                <span class="w-2 h-2 rounded-full flex-shrink-0 {% if agent.isActive %}bg-[#10b981]{% else %}bg-[#9ca3af]{% endif %}"></span>
-                <span class="font-inter font-medium text-[#0f172a] text-[13px] whitespace-nowrap">{{ agent.name }}</span>
-            </a>
-            {% endfor %}
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div class="border border-slate-200 rounded-2xl p-5 bg-white">
+            <div class="font-inter font-bold text-slate-800 text-[28px]">{{ totalSessions }}</div>
+            <div class="font-inter text-slate-500 text-[13px] mt-1">Conversations</div>
+        </div>
+        <div class="border border-slate-200 rounded-2xl p-5 bg-white">
+            <div class="font-inter font-bold text-slate-800 text-[28px]">{{ totalMessages }}</div>
+            <div class="font-inter text-slate-500 text-[13px] mt-1">Messages</div>
+        </div>
+        <div class="border border-slate-200 rounded-2xl p-5 bg-white">
+            <div class="font-inter font-bold text-slate-800 text-[28px]">{{ totalMemories }}</div>
+            <div class="font-inter text-slate-500 text-[13px] mt-1">Memories</div>
+        </div>
+        <div class="border border-slate-200 rounded-2xl p-5 bg-white">
+            <div class="font-inter font-bold text-slate-800 text-[28px]">{{ totalSkills }}</div>
+            <div class="font-inter text-slate-500 text-[13px] mt-1">Active Skills</div>
+        </div>
+        <div class="border border-slate-200 rounded-2xl p-5 bg-white">
+            <div class="font-inter font-bold text-slate-800 text-[28px]">{{ totalGroups }}</div>
+            <div class="font-inter text-slate-500 text-[13px] mt-1">Groups</div>
         </div>
     </div>
-    {% endif %}
 
-    {% if recentSessions %}
-    <div class="mb-8">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Recent Sessions</h2>
-        <div class="flex flex-col gap-1">
-            {% for session in recentSessions %}
-            <a href="{{ session.get_absolute_url }}" class="flex items-center justify-between gap-3 hover:bg-[#f8fafc] transition-colors rounded-xl p-4 no-underline">
-                <span class="font-inter font-semibold text-[#0f172a] text-[14px] truncate">{{ session.title|default:"Untitled" }}</span>
-                <span class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0">{{ session.updated_at|timesince }} ago</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% if activityFeed %}
-    <div class="mb-8">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Activity Feed</h2>
-        <div class="flex flex-col gap-0.5">
-            {% for entry in activityFeed %}
-            <div class="flex items-start gap-3 p-3 rounded-lg">
-                <span class="dashboard-activity-dot w-2 h-2 rounded-full flex-shrink-0 mt-1.5 {% if entry.eventType == 'error' %}bg-[#f59e0b]{% elif entry.eventType == 'session_created' or entry.eventType == 'skill_generated' %}bg-[#10b981]{% else %}bg-[#3b82f6]{% endif %}"></span>
-                <span class="flex-1 font-inter text-[#0f172a] text-[13px] leading-5">
-                    <strong>{{ entry.eventType }}</strong>
-                    {{ entry.description }}
-                    {% if entry.agentName %} ({{ entry.agentName }}){% endif %}
-                </span>
-                <span class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0 whitespace-nowrap">{{ entry.createdAt }}</span>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Agent + Recent Sessions -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            <!-- Agent Card -->
+            {% if agent %}
+            <div class="border border-slate-200 rounded-2xl p-6 bg-white">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-inter font-bold text-slate-800 text-[18px]">My Agent</h2>
+                    <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="font-inter text-mm-primary text-[13px] hover:underline no-underline">Configure</a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-[14px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[18px] shadow-md">
+                        {{ agent.name|truncatechars:1 }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-inter font-semibold text-slate-800 text-[16px]">{{ agent.name }}</div>
+                        <div class="font-inter text-slate-500 text-[13px] truncate">{{ agent.description|default:"No description set" }}</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full {% if agent.is_active %}bg-emerald-50 border border-emerald-200{% else %}bg-red-50 border border-red-200{% endif %}">
+                        <span class="w-2 h-2 rounded-full {% if agent.is_active %}bg-emerald-500{% else %}bg-red-400{% endif %}"></span>
+                        <span class="font-inter font-medium text-[12px] {% if agent.is_active %}text-emerald-700{% else %}text-red-600{% endif %}">{% if agent.is_active %}Active{% else %}Inactive{% endif %}</span>
+                    </div>
+                </div>
             </div>
-            {% endfor %}
+            {% endif %}
+
+            <!-- Recent Sessions -->
+            {% if recentSessions %}
+            <div class="border border-slate-200 rounded-2xl p-6 bg-white">
+                <h2 class="font-inter font-bold text-slate-800 text-[18px] mb-4">Recent Conversations</h2>
+                <div class="flex flex-col">
+                    {% for session in recentSessions %}
+                    <a href="{{ session.get_absolute_url }}" class="flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors rounded-xl px-4 py-3 -mx-2 no-underline">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#5B5FEF]/10 to-[#7B61FF]/10 flex items-center justify-center flex-shrink-0">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                                </svg>
+                            </div>
+                            <span class="font-inter font-medium text-slate-700 text-[14px] truncate">{{ session.title|default:"Untitled" }}</span>
+                        </div>
+                        <span class="font-inter text-slate-400 text-[12px] flex-shrink-0">{{ session.updated_at|timesince }} ago</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Activity Feed -->
+        <div class="flex flex-col gap-6">
+            {% if activityFeed %}
+            <div class="border border-slate-200 rounded-2xl p-6 bg-white">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-inter font-bold text-slate-800 text-[18px]">Activity</h2>
+                    <a href="{% url 'chat:activity_log' %}" class="font-inter text-mm-primary text-[13px] hover:underline no-underline">View all</a>
+                </div>
+                <div class="flex flex-col gap-1">
+                    {% for entry in activityFeed %}
+                    <div class="flex items-start gap-3 py-2.5 border-b border-slate-50 last:border-0">
+                        <span class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5 {% if entry.eventType == 'error' %}bg-amber-400{% elif entry.eventType == 'session_created' or entry.eventType == 'skill_generated' %}bg-emerald-400{% else %}bg-blue-400{% endif %}"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-inter text-slate-700 text-[13px] leading-5">{{ entry.description|truncatewords:12 }}</div>
+                            <div class="font-inter text-slate-400 text-[11px] mt-0.5">{{ entry.createdAt }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Links -->
+            <div class="border border-slate-200 rounded-2xl p-6 bg-white">
+                <h2 class="font-inter font-bold text-slate-800 text-[18px] mb-4">Quick Links</h2>
+                <div class="flex flex-col gap-2">
+                    <a href="{% url 'chat:memory' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors no-underline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
+                        <span class="font-inter font-medium text-slate-700 text-[13px]">All Memories</span>
+                    </a>
+                    <a href="{% url 'chat:analytics' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors no-underline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 20V10"></path>
+                            <path d="M12 20V4"></path>
+                            <path d="M6 20v-6"></path>
+                        </svg>
+                        <span class="font-inter font-medium text-slate-700 text-[13px]">Analytics</span>
+                    </a>
+                    <a href="{% url 'chat:group_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors no-underline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 010 7.75"></path>
+                        </svg>
+                        <span class="font-inter font-medium text-slate-700 text-[13px]">Groups</span>
+                    </a>
+                    <a href="{% url 'chat:skill_marketplace' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors no-underline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span class="font-inter font-medium text-slate-700 text-[13px]">Skill Marketplace</span>
+                    </a>
+                    <a href="{% url 'chat:document_hub' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors no-underline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span class="font-inter font-medium text-slate-700 text-[13px]">Documents</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-    {% endif %}
 </div>
 {% endblock %}

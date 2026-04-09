@@ -26,6 +26,13 @@ from .service import (
     get_session_report_export_rows,
     get_session_for_user,
     get_sidebar_sessions_for_user,
+    get_latency_over_time_chart_png,
+    get_latency_by_model_chart_png,
+    get_error_rate_chart_png,
+    get_daily_cost_chart_png,
+    get_token_usage_chart_png,
+    get_cost_by_model_chart_png,
+    get_request_log_export_rows,
 )
 
 PENDING_PROMPT_SESSION_KEY = "pending_chat_prompts"
@@ -63,6 +70,13 @@ class MemoryListView(ListView):
             "active_sort": self._list_payload["active_sort"],
         })
         context.update(get_memory_summary(self.request.user))
+        from .models.memory_vote import MemoryVote
+        profile = get_or_create_profile_for_user(self.request.user)
+        userVotes = {
+            v["bullet_id"]: v["value"]
+            for v in MemoryVote.objects.filter(user=profile).values("bullet_id", "value")
+        }
+        context["user_votes"] = userVotes
         return context
 
 
@@ -293,6 +307,57 @@ def activity_chart_png(request):
     return HttpResponse(get_activity_chart_png(request.user), content_type="image/png")
 
 
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def latency_over_time_chart_png(request):
+    return HttpResponse(get_latency_over_time_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def latency_by_model_chart_png(request):
+    return HttpResponse(get_latency_by_model_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def error_rate_chart_png(request):
+    return HttpResponse(get_error_rate_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def daily_cost_chart_png(request):
+    return HttpResponse(get_daily_cost_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def token_usage_chart_png(request):
+    return HttpResponse(get_token_usage_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def cost_by_model_chart_png(request):
+    return HttpResponse(get_cost_by_model_chart_png(request.user), content_type="image/png")
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+def export_request_log_report(request):
+    export_format = (request.GET.get("format", "csv") or "csv").strip().lower()
+    rows = get_request_log_export_rows(request.user)
+    return _export_rows_response(
+        rows=rows,
+        export_format=export_format,
+        filename_prefix="request_log",
+        csv_headers=["request_type", "model_name", "status", "latency_ms", "total_tokens", "estimated_cost_usd", "created_at"],
+        csv_field_order=["request_type", "model_name", "status", "latency_ms", "total_tokens", "estimated_cost_usd", "created_at"],
+        json_key="request_logs",
+    )
+
+
 @require_http_methods(["GET"])
 def vega_daily_users_chart_view(request):
     return render(request, "chat/vega_daily_users.html")
@@ -370,25 +435,6 @@ def export_memory_bullets_report(request):
     )
 
 
-@login_required(login_url="/")
-def agent_list_view(request):
-    from .agent_service import get_agents_for_user, create_agent_for_user
-
-    if request.method == "POST":
-        name = (request.POST.get("name") or "").strip()
-        description = (request.POST.get("description") or "").strip()
-        systemPrompt = (request.POST.get("system_prompt") or "").strip()
-        if name:
-            create_agent_for_user(
-                request.user,
-                name=name,
-                description=description,
-                system_prompt=systemPrompt,
-            )
-        return redirect("chat:agent_list")
-
-    agents = get_agents_for_user(request.user, include_inactive=True)
-    return render(request, "chat/agent_list.html", {"agents": agents})
 
 
 @login_required(login_url="/")
@@ -427,7 +473,7 @@ def agent_detail_view(request, agent_id):
 def agent_delete_view(request, agent_id):
     from .agent_service import delete_agent_for_user
     delete_agent_for_user(request.user, str(agent_id))
-    return redirect("chat:agent_list")
+    return redirect("chat:my_agent")
 
 
 @login_required(login_url="/")
@@ -507,7 +553,7 @@ def my_agent_redirect_view(request):
     agents = get_agents_for_user(request.user)
     if agents:
         return redirect("chat:agent_detail", agent_id=agents[0]["id"])
-    return redirect("chat:agent_list")
+    return redirect("chat:dashboard")
 
 
 @login_required(login_url="/")
@@ -611,48 +657,81 @@ def agent_memory_view(request, agent_id):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def memory_vote_view(request, bullet_id):
+    from .models.memory_vote import MemoryVote, VoteValue
+
     direction = request.POST.get("direction", "up")
+    newValue = VoteValue.LIKE if direction == "up" else VoteValue.DISLIKE
     profile = request.user.profile
     bullet = MemoryBullet.objects.filter(id=bullet_id, memory__user=profile).first()
     if not bullet:
         return JsonResponse({"error": "Not found"}, status=404)
-    if direction == "up":
-        bullet.strength = min(100, bullet.strength + 10)
-        bullet.helpful_count += 1
+
+    existing = MemoryVote.objects.filter(user=profile, bullet=bullet).first()
+
+    if existing is None:
+        MemoryVote.objects.create(user=profile, bullet=bullet, value=newValue)
+        if newValue == VoteValue.LIKE:
+            bullet.helpful_count += 1
+        else:
+            bullet.harmful_count += 1
+    elif existing.value == newValue:
+        if existing.value == VoteValue.LIKE:
+            bullet.helpful_count = max(0, bullet.helpful_count - 1)
+        else:
+            bullet.harmful_count = max(0, bullet.harmful_count - 1)
+        existing.delete()
+        newValue = 0
     else:
-        bullet.strength = max(0, bullet.strength - 10)
-        bullet.harmful_count += 1
-    bullet.save()
+        if existing.value == VoteValue.LIKE:
+            bullet.helpful_count = max(0, bullet.helpful_count - 1)
+            bullet.harmful_count += 1
+        else:
+            bullet.harmful_count = max(0, bullet.harmful_count - 1)
+            bullet.helpful_count += 1
+        existing.value = newValue
+        existing.save(update_fields=["value", "updated_at"])
+
+    bullet.strength = max(0, min(100, (bullet.helpful_count - bullet.harmful_count) * 10))
+    bullet.save(update_fields=["helpful_count", "harmful_count", "strength"])
+
     return JsonResponse({
-        "strength": bullet.strength,
+        "bulletId": bullet.pk,
         "helpful": bullet.helpful_count,
         "harmful": bullet.harmful_count,
+        "strength": bullet.strength,
+        "userVote": newValue,
     })
 
 
 @login_required(login_url="/")
 def dashboard_view(request):
-    from .agent_service import get_agents_for_user
+    from .agent_service import get_or_create_user_agent
     from .audit_service import get_activity_feed_for_user
+    from .models import Session, SessionMember, Message as Msg
+    from .models.skill import Skill
 
-    agents = get_agents_for_user(request.user)
+    profile = get_or_create_profile_for_user(request.user)
+    agent = get_or_create_user_agent(request.user)
     activityFeed = get_activity_feed_for_user(request.user, limit=10)
     recentSessions = get_sidebar_sessions_for_user(request.user)[:5]
 
-    profile = get_or_create_profile_for_user(request.user)
-    from .models import Session
     totalSessions = Session.objects.filter(user=profile).count()
-    totalBullets = MemoryBullet.objects.filter(memory__user=profile).count()
-    totalSkills = MemoryBullet.objects.filter(memory__user=profile, is_skill=True).count()
+    totalMemories = MemoryBullet.objects.filter(memory__user=profile).count()
+    totalSkills = Skill.objects.filter(user=profile, is_enabled=True).count()
+    totalGroups = SessionMember.objects.filter(
+        user=profile, session__access_key__isnull=False,
+    ).exclude(session__access_key="").count()
+    totalMessages = Msg.objects.filter(session__user=profile).count()
 
     return render(request, "chat/dashboard.html", {
-        "agents": agents,
+        "agent": agent,
         "activityFeed": activityFeed,
         "recentSessions": recentSessions,
-        "totalAgents": len(agents),
         "totalSessions": totalSessions,
-        "totalBullets": totalBullets,
+        "totalMemories": totalMemories,
         "totalSkills": totalSkills,
+        "totalGroups": totalGroups,
+        "totalMessages": totalMessages,
     })
 
 
@@ -829,54 +908,34 @@ def skill_marketplace_detail_view(request, skill_id):
 @require_http_methods(["POST"])
 def skill_install_view(request, skill_id):
     from .skill_catalog import get_skill_by_id
+    from .skill_service import install_template_skill
+    from .models.skill import Skill
 
-    skill = get_skill_by_id(skill_id)
-    if skill is None:
+    templateData = get_skill_by_id(skill_id)
+    if templateData is None:
         return JsonResponse({"error": "Skill template not found"}, status=404)
 
     agentId = (request.POST.get("agent_id") or "").strip()
-
     profile = get_or_create_profile_for_user(request.user)
-    memory, _ = Memory.objects.get_or_create(user=profile)
 
-    existingBullet = MemoryBullet.objects.filter(
-        memory=memory,
-        is_skill=True,
-        skill_group=f"template:{skill['id']}",
-    ).first()
-
-    if existingBullet:
+    from django.utils.text import slugify
+    candidateSlug = slugify(templateData["name"])[:120]
+    if Skill.objects.filter(user=profile, slug=candidateSlug).exists():
         return JsonResponse({
             "ok": False,
             "error": "already_installed",
-            "message": f"Skill '{skill['name']}' is already installed.",
+            "message": f"Skill '{templateData['name']}' is already installed.",
         })
 
-    bullet = MemoryBullet.objects.create(
-        memory=memory,
-        content=skill["content"],
-        tags=["template", skill["category"], skill["id"]],
-        helpful_count=0,
-        harmful_count=0,
-        memory_type=3,
-        topic=skill["name"],
-        strength=100,
-        ttl_days=365,
-        is_skill=True,
-        skill_enabled=True,
-        skill_group=f"template:{skill['id']}",
-        learner_id=str(profile.pk),
-        context_scope_id="",
-        content_hash=MemoryBullet.compute_content_hash(skill["content"]),
-    )
+    newSkill = install_template_skill(request.user, templateData)
 
     try:
         from .audit_service import log_audit
         log_audit(
             request.user,
             event_type="skill_installed",
-            description=f"Installed template skill: {skill['name']}",
-            metadata={"skillId": skill["id"], "bulletId": bullet.pk},
+            description=f"Installed template skill: {templateData['name']}",
+            metadata={"skillId": templateData["id"], "skillPk": newSkill.pk},
         )
     except Exception:
         pass
@@ -884,8 +943,8 @@ def skill_install_view(request, skill_id):
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({
             "ok": True,
-            "message": f"Skill '{skill['name']}' installed successfully.",
-            "bulletId": bullet.pk,
+            "message": f"Skill '{templateData['name']}' installed successfully.",
+            "skillId": newSkill.pk,
         })
 
     if agentId:
@@ -893,68 +952,10 @@ def skill_install_view(request, skill_id):
     return redirect("chat:skill_marketplace")
 
 
-@login_required(login_url="/")
-@require_http_methods(["POST"])
-def agent_start_chat_view(request, template_id):
-    from .agent_catalog import get_template_agent_by_id as get_template_agent
-    from .models import Session, Agent
-
-    template = get_template_agent(template_id)
-    if not template:
-        return redirect("chat:agent_marketplace")
-
-    profile = request.user.profile
-    agents = Agent.objects.filter(user=profile)
-    agent = agents.first() if agents.exists() else None
-
-    session = Session.objects.create(
-        user=profile,
-        title=f"Chat with {template['name']}",
-    )
-
-    from .models import Message
-    Message.objects.create(
-        session=session,
-        role=1,
-        content=template.get("systemPrompt", f"You are {template['name']}. {template['description']}"),
-    )
-
-    return redirect("chat:conversation_detail", session_id=session.id)
 
 
-@login_required(login_url="/")
-def agent_marketplace_view(request):
-    from .agent_catalog import get_all_template_agents, get_template_agents_by_category, search_template_agents, AGENT_CATEGORIES
-
-    categoryFilter = (request.GET.get("category") or "").strip()
-    searchQuery = (request.GET.get("q") or "").strip()
-
-    if searchQuery:
-        agents = search_template_agents(searchQuery)
-    elif categoryFilter:
-        agents = get_template_agents_by_category(categoryFilter)
-    else:
-        agents = get_all_template_agents()
-
-    return render(request, "chat/agent_marketplace.html", {
-        "templateAgents": agents,
-        "categories": AGENT_CATEGORIES,
-        "activeCategory": categoryFilter,
-        "searchQuery": searchQuery,
-        "totalCount": len(get_all_template_agents()),
-    })
 
 
-@login_required(login_url="/")
-def agent_marketplace_detail_view(request, template_id):
-    from .agent_catalog import get_template_agent_by_id
-
-    template = get_template_agent_by_id(template_id)
-    if template is None:
-        from django.http import Http404
-        raise Http404("Agent template not found")
-
-    return render(request, "chat/agent_marketplace_detail.html", {"template": template})
 
 
 @login_required(login_url="/")
@@ -1115,31 +1116,4 @@ def group_settings_view(request, session_id):
     })
 
 
-@login_required(login_url="/")
-@require_http_methods(["POST"])
-def agent_template_install_view(request, template_id):
-    from .agent_catalog import get_template_agent_by_id
-    from .agent_service import create_agent_for_user
-
-    template = get_template_agent_by_id(template_id)
-    if template is None:
-        return JsonResponse({"error": "Agent template not found"}, status=404)
-
-    agent = create_agent_for_user(
-        request.user,
-        name=template["name"],
-        description=template["description"],
-        system_prompt=template["systemPrompt"],
-        temperature=template["temperature"],
-        max_tokens=template["maxTokens"],
-    )
-
-    if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return JsonResponse({
-            "ok": True,
-            "message": f"Agent '{template['name']}' created successfully.",
-            "agentId": agent.get("id"),
-        })
-
-    return redirect("chat:agent_list")
 

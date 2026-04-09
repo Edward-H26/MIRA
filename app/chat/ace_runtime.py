@@ -568,9 +568,14 @@ def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = Non
     )
     log_event("ace_memory_retrieved", session_id=session.pk, bullet_count=len(bullets))
     guidance = guidance_from_bullets(bullets)
+    from app.chat.skill_service import get_enabled_skills_for_user, format_skills_for_prompt
+    enabledSkills = get_enabled_skills_for_user(session.user.user)
+    skillContext = format_skills_for_prompt(enabledSkills)
     conversation_context = _build_recent_conversation_context(session)
     semanticContext = _build_semantic_context(user_text, memory_obj, learner_id, top_k=3)
     prompt_parts = []
+    if skillContext:
+        prompt_parts.append(skillContext)
     if guidance:
         prompt_parts.append(guidance)
     if semanticContext:

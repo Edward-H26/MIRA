@@ -47,5 +47,13 @@ llm_test/results/tmp/
 *.onnx
 *.h5
 
+# Playwright / E2E artifacts
+.playwright-mcp/
+e2e-tests/
+
+# Claude Code artifacts
+plans/
+docs/superpowers/
+
 
 

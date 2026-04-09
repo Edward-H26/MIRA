@@ -8,3 +8,6 @@ from .session_member import SessionMember
 from .audit_log import AuditLog
 from .notification import Notification, NotificationType
 from .document import Document
+from .memory_vote import MemoryVote, VoteValue
+from .skill import Skill, SkillSource
+from .request_log import RequestLog

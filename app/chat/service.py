@@ -22,7 +22,7 @@ from app.services import local_llm
 from app.services.gemini import generate_reply_text
 from .ace_runtime import run_ace_chat_turn, guidance_from_bullets
 from .rendering import render_assistant_markdown_html
-from .models import Memory, Message, MemoryBullet, Session
+from .models import Memory, Message, MemoryBullet, RequestLog, Session
 from .models.message import Role
 from app.users.models import UserProfile as Profile
 
@@ -35,6 +35,17 @@ CHART_MUTED = "#6A7290"
 LOCAL_PREPROCESS_CONTEXT_MAX_MESSAGES = 6
 INITIAL_STREAM_CHUNK_SIZE = 5
 FALLBACK_TEXT = "Sorry, I couldn't reach the AI service just now."
+
+MODEL_PRICING = {
+    "gemini-3-flash-preview": {"input_per_1m": 0.15, "output_per_1m": 0.60},
+    "gemini-3.1-flash-lite-preview": {"input_per_1m": 0.075, "output_per_1m": 0.30},
+    "qwen3.5-0.8b": {"input_per_1m": 0.0, "output_per_1m": 0.0},
+}
+
+
+def _estimate_cost(model_name, prompt_tokens, completion_tokens):
+    rates = MODEL_PRICING.get(model_name, {"input_per_1m": 0.0, "output_per_1m": 0.0})
+    return (prompt_tokens * rates["input_per_1m"] + completion_tokens * rates["output_per_1m"]) / 1_000_000
 
 
 def retrieve_relevant_document_chunks(user_profile, query, agent_id=None, top_k=5):
@@ -300,6 +311,75 @@ def _get_analytics_metrics_for_user(user):
     }
 
 
+def _get_performance_metrics(user):
+    profile = get_or_create_profile_for_user(user)
+    logs = RequestLog.objects.filter(user=profile)
+    total = logs.count()
+    if total == 0:
+        return {
+            "avg_latency_ms": 0, "p50_latency_ms": 0, "p95_latency_ms": 0,
+            "total_requests": 0, "error_rate_pct": 0.0, "throughput_per_day": 0.0,
+            "requests_by_status": [],
+        }
+
+    agg = logs.aggregate(avg_latency=Avg("latency_ms"))
+    latencies = sorted(logs.values_list("latency_ms", flat=True))
+    n = len(latencies)
+    p50 = (latencies[n // 2 - 1] + latencies[n // 2]) // 2 if n > 1 else (latencies[0] if n == 1 else 0)
+    p95_idx = min(int(len(latencies) * 0.95), len(latencies) - 1)
+    p95 = latencies[p95_idx] if latencies else 0
+
+    error_count = logs.filter(status="error").count()
+    days_range = logs.aggregate(
+        first=Min("created_at"), last=Max("created_at")
+    )
+    days_active = max((days_range["last"] - days_range["first"]).days, 1) if days_range["first"] and days_range["last"] else 1
+
+    status_breakdown = list(logs.values("status").annotate(count=Count("id")).order_by("status"))
+
+    return {
+        "avg_latency_ms": round(agg["avg_latency"] or 0),
+        "p50_latency_ms": p50,
+        "p95_latency_ms": p95,
+        "total_requests": total,
+        "error_rate_pct": round((error_count / total) * 100, 1) if total else 0.0,
+        "throughput_per_day": round(total / days_active, 1),
+        "requests_by_status": status_breakdown,
+    }
+
+
+def _get_cost_metrics(user):
+    profile = get_or_create_profile_for_user(user)
+    logs = RequestLog.objects.filter(user=profile)
+    total = logs.count()
+    if total == 0:
+        return {
+            "total_cost_usd": 0.0, "total_tokens": 0, "total_prompt_tokens": 0,
+            "total_completion_tokens": 0, "avg_cost_per_request": 0.0, "cost_by_model": [],
+        }
+
+    agg = logs.aggregate(
+        total_cost=Sum("estimated_cost_usd"),
+        total_prompt=Sum("prompt_tokens"),
+        total_completion=Sum("completion_tokens"),
+        total_tok=Sum("total_tokens"),
+    )
+    cost_by_model = list(
+        logs.values("model_name")
+        .annotate(total_cost=Sum("estimated_cost_usd"), request_count=Count("id"), tokens=Sum("total_tokens"))
+        .order_by("-total_cost")
+    )
+
+    return {
+        "total_cost_usd": round(agg["total_cost"] or 0, 4),
+        "total_tokens": agg["total_tok"] or 0,
+        "total_prompt_tokens": agg["total_prompt"] or 0,
+        "total_completion_tokens": agg["total_completion"] or 0,
+        "avg_cost_per_request": round((agg["total_cost"] or 0) / total, 6) if total else 0.0,
+        "cost_by_model": cost_by_model,
+    }
+
+
 def get_sidebar_sessions_for_user(user):
     return _get_session_queryset_for_user(user).order_by("-updated_at")
 
@@ -405,6 +485,7 @@ def stream_user_message_with_agent_reply(session, content):
     log_event("chat_classify", session_id=session.pk, classification=classification)
 
     use_local = _should_use_local_model(trimmed, classification)
+    usage_metadata = None
 
     try:
         if use_local:
@@ -469,19 +550,46 @@ def stream_user_message_with_agent_reply(session, content):
             full_prompt = "\n\n".join(context_parts)
 
             chunks_buf = []
+            usage_metadata = None
             try:
                 for chunk in generate_reply_stream(full_prompt):
-                    if chunk:
+                    if isinstance(chunk, dict) and chunk.get("_type") == "usage_metadata":
+                        usage_metadata = chunk
+                    elif isinstance(chunk, str) and chunk:
                         chunks_buf.append(chunk)
             except Exception:
                 pass
             assistant_text = "".join(chunks_buf).strip() or FALLBACK_TEXT
 
+        elapsed_ms = int((time.monotonic() - started_at) * 1000)
+        pipeline_name = "local_qwen" if use_local else "gemini_direct"
+        model_used = "qwen3.5-0.8b" if use_local else "gemini-3-flash-preview"
+        prompt_tok = usage_metadata.get("prompt_tokens", 0) if usage_metadata else 0
+        completion_tok = usage_metadata.get("completion_tokens", 0) if usage_metadata else 0
+        total_tok = usage_metadata.get("total_tokens", 0) if usage_metadata else prompt_tok + completion_tok
+        try:
+            req_profile = get_or_create_profile_for_user(session.user.user)
+            RequestLog.objects.create(
+                user=req_profile,
+                session=session,
+                request_type="chat",
+                model_name=model_used,
+                pipeline=pipeline_name,
+                status="success",
+                latency_ms=elapsed_ms,
+                prompt_tokens=prompt_tok,
+                completion_tokens=completion_tok,
+                total_tokens=total_tok,
+                estimated_cost_usd=_estimate_cost(model_used, prompt_tok, completion_tok),
+            )
+        except Exception:
+            pass
+
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
             answer_len=len(assistant_text),
-            pipeline="local_qwen" if use_local else "gemini_direct",
+            pipeline=pipeline_name,
             agent_name=responding_agent.get("name") if responding_agent else None,
         )
         _stream_debug_log(
@@ -492,6 +600,20 @@ def stream_user_message_with_agent_reply(session, content):
         )
     except Exception as exc:
         assistant_text = FALLBACK_TEXT
+        try:
+            err_profile = get_or_create_profile_for_user(session.user.user)
+            RequestLog.objects.create(
+                user=err_profile,
+                session=session,
+                request_type="chat",
+                model_name="gemini-3-flash-preview",
+                pipeline="fallback",
+                status="error",
+                latency_ms=int((time.monotonic() - started_at) * 1000),
+                error_type=exc.__class__.__name__,
+            )
+        except Exception:
+            pass
         log_event(
             "chat_stream_ace_failed_fallback",
             session_id=session.pk,
@@ -795,7 +917,7 @@ def get_analytics_dashboard_context_with_reports(user, session_group="month", me
             for row in grouped_bullets
         ]
 
-    return {
+    context = {
         "total_memories": metrics["total_memories"],
         "total_sessions": metrics["total_sessions"],
         "total_messages": metrics["total_messages"],
@@ -808,6 +930,25 @@ def get_analytics_dashboard_context_with_reports(user, session_group="month", me
         "session_group_count": len(session_grouped_rows),
         "memory_group_count": len(memory_grouped_rows),
     }
+
+    perf = _get_performance_metrics(user)
+    context["perf_avg_latency"] = perf["avg_latency_ms"]
+    context["perf_p50_latency"] = perf["p50_latency_ms"]
+    context["perf_p95_latency"] = perf["p95_latency_ms"]
+    context["perf_total_requests"] = perf["total_requests"]
+    context["perf_error_rate"] = perf["error_rate_pct"]
+    context["perf_throughput"] = perf["throughput_per_day"]
+    context["perf_requests_by_status"] = perf["requests_by_status"]
+
+    cost = _get_cost_metrics(user)
+    context["cost_total"] = cost["total_cost_usd"]
+    context["cost_total_tokens"] = cost["total_tokens"]
+    context["cost_prompt_tokens"] = cost["total_prompt_tokens"]
+    context["cost_completion_tokens"] = cost["total_completion_tokens"]
+    context["cost_avg_per_request"] = cost["avg_cost_per_request"]
+    context["cost_by_model"] = cost["cost_by_model"]
+
+    return context
 
 
 def get_session_report_export_rows(user, q=""):
@@ -850,6 +991,23 @@ def get_memory_bullet_report_export_rows(user, q=""):
             "created_at": b.created_at.isoformat(),
         }
         for b in bullets_qs
+    ]
+
+
+def get_request_log_export_rows(user):
+    profile = get_or_create_profile_for_user(user)
+    logs = RequestLog.objects.filter(user=profile).order_by("-created_at")[:500]
+    return [
+        {
+            "request_type": log.request_type,
+            "model_name": log.model_name,
+            "status": log.status,
+            "latency_ms": log.latency_ms,
+            "total_tokens": log.total_tokens,
+            "estimated_cost_usd": round(log.estimated_cost_usd, 6),
+            "created_at": log.created_at.isoformat(),
+        }
+        for log in logs
     ]
 
 
@@ -1013,6 +1171,245 @@ def get_activity_chart_png(user):
         ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
     else:
         ax.text(0.5, 0.5, "No activity data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    fig.tight_layout()
+    return _render_chart_to_png(fig)
+
+
+def get_latency_over_time_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    daily = (
+        RequestLog.objects.filter(user=profile, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(avg_latency=Avg("latency_ms"))
+        .order_by("day")
+    )
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    if daily:
+        days = [d["day"].strftime("%m/%d") for d in daily]
+        latencies = [float(d["avg_latency"] or 0) for d in daily]
+        x = range(len(days))
+        ax.plot(
+            x,
+            latencies,
+            marker="o",
+            color=PROGRESSIVE_COLORS[0],
+            linewidth=2.5,
+            markersize=5,
+            label="Avg Latency (ms)",
+        )
+        ax.fill_between(x, latencies, alpha=0.22, color=PROGRESSIVE_COLORS[-1])
+        ax.set_xticks(x)
+        ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8, color=CHART_MUTED)
+        ax.set_title("Average Latency (Last 30 Days)", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Latency (ms)", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    fig.tight_layout()
+    return _render_chart_to_png(fig)
+
+
+def get_latency_by_model_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    model_data = list(
+        RequestLog.objects.filter(user=profile)
+        .values("model_name")
+        .annotate(avg_latency=Avg("latency_ms"))
+        .order_by("model_name")
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    if model_data:
+        models = [d["model_name"] for d in model_data]
+        latencies = [float(d["avg_latency"] or 0) for d in model_data]
+        colors = PROGRESSIVE_COLORS[:len(models)]
+        bars = ax.barh(models, latencies, color=colors, edgecolor="#FFFFFF", linewidth=1)
+        ax.set_title("Average Latency by Model", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Latency (ms)", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.bar_label(bars, fmt="%.0f", padding=3, color=CHART_MUTED, fontsize=9)
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    fig.tight_layout()
+    return _render_chart_to_png(fig)
+
+
+def get_error_rate_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    status_data = list(
+        RequestLog.objects.filter(user=profile)
+        .values("status")
+        .annotate(count=Count("id"))
+        .order_by("status")
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    if status_data:
+        labels = [d["status"] for d in status_data]
+        counts = [d["count"] for d in status_data]
+        non_zero_count = sum(1 for c in counts if c > 0)
+        wedge_linewidth = 0 if non_zero_count <= 1 else 1.2
+        wedges, texts, autotexts = ax.pie(
+            counts,
+            labels=labels,
+            autopct="%1.1f%%",
+            colors=SEGMENT_COLORS[:len(labels)],
+            startangle=140,
+            wedgeprops={"linewidth": wedge_linewidth, "edgecolor": "#FFFFFF"},
+        )
+        for txt in texts:
+            txt.set_color(CHART_TEXT)
+            txt.set_fontsize(10)
+        for txt in autotexts:
+            txt.set_color("#FFFFFF")
+            txt.set_fontsize(9)
+            txt.set_fontweight("semibold")
+        ax.set_title("Request Status Distribution", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.legend(
+            wedges,
+            labels,
+            title="Status",
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            frameon=False,
+            labelcolor=CHART_MUTED,
+        )
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    return _render_chart_to_png(fig)
+
+
+def get_daily_cost_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    daily = (
+        RequestLog.objects.filter(user=profile, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(daily_cost=Sum("estimated_cost_usd"))
+        .order_by("day")
+    )
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    if daily:
+        days = [d["day"].strftime("%m/%d") for d in daily]
+        costs = [float(d["daily_cost"] or 0) for d in daily]
+        x = range(len(days))
+        ax.plot(
+            x,
+            costs,
+            marker="o",
+            color=PROGRESSIVE_COLORS[0],
+            linewidth=2.5,
+            markersize=5,
+            label="Daily Cost (USD)",
+        )
+        ax.fill_between(x, costs, alpha=0.22, color=PROGRESSIVE_COLORS[-1])
+        ax.set_xticks(x)
+        ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8, color=CHART_MUTED)
+        ax.set_title("Daily Cost (Last 30 Days)", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Cost (USD)", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    fig.tight_layout()
+    return _render_chart_to_png(fig)
+
+
+def get_token_usage_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    daily = (
+        RequestLog.objects.filter(user=profile, created_at__gte=thirty_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(
+            prompt_total=Sum("prompt_tokens"),
+            completion_total=Sum("completion_tokens"),
+        )
+        .order_by("day")
+    )
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    if daily:
+        days = [d["day"].strftime("%m/%d") for d in daily]
+        prompt_vals = [d["prompt_total"] or 0 for d in daily]
+        completion_vals = [d["completion_total"] or 0 for d in daily]
+        x = range(len(days))
+        ax.bar(x, prompt_vals, color=PROGRESSIVE_COLORS[0], label="Prompt Tokens", edgecolor="#FFFFFF", linewidth=1)
+        ax.bar(x, completion_vals, bottom=prompt_vals, color=PROGRESSIVE_COLORS[2], label="Completion Tokens", edgecolor="#FFFFFF", linewidth=1)
+        ax.set_xticks(list(x))
+        ax.set_xticklabels(days, rotation=45, ha="right", fontsize=8, color=CHART_MUTED)
+        ax.set_title("Token Usage (Last 30 Days)", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Date", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Tokens", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.legend(loc="upper left", frameon=False, labelcolor=CHART_MUTED)
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis("off")
+
+    fig.patch.set_facecolor(CHART_BG)
+    fig.tight_layout()
+    return _render_chart_to_png(fig)
+
+
+def get_cost_by_model_chart_png(user):
+    profile = get_or_create_profile_for_user(user)
+    model_data = list(
+        RequestLog.objects.filter(user=profile)
+        .values("model_name")
+        .annotate(total_cost=Sum("estimated_cost_usd"))
+        .order_by("-total_cost")
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    if model_data:
+        models = [d["model_name"] for d in model_data]
+        costs = [float(d["total_cost"] or 0) for d in model_data]
+        colors = PROGRESSIVE_COLORS[:len(models)]
+        bars = ax.bar(models, costs, color=colors, edgecolor="#FFFFFF", linewidth=1)
+        ax.set_title("Total Cost by Model", fontsize=14, fontweight="bold", color=CHART_TEXT, pad=16)
+        ax.set_xlabel("Model", color=CHART_MUTED, fontsize=10)
+        ax.set_ylabel("Cost (USD)", color=CHART_MUTED, fontsize=10)
+        _apply_chart_style(ax)
+        ax.bar_label(bars, fmt="$%.4f", padding=3, color=CHART_MUTED, fontsize=9)
+    else:
+        ax.text(0.5, 0.5, "No data yet", ha="center", va="center", fontsize=14, color=CHART_MUTED)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")

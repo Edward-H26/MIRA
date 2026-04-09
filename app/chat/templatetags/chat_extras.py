@@ -22,3 +22,10 @@ def relative_time(value):
 @register.filter(name="assistant_markdown")
 def assistant_markdown(value):
     return render_assistant_markdown_html(value)
+
+
+@register.filter(name="get_vote")
+def get_vote(votes_dict, bullet_id):
+    if not isinstance(votes_dict, dict):
+        return 0
+    return votes_dict.get(bullet_id, 0)

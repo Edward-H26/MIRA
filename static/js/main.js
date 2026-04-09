@@ -14,7 +14,7 @@ function getAppRoutes() {
         chatMemory: "/chat/memory/",
         chatAnalytics: "/chat/analytics/",
         chatDashboard: "/chat/dashboard/",
-        chatAgentList: "/chat/agents/",
+        chatMyAgent: "/chat/agents/my/",
         chatActivityLog: "/chat/activity/",
         chatDocumentUpload: "/chat/document/upload/",
         chatSessionsApi: "/chat/api/sessions/",
@@ -47,7 +47,7 @@ function initHeaderNav() {
         } else if (key === "analytics") {
             isActive = path.startsWith(routes.chatAnalytics)
         } else if (key === "agents") {
-            isActive = path.startsWith(routes.chatAgentList)
+            isActive = path.startsWith("/chat/agents/")
         }
 
         if (isActive) {
@@ -81,9 +81,7 @@ function initSidebarNav() {
         } else if (key === "dashboard") {
             isActive = path.startsWith(routes.chatDashboard)
         } else if (key === "agents") {
-            isActive = path.startsWith(routes.chatAgentList) && !path.includes("/marketplace")
-        } else if (key === "directory") {
-            isActive = path.includes("/marketplace")
+            isActive = path.startsWith("/chat/agents/")
         } else if (key === "activity") {
             isActive = path.startsWith(routes.chatActivityLog)
         } else if (key === "documents") {
@@ -397,9 +395,7 @@ function initMobileNav() {
             const convPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
             isActive = path === routes.home || path === homeNoSlash || path.startsWith(convPrefix)
         } else if (key === "agent") {
-            isActive = path.startsWith(routes.chatAgentList) && !path.includes("/marketplace")
-        } else if (key === "directory") {
-            isActive = path.includes("/marketplace")
+            isActive = path.startsWith("/chat/agents/")
         }
 
         link.classList.toggle("is-active", isActive)

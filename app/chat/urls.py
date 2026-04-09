@@ -21,6 +21,13 @@ page_urlpatterns = [
     path("analytics/activity.png", views.activity_chart_png, name="activity_chart"),
     path("analytics/export/sessions/", views.export_sessions_report, name="export_sessions_report"),
     path("analytics/export/memory-bullets/", views.export_memory_bullets_report, name="export_memory_bullets_report"),
+    path("analytics/latency-over-time.png", views.latency_over_time_chart_png, name="latency_over_time_chart"),
+    path("analytics/latency-by-model.png", views.latency_by_model_chart_png, name="latency_by_model_chart"),
+    path("analytics/error-rate.png", views.error_rate_chart_png, name="error_rate_chart"),
+    path("analytics/daily-cost.png", views.daily_cost_chart_png, name="daily_cost_chart"),
+    path("analytics/token-usage.png", views.token_usage_chart_png, name="token_usage_chart"),
+    path("analytics/cost-by-model.png", views.cost_by_model_chart_png, name="cost_by_model_chart"),
+    path("analytics/export/request-log/", views.export_request_log_report, name="export_request_log_report"),
     path(
         "charts/active-users/",
         views.vega_daily_users_chart_view,

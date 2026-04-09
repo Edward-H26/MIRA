@@ -20,7 +20,12 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+from app.chat.views import analytics_view
+
+admin.site.login_url = "/"
+
 urlpatterns = [
+    path("dashboard/", analytics_view, name="dashboard"),
     path("admin/", admin.site.urls),
     path("", include("app.memoria.urls", namespace="memoria")),
     path("users/", include("app.users.urls", namespace="users")),

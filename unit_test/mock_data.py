@@ -27,6 +27,10 @@ from django.utils import timezone
 
 from app.users.models import UserProfile
 from app.chat.models import Session, Message, Memory, MemoryBullet
+from app.chat.models.agent import Agent
+from app.chat.models.session_member import SessionMember
+from app.chat.models.memory_vote import MemoryVote, VoteValue
+from app.chat.models.skill import Skill, SkillSource
 from app.chat.models.message import Role
 from app.chat.models.memory_bullet import MemoryType
 from app.billing.models import Plan, Subscription, Payment
