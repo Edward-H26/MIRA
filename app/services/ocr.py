@@ -7,6 +7,10 @@ from PIL import Image
 
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp",
+    "application/pdf",
+}
+IMAGE_CONTENT_TYPES = {
+    "image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp",
 }
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 MIN_IMAGE_DIMENSION = 50
@@ -108,6 +112,39 @@ def extract_text_from_image(imageFile) -> OcrResult:
     result.word_count = len(rawText.split())
     result.status = "success"
     return result
+
+
+def extract_text_from_pdf(pdfFile) -> OcrResult:
+    import pdfplumber
+
+    result = OcrResult()
+    try:
+        pdfFile.seek(0)
+        with pdfplumber.open(pdfFile) as pdf:
+            pagesText = [page.extract_text() or "" for page in pdf.pages]
+            rawText = "\n\n".join(pagesText).strip()
+    except Exception as exc:
+        result.status = "failed"
+        result.error = f"PDF extraction failed: {exc}"
+        return result
+
+    if not rawText:
+        result.status = "failed"
+        result.error = "No text could be extracted from the PDF."
+        return result
+
+    result.raw_text = rawText
+    result.line_count = len(rawText.splitlines())
+    result.word_count = len(rawText.split())
+    result.status = "success"
+    return result
+
+
+def extract_text_from_file(uploadedFile) -> OcrResult:
+    contentType = getattr(uploadedFile, "content_type", "")
+    if contentType == "application/pdf":
+        return extract_text_from_pdf(uploadedFile)
+    return extract_text_from_image(uploadedFile)
 
 
 def parse_document_fields(rawText: str) -> dict:

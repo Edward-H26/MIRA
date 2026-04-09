@@ -156,21 +156,26 @@ def conversation_upload_view(request, session_id):
     if not uploadedFile:
         return JsonResponse({"error": "No file uploaded"}, status=400)
 
-    from app.services.ocr import validate_uploaded_image, extract_text_from_image
+    from app.services.ocr import validate_uploaded_image, extract_text_from_file
 
     isValid, errorMsg = validate_uploaded_image(uploadedFile)
     if not isValid:
         return JsonResponse({"error": errorMsg}, status=400)
 
-    ocrResult = extract_text_from_image(uploadedFile)
+    ocrResult = extract_text_from_file(uploadedFile)
     if ocrResult.status != "success":
         return JsonResponse({"error": ocrResult.error or "OCR extraction failed"}, status=400)
 
+    userMessage = (request.POST.get("message") or "").strip()
     truncatedText = ocrResult.raw_text[:500]
-    content = (
+    parts = []
+    if userMessage:
+        parts.append(userMessage)
+    parts.append(
         f"[Uploaded document: {uploadedFile.name}]\n\n"
         f"Extracted text:\n{truncatedText}"
     )
+    content = "\n\n".join(parts)
 
     log_event("chat_document_upload", request=request, session_id=session.pk)
 
@@ -825,13 +830,13 @@ def document_hub_view(request):
 def document_upload_view(request):
     from .forms import DocumentUploadForm
     from .models import Document
-    from app.services.ocr import extract_text_from_image, parse_document_fields
+    from app.services.ocr import extract_text_from_file, parse_document_fields
 
     if request.method == "POST":
         form = DocumentUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            imageFile = form.cleaned_data["image"]
-            ocrResult = extract_text_from_image(imageFile)
+            uploadedFile = form.cleaned_data["file"]
+            ocrResult = extract_text_from_file(uploadedFile)
 
             if ocrResult.status != "success":
                 return render(request, "chat/document_upload.html", {

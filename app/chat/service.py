@@ -557,8 +557,10 @@ def stream_user_message_with_agent_reply(session, content):
                         usage_metadata = chunk
                     elif isinstance(chunk, str) and chunk:
                         chunks_buf.append(chunk)
-            except Exception:
-                pass
+            except Exception as stream_exc:
+                _stream_debug_log(
+                    f"stream_error session_id={session.pk} error={stream_exc}"
+                )
             assistant_text = "".join(chunks_buf).strip() or FALLBACK_TEXT
 
         elapsed_ms = int((time.monotonic() - started_at) * 1000)

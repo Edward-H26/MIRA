@@ -203,9 +203,25 @@
             <input
               type="file"
               id="conversation-file-input"
-              accept="image/jpeg,image/png,image/tiff,image/bmp,image/webp"
+              accept="image/jpeg,image/png,image/tiff,image/bmp,image/webp,application/pdf"
               style="display: none;"
             >
+            <div id="file-preview-bar" class="hidden mx-4 mb-2 px-3 py-2 bg-slate-50/80 rounded-[10px] border border-slate-200/60 flex items-center gap-3">
+              <img id="file-preview-thumb" class="w-10 h-10 rounded-[6px] object-cover flex-shrink-0 border border-slate-200/40" alt="">
+              <svg id="file-preview-pdf-icon" class="hidden w-10 h-10 text-red-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span id="file-preview-name" class="font-inter text-slate-600 text-[13px] font-medium truncate flex-1"></span>
+              <button type="button" id="file-preview-remove" class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors" title="Remove file">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
             <div class="flex items-center justify-between px-4 pb-3">
               <div class="flex gap-2">
                 <button type="button" id="conversation-add-button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" title="Upload file">
@@ -480,7 +496,6 @@
             onPayload(JSON.parse(trimmed));
           } catch (error) {
             debugLog("invalid-ndjson-line", { line: trimmed.slice(0, 200), error: String(error) });
-            throw error;
           }
         }
 
@@ -495,7 +510,6 @@
           onPayload(JSON.parse(tail));
         } catch (error) {
           debugLog("invalid-ndjson-tail", { line: tail.slice(0, 200), error: String(error) });
-          throw error;
         }
       }
     };
@@ -523,6 +537,7 @@
       debugLog("request-start", { streamUrl, promptLength: content.length });
 
       const abortController = new AbortController();
+      const streamTimeoutId = setTimeout(() => abortController.abort(), 90000);
       const onBeforeUnload = () => { abortController.abort(); };
       window.addEventListener("beforeunload", onBeforeUnload);
 
@@ -587,6 +602,7 @@
           (error && error.message) || "Sorry, I couldn't reach the AI service just now."
         );
       } finally {
+        clearTimeout(streamTimeoutId);
         debugLog("request-end");
         window.removeEventListener("beforeunload", onBeforeUnload);
         hideTypingIndicator();
@@ -625,7 +641,15 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      await submitMessage();
+      if (stagedFile) {
+        const userText = input.value.trim();
+        const file = stagedFile;
+        input.value = "";
+        clearStagedFile();
+        await handleFileUpload(file, userText);
+      } else {
+        await submitMessage();
+      }
     });
 
     scrollToBottom();
@@ -643,26 +667,66 @@
 
     const fileInput = document.getElementById("conversation-file-input");
     const uploadUrl = form.dataset.uploadUrl || "";
+    const previewBar = document.getElementById("file-preview-bar");
+    const previewThumb = document.getElementById("file-preview-thumb");
+    const previewPdfIcon = document.getElementById("file-preview-pdf-icon");
+    const previewName = document.getElementById("file-preview-name");
+    const previewRemove = document.getElementById("file-preview-remove");
+    let stagedFile = null;
 
-    const handleFileUpload = async (file) => {
-      if (isStreaming || !file || !uploadUrl) return;
+    const allowedTypes = [
+      "image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp",
+      "application/pdf",
+    ];
 
-      const allowedTypes = ["image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp"];
+    const stageFile = (file) => {
+      if (!file) return;
       if (!allowedTypes.includes(file.type)) {
-        appendMessage("assistant", "Unsupported file type. Please upload JPEG, PNG, TIFF, BMP, or WebP images.");
+        appendMessage("assistant", "Unsupported file type. Please upload JPEG, PNG, TIFF, BMP, WebP, or PDF.");
         return;
       }
-
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
+      if (file.size > 10 * 1024 * 1024) {
         appendMessage("assistant", "File too large. Maximum size is 10 MB.");
         return;
       }
+      stagedFile = file;
+      if (previewName) previewName.textContent = file.name;
+      if (file.type === "application/pdf") {
+        if (previewThumb) previewThumb.classList.add("hidden");
+        if (previewPdfIcon) previewPdfIcon.classList.remove("hidden");
+      } else {
+        if (previewPdfIcon) previewPdfIcon.classList.add("hidden");
+        if (previewThumb) {
+          previewThumb.classList.remove("hidden");
+          previewThumb.src = URL.createObjectURL(file);
+        }
+      }
+      if (previewBar) previewBar.classList.remove("hidden");
+      input.focus();
+    };
+
+    const clearStagedFile = () => {
+      stagedFile = null;
+      if (fileInput) fileInput.value = "";
+      if (previewBar) previewBar.classList.add("hidden");
+      if (previewThumb) { previewThumb.src = ""; previewThumb.classList.remove("hidden"); }
+      if (previewPdfIcon) previewPdfIcon.classList.add("hidden");
+    };
+
+    if (previewRemove) {
+      previewRemove.addEventListener("click", clearStagedFile);
+    }
+
+    const handleFileUpload = async (file, userMessage) => {
+      if (isStreaming || !file || !uploadUrl) return;
 
       let assistantText = "";
       let assistantHtml = "";
+      const displayText = userMessage
+        ? `${userMessage}\n[Attached: ${file.name}]`
+        : `[Uploaded: ${file.name}]`;
 
-      appendMessage("user", `[Uploaded: ${file.name}]`);
+      appendMessage("user", displayText);
       const assistantUi = appendMessage("assistant", "", { pending: true });
       setStreamingState(true);
       debugLog("upload-start", { fileName: file.name, size: file.size });
@@ -670,6 +734,7 @@
       const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
       const formData = new FormData();
       formData.append("file", file);
+      if (userMessage) formData.append("message", userMessage);
 
       try {
         const response = await fetch(uploadUrl, {
@@ -721,8 +786,7 @@
     if (fileInput) {
       fileInput.addEventListener("change", () => {
         if (fileInput.files && fileInput.files[0]) {
-          handleFileUpload(fileInput.files[0]);
-          fileInput.value = "";
+          stageFile(fileInput.files[0]);
         }
       });
     }
@@ -1019,7 +1083,7 @@
         dragCounter = 0;
         chatMain.classList.remove("ring-2", "ring-mm-primary", "ring-inset");
         const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (file) handleFileUpload(file);
+        if (file) stageFile(file);
       });
     }
   });
