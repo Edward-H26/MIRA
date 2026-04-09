@@ -73,7 +73,7 @@ class ConversationMessagesView(View):
             session = get_session_for_user(request.user, session_id, with_messages=True)
         except Http404:
             from .models import Session, SessionMember
-            session = get_object_or_404(Session, pk=session_id, is_group=True)
+            session = get_object_or_404(Session, pk=session_id)
             profile = get_or_create_profile_for_user(request.user)
             if not SessionMember.objects.filter(session=session, user=profile).exists():
                 raise Http404
@@ -142,7 +142,7 @@ def conversation_upload_view(request, session_id):
     if not uploadedFile:
         return JsonResponse({"error": "No file uploaded"}, status=400)
 
-    from app.services.ocr import validate_uploaded_image, extract_text_from_image, ocr_to_lessons
+    from app.services.ocr import validate_uploaded_image, extract_text_from_image
 
     isValid, errorMsg = validate_uploaded_image(uploadedFile)
     if not isValid:
@@ -151,15 +151,6 @@ def conversation_upload_view(request, session_id):
     ocrResult = extract_text_from_image(uploadedFile)
     if ocrResult.status != "success":
         return JsonResponse({"error": ocrResult.error or "OCR extraction failed"}, status=400)
-
-    lessons = ocr_to_lessons(ocrResult)
-    if lessons:
-        profile = get_or_create_profile_for_user(request.user)
-        memory, _ = Memory.objects.get_or_create(user=profile)
-        try:
-            memory.apply_lessons(lessons, learner_id=str(profile.pk), context_scope_id="ocr")
-        except Exception:
-            pass
 
     truncatedText = ocrResult.raw_text[:500]
     content = (
@@ -418,7 +409,17 @@ def agent_detail_view(request, agent_id):
             agent = update_agent_for_user(request.user, str(agent_id), **fields)
         return redirect("chat:agent_detail", agent_id=agent_id)
 
-    return render(request, "chat/agent_detail.html", {"agent": agent})
+    profile = get_or_create_profile_for_user(request.user)
+    from .models import Document
+    skillCount = MemoryBullet.objects.filter(memory__user=profile, is_skill=True).count()
+    memoryCount = MemoryBullet.objects.filter(memory__user=profile).count()
+    fileCount = Document.objects.filter(user=profile, agent_id=agent_id).count()
+    return render(request, "chat/agent_detail.html", {
+        "agent": agent,
+        "skill_count": skillCount,
+        "memory_count": memoryCount,
+        "file_count": fileCount,
+    })
 
 
 @login_required(login_url="/")
@@ -518,9 +519,18 @@ def agent_files_view(request, agent_id):
     profile = request.user.profile
 
     if request.method == "POST":
+        from .models.document import MAX_UPLOAD_SIZE_BYTES
         uploaded = request.FILES.get("file")
         if uploaded:
             size = uploaded.size
+            if size > MAX_UPLOAD_SIZE_BYTES:
+                documents = Document.objects.filter(user=profile, agent_id=agent_id)
+                return render(request, "chat/agent_files.html", {
+                    "agent": agent,
+                    "documents": documents,
+                    "error": f"File too large. Maximum size: {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB.",
+                })
+
             if size < 1024:
                 sizeLabel = f"{size} B"
             elif size < 1024 * 1024:
@@ -528,12 +538,17 @@ def agent_files_view(request, agent_id):
             else:
                 sizeLabel = f"{size / (1024 * 1024):.1f} MB"
 
-            rawText = ""
-            try:
-                rawText = uploaded.read().decode("utf-8", errors="replace")
-                uploaded.seek(0)
-            except Exception:
-                rawText = "(binary file)"
+            contentType = getattr(uploaded, "content_type", "")
+            imageTypes = {"image/jpeg", "image/png", "image/webp", "image/tiff", "image/bmp"}
+            if contentType in imageTypes:
+                rawText = "(image file)"
+            else:
+                rawText = ""
+                try:
+                    rawText = uploaded.read().decode("utf-8", errors="replace")
+                    uploaded.seek(0)
+                except Exception:
+                    rawText = "(binary file)"
 
             Document.objects.create(
                 user=profile,
@@ -543,6 +558,7 @@ def agent_files_view(request, agent_id):
                 file=uploaded,
                 file_size=sizeLabel,
                 raw_text=rawText,
+                ttl_days=None,
             )
         return redirect("chat:agent_files", agent_id=agent_id)
 
@@ -730,7 +746,7 @@ def document_hub_view(request):
 def document_upload_view(request):
     from .forms import DocumentUploadForm
     from .models import Document
-    from app.services.ocr import extract_text_from_image, ocr_to_lessons, parse_document_fields
+    from app.services.ocr import extract_text_from_image, parse_document_fields
 
     if request.method == "POST":
         form = DocumentUploadForm(request.POST, request.FILES)
@@ -745,7 +761,6 @@ def document_upload_view(request):
                 })
 
             parsedFields = parse_document_fields(ocrResult.raw_text)
-            lessons = ocr_to_lessons(ocrResult)
 
             profile = get_or_create_profile_for_user(request.user)
 
@@ -756,24 +771,11 @@ def document_upload_view(request):
                 parsed_fields=parsedFields,
             )
 
-            bulletCount = 0
-            if lessons:
-                memory, _ = Memory.objects.get_or_create(user=profile)
-                try:
-                    memory.apply_lessons(
-                        lessons,
-                        learner_id=str(profile.pk),
-                        context_scope_id="ocr",
-                    )
-                    bulletCount = len(lessons)
-                except Exception:
-                    pass
-
             return render(request, "chat/document_results.html", {
                 "ocrResult": ocrResult,
                 "parsedFields": parsedFields,
-                "bulletCount": bulletCount,
-                "lessons": lessons,
+                "bulletCount": 0,
+                "lessons": [],
             })
     else:
         form = DocumentUploadForm()
@@ -992,7 +994,7 @@ def group_create_view(request):
         access_key = uuid.uuid4().hex[:12]
     session = Session.objects.create(
         user=profile, title=title, description=description,
-        access_key=access_key, is_group=True,
+        access_key=access_key,
     )
     SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_ADMIN)
     try:
@@ -1015,7 +1017,7 @@ def group_join_view(request):
     access_key = request.POST.get("access_key", "").strip()
     if not access_key:
         return redirect("memoria:home")
-    session = Session.objects.filter(access_key=access_key, is_group=True).first()
+    session = Session.objects.filter(access_key=access_key).first()
     if not session:
         return redirect("memoria:home")
     if SessionMember.objects.filter(session=session, user=profile).exists():
@@ -1030,15 +1032,41 @@ def group_join_view(request):
         })
     except Exception:
         pass
+    from django.contrib import messages as django_messages
+    django_messages.success(request, f"You joined \"{session.title}\"")
+    try:
+        from .notification_service import create_notification
+        from .models.notification import NotificationType
+        create_notification(
+            request.user,
+            title=f"Joined group: {session.title}",
+            message=f"You are now a member of {session.title}.",
+            notification_type=NotificationType.SYSTEM_ALERT,
+            related_url=session.get_absolute_url(),
+        )
+        adminMembers = SessionMember.objects.filter(session=session, role=SessionMember.ROLE_ADMIN)
+        for adminMember in adminMembers:
+            create_notification(
+                adminMember.user.user,
+                title=f"{profile.display_name or request.user.username} joined your group",
+                message=f"A new member joined {session.title}.",
+                notification_type=NotificationType.SYSTEM_ALERT,
+                related_url=session.get_absolute_url(),
+            )
+    except Exception:
+        pass
     return redirect("chat:conversation_detail", session_id=session.pk)
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def group_leave_view(request, session_id):
-    from .models import SessionMember
+    from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
-    SessionMember.objects.filter(session_id=session_id, user=profile).delete()
+    membership = SessionMember.objects.filter(session_id=session_id, user=profile).first()
+    if not membership:
+        return redirect("memoria:home")
+    membership.delete()
     try:
         from app.services import pusher_service
         pusher_service.send_member_left(session_id, {
@@ -1047,7 +1075,44 @@ def group_leave_view(request, session_id):
         })
     except Exception:
         pass
+    remainingCount = SessionMember.objects.filter(session_id=session_id).count()
+    if remainingCount == 0:
+        Session.objects.filter(pk=session_id).delete()
     return redirect("memoria:home")
+
+
+@login_required(login_url="/")
+def group_settings_view(request, session_id):
+    from .models import Session, SessionMember
+    profile = get_or_create_profile_for_user(request.user)
+    session = get_object_or_404(Session, pk=session_id)
+    membership = SessionMember.objects.filter(session=session, user=profile, role=SessionMember.ROLE_ADMIN).first()
+    if not membership:
+        raise Http404
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "disband":
+            session.delete()
+            return redirect("memoria:home")
+        title = request.POST.get("title", "").strip()
+        description = request.POST.get("description", "").strip()
+        updateFields = []
+        if title:
+            session.title = title[:200]
+            updateFields.append("title")
+        session.description = description
+        updateFields.append("description")
+        if updateFields:
+            session.save(update_fields=updateFields)
+        return redirect("chat:group_settings", session_id=session_id)
+
+    members = SessionMember.objects.filter(session=session).select_related("user", "user__user")
+    return render(request, "chat/group_settings.html", {
+        "session": session,
+        "members": members,
+        "is_admin": True,
+    })
 
 
 @login_required(login_url="/")

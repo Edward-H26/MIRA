@@ -30,14 +30,14 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
 
           <!-- Start New Chat -->
-          <a href="{% url 'chat:agent_marketplace' %}" class="border border-white/30 rounded-[16px] p-6 bg-white/60 backdrop-blur-md hover:shadow-lg hover:bg-white/80 transition-all duration-300 group block no-underline">
+          <a href="{% url 'chat:my_agent' %}" class="border border-white/30 rounded-[16px] p-6 bg-white/60 backdrop-blur-md hover:shadow-lg hover:bg-white/80 transition-all duration-300 group block no-underline">
             <div class="w-11 h-11 rounded-[12px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center mb-4 shadow-md group-hover:scale-105 transition-transform">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
               </svg>
             </div>
-            <h3 class="font-inter font-bold text-mm-text text-[16px] mb-1.5 group-hover:text-mm-primary transition-colors">Chat with an Agent</h3>
-            <p class="font-inter text-mm-muted text-[13px] leading-relaxed">Browse the Agent Directory and start a conversation with a colleague's AI agent.</p>
+            <h3 class="font-inter font-bold text-mm-text text-[16px] mb-1.5 group-hover:text-mm-primary transition-colors">My Agent</h3>
+            <p class="font-inter text-mm-muted text-[13px] leading-relaxed">Configure your personal AI assistant, manage skills, and upload documents.</p>
           </a>
 
           <!-- Project Groups -->
@@ -93,11 +93,11 @@
         <!-- Recent Activity -->
         <div class="border-t border-white/20 pt-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px]">Your Channels & Groups</h2>
+            <h2 class="font-inter font-semibold text-mm-muted text-[12px] uppercase tracking-[0.5px]">Your Groups</h2>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {% for s in sessions %}
-            {% if s.is_group %}
+            {% if s.is_shared %}
             <a href="{{ s.get_absolute_url }}" class="flex flex-col items-center gap-2 p-3 rounded-[12px] bg-white/40 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 group no-underline">
               <div class="w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#5B5FEF]/20 to-[#7B61FF]/20 flex items-center justify-center">
                 {% if "Project" in s.title %}

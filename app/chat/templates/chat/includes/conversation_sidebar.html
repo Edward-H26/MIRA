@@ -14,7 +14,7 @@
                 <input
                     id="conv-sidebar-search"
                     type="text"
-                    placeholder="Search agents..."
+                    placeholder="Search conversations..."
                     class="w-full bg-transparent border-none outline-none font-inter font-medium text-slate-600 text-[12px] tracking-[0.35px] placeholder:text-slate-400/60"
                 >
             </div>
@@ -27,103 +27,37 @@
 
     <!-- Conversation List -->
     <div class="flex-1 overflow-y-auto px-3 py-2">
-        <!-- Channels (General, HR team) -->
+        <!-- Groups (sessions with access_key) -->
         <div class="mb-4">
             <div class="px-2 mb-3 flex items-center justify-between">
                 <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase leading-5">
-                    Channels
+                    Groups
                 </div>
-                <button type="button" onclick="document.getElementById('channel-create-form').classList.toggle('hidden')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-            </div>
-            <!-- Inline Create/Join for Channels -->
-            <div id="channel-create-form" class="hidden px-2 mb-3">
-                <div class="bg-white/60 backdrop-blur-sm rounded-[10px] p-3 border border-white/30">
-                    <div class="flex mb-2 bg-white/40 rounded-[6px] p-0.5 border border-white/20">
-                        <button type="button" id="ch-tab-create" onclick="document.getElementById('ch-form-create').classList.remove('hidden'); document.getElementById('ch-form-join').classList.add('hidden'); this.classList.add('bg-white','shadow-sm','text-mm-primary'); document.getElementById('ch-tab-join').classList.remove('bg-white','shadow-sm','text-mm-primary')" class="flex-1 px-2 py-1 rounded-[4px] font-inter font-semibold text-[10px] transition-all bg-white shadow-sm text-mm-primary">Create</button>
-                        <button type="button" id="ch-tab-join" onclick="document.getElementById('ch-form-join').classList.remove('hidden'); document.getElementById('ch-form-create').classList.add('hidden'); this.classList.add('bg-white','shadow-sm','text-mm-primary'); document.getElementById('ch-tab-create').classList.remove('bg-white','shadow-sm','text-mm-primary')" class="flex-1 px-2 py-1 rounded-[4px] font-inter font-semibold text-[10px] text-mm-muted transition-all">Join</button>
-                    </div>
-                    <form method="post" action="{% url 'chat:group_create' %}" id="ch-form-create">
-                        {% csrf_token %}
-                        <div class="flex gap-1.5">
-                            <input type="text" name="title" placeholder="Channel name..." required class="flex-1 bg-white/70 border border-white/30 rounded-[6px] px-2 py-1.5 font-inter text-[11px] text-mm-text placeholder:text-mm-light outline-none focus:ring-1 focus:ring-mm-primary">
-                            <button type="submit" class="btn-gradient px-2.5 py-1.5 rounded-[6px] font-inter font-semibold text-[10px]">+</button>
-                        </div>
-                    </form>
-                    <form method="post" action="{% url 'chat:group_join' %}" id="ch-form-join" class="hidden">
-                        {% csrf_token %}
-                        <div class="flex gap-1.5">
-                            <input type="text" name="access_key" placeholder="Invite key..." required class="flex-1 bg-white/70 border border-white/30 rounded-[6px] px-2 py-1.5 font-inter font-mono text-[11px] text-mm-text placeholder:text-mm-light outline-none focus:ring-1 focus:ring-mm-primary">
-                            <button type="submit" class="btn-gradient px-2.5 py-1.5 rounded-[6px] font-inter font-semibold text-[10px]">Join</button>
-                        </div>
-                    </form>
+                <div class="flex gap-1">
+                    <button type="button" onclick="openGroupModal('create')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary" title="Create group">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="openGroupModal('join')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary" title="Join group">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"></path>
+                            <polyline points="10 17 15 12 10 7"></polyline>
+                            <line x1="15" y1="12" x2="3" y2="12"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="flex flex-col gap-1">
                 {% for s in sessions %}
-                {% if s.is_group and s.title == "General" or s.is_group and s.title == "HR team" %}
-                <a href="{{ s.get_absolute_url }}" class="flex gap-3 items-center px-3 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
-                    <svg class="w-[13.5px] h-[12px] text-slate-600/60 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="9" x2="20" y2="9"></line>
-                        <line x1="4" y1="15" x2="20" y2="15"></line>
-                        <line x1="10" y1="3" x2="8" y2="21"></line>
-                        <line x1="16" y1="3" x2="14" y2="21"></line>
-                    </svg>
-                    <div class="font-inter font-medium text-slate-700/80 text-[14px] leading-5 truncate">
-                        {{ s.title }}
-                    </div>
-                </a>
-                {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Project Groups (all other group sessions) -->
-        <div class="mb-4">
-            <div class="px-2 mb-3 flex items-center justify-between">
-                <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase leading-5">
-                    Project Groups
-                </div>
-                <button type="button" onclick="document.getElementById('group-create-form').classList.toggle('hidden')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
-            </div>
-            <!-- Inline Create/Join for Groups -->
-            <div id="group-create-form" class="hidden px-2 mb-3">
-                <div class="bg-white/60 backdrop-blur-sm rounded-[10px] p-3 border border-white/30">
-                    <div class="flex mb-2 bg-white/40 rounded-[6px] p-0.5 border border-white/20">
-                        <button type="button" id="grp-tab-create" onclick="document.getElementById('grp-form-create').classList.remove('hidden'); document.getElementById('grp-form-join').classList.add('hidden'); this.classList.add('bg-white','shadow-sm','text-mm-primary'); document.getElementById('grp-tab-join').classList.remove('bg-white','shadow-sm','text-mm-primary')" class="flex-1 px-2 py-1 rounded-[4px] font-inter font-semibold text-[10px] transition-all bg-white shadow-sm text-mm-primary">Create</button>
-                        <button type="button" id="grp-tab-join" onclick="document.getElementById('grp-form-join').classList.remove('hidden'); document.getElementById('grp-form-create').classList.add('hidden'); this.classList.add('bg-white','shadow-sm','text-mm-primary'); document.getElementById('grp-tab-create').classList.remove('bg-white','shadow-sm','text-mm-primary')" class="flex-1 px-2 py-1 rounded-[4px] font-inter font-semibold text-[10px] text-mm-muted transition-all">Join</button>
-                    </div>
-                    <form method="post" action="{% url 'chat:group_create' %}" id="grp-form-create">
-                        {% csrf_token %}
-                        <div class="flex gap-1.5">
-                            <input type="text" name="title" placeholder="Group name..." required class="flex-1 bg-white/70 border border-white/30 rounded-[6px] px-2 py-1.5 font-inter text-[11px] text-mm-text placeholder:text-mm-light outline-none focus:ring-1 focus:ring-mm-primary">
-                            <button type="submit" class="btn-gradient px-2.5 py-1.5 rounded-[6px] font-inter font-semibold text-[10px]">+</button>
-                        </div>
-                    </form>
-                    <form method="post" action="{% url 'chat:group_join' %}" id="grp-form-join" class="hidden">
-                        {% csrf_token %}
-                        <div class="flex gap-1.5">
-                            <input type="text" name="access_key" placeholder="Invite key..." required class="flex-1 bg-white/70 border border-white/30 rounded-[6px] px-2 py-1.5 font-inter font-mono text-[11px] text-mm-text placeholder:text-mm-light outline-none focus:ring-1 focus:ring-mm-primary">
-                            <button type="submit" class="btn-gradient px-2.5 py-1.5 rounded-[6px] font-inter font-semibold text-[10px]">Join</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div class="flex flex-col gap-1">
-                {% for s in sessions %}
-                {% if s.is_group and s.title != "General" and s.title != "HR team" %}
+                {% if s.is_shared %}
                 <a href="{{ s.get_absolute_url }}" class="flex gap-3 items-center px-3 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
                     <svg class="w-[15px] h-[12px] text-slate-600/60 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"></path>
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 010 7.75"></path>
                     </svg>
                     <div class="font-inter font-medium text-slate-700/80 text-[14px] leading-5 truncate">
                         {{ s.title }}
@@ -134,7 +68,7 @@
             </div>
         </div>
 
-        <!-- Recent Chats -->
+        <!-- Recent Chats (all non-shared sessions) -->
         <div class="mb-4">
             <div class="px-2 mb-3">
                 <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase leading-5">
@@ -143,7 +77,7 @@
             </div>
             <div class="flex flex-col gap-2" id="conv-sidebar-list">
                 {% for s in sessions %}
-                {% if not s.is_group %}
+                {% if not s.is_shared %}
                 <div class="conv-sidebar-item" data-id="{{ s.id }}">
                     <a href="{{ s.get_absolute_url }}" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex gap-3 items-center px-2 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
                         <div class="relative rounded-[12px] shrink-0 w-8 h-8 shadow-md bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center">
@@ -186,3 +120,97 @@
         </button>
     </div>
 </div>
+
+<!-- Group Create/Join Modal -->
+<div id="group-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" onclick="closeGroupModal()"></div>
+    <div class="relative bg-white rounded-[16px] shadow-xl w-[400px] max-w-[90vw] p-6">
+        <button type="button" onclick="closeGroupModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+
+        <!-- Create Tab -->
+        <div id="group-modal-create">
+            <h3 class="font-inter font-semibold text-slate-800 text-[16px] mb-4">Create a Group</h3>
+            <form method="post" action="{% url 'chat:group_create' %}">
+                {% csrf_token %}
+                <div class="flex flex-col gap-3">
+                    <input type="text" name="title" placeholder="Group name" required
+                        class="w-full bg-slate-50 border border-slate-200 rounded-[10px] px-4 py-2.5 font-inter text-[14px] text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-mm-primary/30 focus:border-mm-primary">
+                    <input type="text" name="description" placeholder="Description (optional)"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-[10px] px-4 py-2.5 font-inter text-[14px] text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-mm-primary/30 focus:border-mm-primary">
+                    <button type="submit" class="btn-gradient w-full py-2.5 rounded-[10px] font-inter font-semibold text-[14px]">
+                        Create Group
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Join Tab -->
+        <div id="group-modal-join" class="hidden">
+            <h3 class="font-inter font-semibold text-slate-800 text-[16px] mb-4">Join a Group</h3>
+            <form method="post" action="{% url 'chat:group_join' %}">
+                {% csrf_token %}
+                <div class="flex flex-col gap-3">
+                    <input type="text" name="access_key" placeholder="Enter invite key" required
+                        class="w-full bg-slate-50 border border-slate-200 rounded-[10px] px-4 py-2.5 font-inter font-mono text-[14px] text-slate-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-mm-primary/30 focus:border-mm-primary">
+                    <button type="submit" class="btn-gradient w-full py-2.5 rounded-[10px] font-inter font-semibold text-[14px]">
+                        Join Group
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab switcher -->
+        <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+            <button type="button" id="group-modal-switch" onclick="toggleGroupModalTab()" class="font-inter text-mm-primary text-[13px] hover:underline"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openGroupModal(mode) {
+    const modal = document.getElementById("group-modal");
+    const createTab = document.getElementById("group-modal-create");
+    const joinTab = document.getElementById("group-modal-join");
+    const switchBtn = document.getElementById("group-modal-switch");
+    modal.classList.remove("hidden");
+    if (mode === "create") {
+        createTab.classList.remove("hidden");
+        joinTab.classList.add("hidden");
+        switchBtn.textContent = "Or join an existing group";
+    } else {
+        joinTab.classList.remove("hidden");
+        createTab.classList.add("hidden");
+        switchBtn.textContent = "Or create a new group";
+    }
+}
+
+function closeGroupModal() {
+    document.getElementById("group-modal").classList.add("hidden");
+}
+
+function toggleGroupModalTab() {
+    const createTab = document.getElementById("group-modal-create");
+    const joinTab = document.getElementById("group-modal-join");
+    const switchBtn = document.getElementById("group-modal-switch");
+    if (createTab.classList.contains("hidden")) {
+        createTab.classList.remove("hidden");
+        joinTab.classList.add("hidden");
+        switchBtn.textContent = "Or join an existing group";
+    } else {
+        joinTab.classList.remove("hidden");
+        createTab.classList.add("hidden");
+        switchBtn.textContent = "Or create a new group";
+    }
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && !document.getElementById("group-modal").classList.contains("hidden")) {
+        closeGroupModal();
+    }
+});
+</script>

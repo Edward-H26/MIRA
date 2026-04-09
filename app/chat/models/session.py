@@ -17,13 +17,16 @@ class Session(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     generation_in_progress = models.BooleanField(default=False)
     generation_started_at = models.DateTimeField(null=True, blank=True)
-    is_group = models.BooleanField(default=False)
     access_key = models.CharField(max_length=50, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["user", "-created_at"])]
         ordering = ["-created_at"]
+
+    @property
+    def is_shared(self):
+        return self.access_key is not None and self.access_key != ""
 
     def __str__(self):
         return f"{self.user_id} - {self.title or 'Untitled'}"
@@ -33,7 +36,7 @@ class Session(models.Model):
 
     @staticmethod
     def _lock_timeout_seconds():
-        raw = os.getenv("CHAT_GENERATION_LOCK_TIMEOUT_SECONDS", "180")
+        raw = os.getenv("CHAT_GENERATION_LOCK_TIMEOUT_SECONDS", "60")
         try:
             value = int(raw)
         except Exception:

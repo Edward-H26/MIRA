@@ -300,22 +300,7 @@ def _get_analytics_metrics_for_user(user):
     }
 
 
-DEFAULT_CHANNELS = ["General", "HR team"]
-DEFAULT_PROJECTS = ["Project X", "Project Y", "Project Z"]
-
-
-def ensure_default_groups_for_user(user):
-    profile = get_or_create_profile_for_user(user)
-    existing = set(
-        Session.objects.filter(user=profile, is_group=True).values_list("title", flat=True)
-    )
-    for name in DEFAULT_CHANNELS + DEFAULT_PROJECTS:
-        if name not in existing:
-            Session.objects.create(user=profile, title=name, is_group=True)
-
-
 def get_sidebar_sessions_for_user(user):
-    ensure_default_groups_for_user(user)
     return _get_session_queryset_for_user(user).order_by("-updated_at")
 
 

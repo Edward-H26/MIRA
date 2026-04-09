@@ -101,7 +101,10 @@
     </div>
 
     <!-- Skill List -->
-    <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase mb-3">Agent Skills</div>
+    <div class="mb-4">
+        <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase mb-1">Active Skills</div>
+        <div class="font-inter text-mm-muted text-[12px]">Frequently referenced knowledge your agent uses during conversations</div>
+    </div>
     <div class="flex flex-col gap-4">
         {% for skill in skills %}
         <div class="skill-card border border-white/30 rounded-[12px] bg-white/60 backdrop-blur-md hover:shadow-md transition-shadow" data-skill-id="{{ skill.id }}">

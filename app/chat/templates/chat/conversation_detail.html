@@ -32,8 +32,8 @@
           {% endif %}
         </div>
       </div>
-      <div class="flex gap-2">
-        {% if session.is_group %}
+      <div class="flex gap-2 items-center">
+        {% if session.is_shared %}
         <button type="button" class="font-inter text-slate-500/60 text-[13px] hover:text-mm-primary transition-colors cursor-pointer" onclick="document.getElementById('members-panel').classList.toggle('hidden')">{{ session.members.count }} member{{ session.members.count|pluralize }}</button>
         {% if session.access_key %}
         <button type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-mm-primary/10 hover:bg-mm-primary/20 transition-colors" onclick="navigator.clipboard.writeText('{{ session.access_key }}'); this.querySelector('span').textContent='Copied!'; setTimeout(() => this.querySelector('span').textContent='{{ session.access_key }}', 1500)" title="Click to copy invite key">
@@ -45,17 +45,6 @@
         </button>
         {% endif %}
         {% endif %}
-        <button class="p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm">
-          <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"></path>
-          </svg>
-        </button>
-        <button class="p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm">
-          <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7"></polygon>
-            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-          </svg>
-        </button>
         <div class="relative">
           <button type="button" class="p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" onclick="document.getElementById('members-panel').classList.toggle('hidden')">
             <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,25 +53,30 @@
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
           </button>
-          {% if session.is_group %}
-          <div id="members-panel" class="hidden absolute right-0 mt-2 w-72 rounded-[12px] border border-white/30 bg-white/90 backdrop-blur-md shadow-lg overflow-hidden" style="z-index: 100;">
-            <div class="px-4 py-3 border-b border-white/20">
+          {% if session.is_shared %}
+          <div id="members-panel" class="hidden absolute right-0 mt-2 w-72 rounded-[16px] border border-slate-200 bg-white shadow-xl overflow-hidden" style="z-index: 150;">
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <span class="font-inter font-semibold text-sm text-mm-text">Members ({{ session.members.count }})</span>
+              <a href="{% url 'chat:group_settings' session.id %}" class="font-inter text-mm-primary text-[11px] hover:underline">Settings</a>
             </div>
             <div class="max-h-64 overflow-y-auto">
               {% for member in session.members.all %}
-              <div class="px-4 py-2.5 flex items-center gap-3 hover:bg-white/60 transition-colors">
+              <div class="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+                {% if member.user.profile_img %}
+                <img src="{{ member.user.profile_img.url }}" alt="" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                {% else %}
                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[12px] flex-shrink-0">
                   {{ member.user.display_name|default:member.user.user.username|truncatechars:1 }}
                 </div>
+                {% endif %}
                 <div class="flex-1 min-w-0">
                   <div class="font-inter font-semibold text-mm-text text-[13px] truncate">{{ member.user.display_name|default:member.user.user.username }}</div>
-                  <div class="font-inter text-mm-muted text-[11px]">{{ member.user.user.email|default:"Member" }}</div>
+                  <div class="font-inter text-mm-muted text-[11px]">{{ member.role }}</div>
                 </div>
               </div>
               {% endfor %}
             </div>
-            <div class="px-4 py-3 border-t border-white/20">
+            <div class="px-4 py-3 border-t border-slate-100">
               <form method="post" action="{% url 'chat:group_leave' session.id %}">
                 {% csrf_token %}
                 <button type="submit" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[8px] text-red-500 hover:bg-red-50 transition-colors font-inter font-semibold text-[12px]" onclick="return confirm('Leave this group?')">
@@ -98,7 +92,6 @@
           </div>
           {% endif %}
         </div>
-        <!-- Mobile conversation toggle -->
         <button class="lg:hidden p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300" onclick="toggleConvSidebar()">
           <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -111,7 +104,7 @@
 
     <!-- Messages -->
     <div class="flex-1 overflow-y-auto px-8 py-6" id="conversation-messages">
-      <div class="flex flex-col gap-6 max-w-[900px] mx-auto">
+      <div class="flex flex-col gap-5 max-w-[900px] mx-auto">
         <!-- Date Divider -->
         <div class="flex items-center justify-center">
           <div class="font-inter font-medium text-slate-500/60 text-[11px] tracking-[0.5px] uppercase">
@@ -120,34 +113,44 @@
         </div>
         {% for message in session.messages.all %}
           {% if message.role != 1 %}
-            <div class="flex gap-4 {% if message.role == 2 %}flex-row-reverse{% endif %}">
+            <div class="flex gap-3 {% if message.role == 2 %}flex-row-reverse{% endif %} chat-message-appear">
               <!-- Avatar -->
-              <div class="flex-shrink-0 w-10 h-10 rounded-[12px] flex items-center justify-center text-white font-semibold text-[14px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] shadow-md">
-                {% if message.role == 2 %}U{% elif message.sender_agent %}{{ message.sender_agent.name|truncatechars:1 }}{% else %}A{% endif %}
+              {% if message.role == 2 %}
+                {% if request.user.profile.profile_img %}
+                <img src="{{ request.user.profile.profile_img.url }}" alt="" class="flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm">
+                {% else %}
+                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] shadow-sm">
+                  {{ request.user.username|truncatechars:1 }}
+                </div>
+                {% endif %}
+              {% else %}
+              <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm">
+                {% if message.sender_agent %}{{ message.sender_agent.name|truncatechars:1 }}{% else %}A{% endif %}
               </div>
+              {% endif %}
 
               <!-- Message Content -->
-              <div class="flex-1 flex flex-col {% if message.role == 2 %}items-end{% endif %}">
-                <div class="flex items-center gap-2 mb-2">
-                  <div class="font-inter font-semibold text-mm-text text-[14px] leading-5">
+              <div class="flex-1 flex flex-col {% if message.role == 2 %}items-end{% endif %} max-w-[75%]">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="font-inter font-semibold text-mm-text text-[13px] leading-5">
                     {% if message.role == 2 %}You{% elif message.sender_agent %}{{ message.sender_agent.name }}{% else %}Assistant{% endif %}
                   </div>
-                  <div class="font-inter text-mm-light text-[12px] leading-4">
+                  <div class="font-inter text-mm-light text-[11px] leading-4">
                     {{ message.created_at|date:"g:i A" }}
                   </div>
                 </div>
-                <div class="{% if message.role == 2 %}bg-gradient-to-br from-[#5B5FEF]/90 to-[#7B61FF]/90 text-white shadow-[0_4px_20px_rgba(91,95,239,0.3)]{% else %}bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90{% endif %} rounded-[16px] px-5 py-4 max-w-[600px] border border-white/30">
+                <div class="{% if message.role == 2 %}bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] text-white shadow-[0_2px_12px_rgba(91,95,239,0.2)] rounded-[18px] rounded-br-[4px]{% else %}bg-white shadow-sm text-slate-700 rounded-[18px] rounded-bl-[4px]{% endif %} px-4 py-3 border border-white/20">
                   {% if message.role == 2 %}
-                    <span class="message-content font-inter text-[14px] leading-5 whitespace-pre-wrap">{{ message.content|linebreaksbr }}</span>
+                    <span class="message-content font-inter text-[14px] leading-6 whitespace-pre-wrap">{{ message.content|linebreaksbr }}</span>
                   {% else %}
-                    <div class="message-content message-content-markdown font-inter text-[14px] leading-5">{{ message.content|assistant_markdown }}</div>
+                    <div class="message-content message-content-markdown font-inter text-[14px] leading-6">{{ message.content|assistant_markdown }}</div>
                   {% endif %}
                 </div>
               </div>
             </div>
           {% endif %}
         {% empty %}
-          <div class="flex items-center justify-center h-full py-20">
+          <div id="empty-state" class="flex items-center justify-center h-full py-20">
             <div class="text-center">
               <div class="font-inter font-semibold text-mm-muted text-[16px] mb-2">No messages yet</div>
               <div class="font-inter text-mm-light text-[14px]">Start a conversation</div>
@@ -158,9 +161,18 @@
     </div>
 
     <!-- Typing Indicator -->
-    <div class="conversation-typing-indicator" id="typing-indicator" style="display: none;">
-      <span class="typing-indicator-text" id="typing-indicator-text"></span>
-      <span class="conversation-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+    <div class="hidden px-8 py-3" id="typing-indicator">
+      <div class="max-w-[900px] mx-auto flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm">A</div>
+        <div class="bg-white rounded-[18px] rounded-bl-[4px] px-4 py-3 shadow-sm border border-white/20 flex items-center gap-1.5">
+          <span class="font-inter text-mm-muted text-[13px]" id="typing-indicator-text">Assistant is typing</span>
+          <span class="flex gap-[3px] items-center ml-1">
+            <span class="w-[5px] h-[5px] rounded-full bg-slate-400 animate-bounce" style="animation-delay: 0s;"></span>
+            <span class="w-[5px] h-[5px] rounded-full bg-slate-400 animate-bounce" style="animation-delay: 0.15s;"></span>
+            <span class="w-[5px] h-[5px] rounded-full bg-slate-400 animate-bounce" style="animation-delay: 0.3s;"></span>
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- Message Input -->
@@ -182,7 +194,7 @@
             <textarea
               name="message"
               id="conversation-message-input"
-              placeholder="Message {{ session.title|default:'the assistant' }} (Assisted by Curator AI)..."
+              placeholder="Message {{ session.title|default:'the assistant' }}..."
               aria-label="Message input"
               autocomplete="off"
               rows="3"
@@ -196,30 +208,9 @@
             >
             <div class="flex items-center justify-between px-4 pb-3">
               <div class="flex gap-2">
-                <button type="button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm">
-                  <svg class="w-[18px] h-[18px] text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                  </svg>
-                </button>
                 <button type="button" id="conversation-add-button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" title="Upload file">
                   <svg class="w-[18px] h-[18px] text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
-                  </svg>
-                </button>
-                <button type="button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm">
-                  <svg class="w-[18px] h-[18px] text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                    <path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                  </svg>
-                </button>
-                <button type="button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm">
-                  <svg class="w-[18px] h-[18px] text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="4" x2="10" y2="4"></line>
-                    <line x1="14" y1="20" x2="5" y2="20"></line>
-                    <line x1="15" y1="4" x2="9" y2="20"></line>
                   </svg>
                 </button>
               </div>
@@ -272,8 +263,8 @@
     };
 
     const removeEmptyState = () => {
-      const emptyState = messages.querySelector(".flex.items-center.justify-center");
-      if (emptyState && emptyState.querySelector(".text-center")) {
+      const emptyState = document.getElementById("empty-state");
+      if (emptyState) {
         emptyState.remove();
       }
     };
@@ -528,7 +519,12 @@
       const assistantUi = appendMessage("assistant", "", { pending: true });
       input.value = "";
       setStreamingState(true);
+      showTypingIndicator("Assistant");
       debugLog("request-start", { streamUrl, promptLength: content.length });
+
+      const abortController = new AbortController();
+      const onBeforeUnload = () => { abortController.abort(); };
+      window.addEventListener("beforeunload", onBeforeUnload);
 
       try {
         const response = await fetch(streamUrl, {
@@ -539,6 +535,7 @@
             "X-Requested-With": "XMLHttpRequest",
           },
           body: new URLSearchParams({ message: content }),
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
@@ -591,6 +588,8 @@
         );
       } finally {
         debugLog("request-end");
+        window.removeEventListener("beforeunload", onBeforeUnload);
+        hideTypingIndicator();
         streamCooldown = true;
         setStreamingState(false);
         setTimeout(() => { streamCooldown = false; }, 3000);
@@ -737,18 +736,18 @@
 
     const showTypingIndicator = (name) => {
       if (typingIndicator && typingText) {
-        typingText.textContent = `${name} is typing`;
-        typingIndicator.style.display = "flex";
+        typingText.textContent = `${name || "Assistant"} is typing`;
+        typingIndicator.classList.remove("hidden");
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
-          typingIndicator.style.display = "none";
+          typingIndicator.classList.add("hidden");
         }, 3000);
       }
     };
 
     const hideTypingIndicator = () => {
       if (typingIndicator) {
-        typingIndicator.style.display = "none";
+        typingIndicator.classList.add("hidden");
         clearTimeout(typingTimeout);
       }
     };

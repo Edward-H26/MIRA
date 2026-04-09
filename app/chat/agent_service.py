@@ -26,6 +26,19 @@ def _agent_to_dict(a: Agent) -> dict:
     }
 
 
+def get_or_create_user_agent(user) -> Agent:
+    profile = _get_profile(user)
+    agent = Agent.objects.filter(user=profile).first()
+    if agent is None:
+        agent = Agent.objects.create(
+            user=profile,
+            name="My Assistant",
+            temperature=0.7,
+            max_tokens=1024,
+        )
+    return agent
+
+
 def get_agents_for_user(user, include_inactive: bool = False) -> list[dict]:
     profile = _get_profile(user)
     qs = Agent.objects.filter(user=profile)

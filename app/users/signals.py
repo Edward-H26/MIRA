@@ -6,6 +6,7 @@ import requests
 from allauth.account.signals import user_signed_up
 from django.contrib.auth.models import User as AuthUser
 from django.core.files.base import ContentFile
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from .models import UserProfile
@@ -84,6 +85,20 @@ def _sync_google_user_names(user, extra_data):
         profile.display_name = display_name
         profile.save(update_fields=["display_name"])
     return profile
+
+
+@receiver(post_save, sender=UserProfile)
+def ensure_default_agent_on_profile_save(sender, instance, created, **kwargs):
+    if not created:
+        return
+    from app.chat.models.agent import Agent
+    if not Agent.objects.filter(user=instance).exists():
+        Agent.objects.create(
+            user=instance,
+            name="My Assistant",
+            temperature=0.7,
+            max_tokens=1024,
+        )
 
 
 @receiver(user_signed_up)
