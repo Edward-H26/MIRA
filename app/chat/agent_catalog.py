@@ -353,18 +353,34 @@ AGENT_CATEGORIES = [
 ]
 
 
+COLLABORATION_SUFFIX = (
+    "\n\n## Collaboration Protocol\n"
+    "You are part of a team of agents. When your response does not fully complete the task, "
+    "or when a question falls outside your expertise, you MUST @mention the most relevant agent "
+    "by name to continue the conversation. Use the format @AgentFirstNameLastName (e.g., @JordanWells, "
+    "@KatherineOsei, @ElenaVolkov). Available agents include specialists in finance, legal, data analysis, "
+    "project management, operations, HR, customer success, content strategy, technical writing, and meeting facilitation.\n\n"
+    "If the task requires multiple perspectives or is not yet complete, end your response with a specific @mention "
+    "and a clear request for the next agent. Do NOT leave tasks incomplete without delegating to the appropriate specialist."
+)
+
+
 def get_all_template_agents() -> list[dict]:
-    return TEMPLATE_AGENTS
+    return [
+        {**agent, "systemPrompt": agent.get("systemPrompt", "") + COLLABORATION_SUFFIX}
+        for agent in TEMPLATE_AGENTS
+    ]
 
 
 def get_template_agents_by_category(category: str) -> list[dict]:
+    allAgents = get_all_template_agents()
     if not category or category == "all":
-        return TEMPLATE_AGENTS
-    return [a for a in TEMPLATE_AGENTS if a["category"] == category]
+        return allAgents
+    return [a for a in allAgents if a["category"] == category]
 
 
 def get_template_agent_by_id(agent_id: str) -> dict | None:
-    for agent in TEMPLATE_AGENTS:
+    for agent in get_all_template_agents():
         if agent["id"] == agent_id:
             return agent
     return None

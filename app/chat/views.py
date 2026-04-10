@@ -25,6 +25,7 @@ from .service import (
     get_activity_chart_png,
     get_session_report_export_rows,
     get_session_for_user,
+    get_session_for_user_or_member,
     get_sidebar_sessions_for_user,
     get_latency_over_time_chart_png,
     get_latency_by_model_chart_png,
@@ -123,6 +124,13 @@ class ConversationMessagesView(View):
                 status=409,
             )
 
+        autoTitle = None
+        if session.title in ("New Chat", "") and not session.messages.exists():
+            autoTitle = content[:60].strip()
+            if autoTitle:
+                session.title = autoTitle
+                session.save(update_fields=["title"])
+
         if request.headers.get("x-requested-with") != "XMLHttpRequest":
             try:
                 for _ in stream_user_message_with_agent_reply(session, content):
@@ -132,8 +140,12 @@ class ConversationMessagesView(View):
             return redirect(session.get_absolute_url())
 
         def event_stream():
+            titleInjected = not autoTitle
             try:
                 for payload in stream_user_message_with_agent_reply(session, content):
+                    if not titleInjected:
+                        payload = {**payload, "auto_title": autoTitle, "session_id": session.pk}
+                        titleInjected = True
                     yield json.dumps(payload, ensure_ascii=False) + "\n"
             finally:
                 session.release_generation_lock()
@@ -216,29 +228,42 @@ def conversation_upload_view(request, session_id):
     if not isValid:
         return JsonResponse({"error": errorMsg}, status=400)
 
-    ocrResult = extract_text_from_file(uploadedFile)
+    try:
+        ocrResult = extract_text_from_file(uploadedFile)
+    except Exception as exc:
+        log_event("chat_upload_ocr_crash", session_id=session.pk, error=str(exc))
+        return JsonResponse({"error": f"Document processing failed: {exc}"}, status=400)
+
     if ocrResult.status != "success":
         return JsonResponse({"error": ocrResult.error or "OCR extraction failed"}, status=400)
 
     userMessage = (request.POST.get("message") or "").strip()
     truncatedText = ocrResult.raw_text[:500]
-    parts = []
+
+    displayContent = userMessage or f"Analyze this document"
+    displayContent += f"\n[Attached: {uploadedFile.name}]"
+
+    aiPromptParts = []
     if userMessage:
-        parts.append(userMessage)
-    parts.append(
+        aiPromptParts.append(userMessage)
+    aiPromptParts.append(
         f"[Uploaded document: {uploadedFile.name}]\n\n"
         f"Extracted text:\n{truncatedText}"
     )
-    content = "\n\n".join(parts)
+    aiPrompt = "\n\n".join(aiPromptParts)
 
     log_event("chat_document_upload", request=request, session_id=session.pk)
 
     if not session.acquire_generation_lock():
         return JsonResponse({"error": "generation_in_progress"}, status=409)
 
+    from .models import Message
+    from .models.message import Role
+    Message.objects.create(session=session, role=Role.USER, content=displayContent)
+
     def event_stream():
         try:
-            for payload in stream_user_message_with_agent_reply(session, content):
+            for payload in stream_user_message_with_agent_reply(session, aiPrompt, skip_user_message=True):
                 yield json.dumps(payload, ensure_ascii=False) + "\n"
         finally:
             session.release_generation_lock()
@@ -319,12 +344,13 @@ def conversation_wait_for_unlock_view(request, session_id):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def session_rename_view(request, session_id):
-    session = get_session_for_user(request.user, session_id)
+    session = get_session_for_user_or_member(request.user, session_id, require_admin=True)
     title = (request.POST.get("title") or "").strip()
-    if title:
-        session.title = title[:200]
-        session.save(update_fields=["title"])
-        log_event("chat_session_updated", request=request, session_id=session.pk, action="rename")
+    if not title:
+        return JsonResponse({"error": "Title is required"}, status=400)
+    session.title = title[:200]
+    session.save(update_fields=["title"])
+    log_event("chat_session_updated", request=request, session_id=session.pk, action="rename")
     return JsonResponse({"ok": True, "title": session.title})
 
 
@@ -1051,6 +1077,7 @@ def agent_start_chat_view(request, template_id):
         session=session,
         role=Role.ASSISTANT,
         content=f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
+        sender_agent_name=template["name"],
     )
 
     return redirect("chat:conversation_detail", session_id=session.id)

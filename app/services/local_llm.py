@@ -111,8 +111,11 @@ def _candidate_devices() -> tuple[str, ...]:
 
 def _get_torch_dtype(device: str):
     import torch
+    import os
 
     if device in {"cuda", "mps"}:
+        return torch.float16
+    if os.getenv("CHAT_LOCAL_MODEL_FP16", "0").strip().lower() in {"1", "true", "yes"}:
         return torch.float16
     return torch.float32
 

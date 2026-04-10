@@ -1,6 +1,9 @@
 from .base import *
+import os
 
 DEBUG = False
+
+os.environ["CHAT_LOCAL_MODEL_ENABLED"] = "0"
 
 ALLOWED_HOSTS = ["miramemoria.com", "www.miramemoria.com", "mira-ydqq.onrender.com"]
 CSRF_TRUSTED_ORIGINS = [

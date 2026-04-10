@@ -95,7 +95,7 @@
                 <div class="conv-sidebar-item" data-id="{{ s.id }}">
                     <a href="{{ s.get_absolute_url }}" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex gap-3 items-center px-2 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
                         <div class="relative rounded-[12px] shrink-0 w-8 h-8 shadow-md bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center">
-                            <span class="font-inter font-semibold text-white text-[14px]">
+                            <span class="conv-sidebar-avatar font-inter font-semibold text-white text-[14px]">
                                 {{ s.title|default:"U"|truncatechars:1 }}
                             </span>
                         </div>

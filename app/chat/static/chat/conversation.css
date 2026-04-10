@@ -168,6 +168,15 @@
     color: white;
 }
 
+.chat-message-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.chat-msg-row:hover .chat-message-actions {
+    opacity: 1;
+}
+
 .mention-highlight {
     background: rgba(91, 95, 239, 0.1);
     padding: 1px 4px;

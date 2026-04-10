@@ -22,7 +22,7 @@
           <path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"></path>
         </svg>
         <div class="flex items-center gap-2">
-          <div class="font-inter font-semibold text-slate-700 text-[16px] leading-6">
+          <div id="conv-header-title" data-session-id="{{ session.id }}" class="font-inter font-semibold text-slate-700 text-[16px] leading-6 cursor-text" title="Click to rename">
             {{ session.title|default:"Untitled" }}
           </div>
           {% if session.messages.count > 0 %}
@@ -104,7 +104,7 @@
 
     <!-- Messages -->
     <div class="flex-1 overflow-y-auto px-8 py-6" id="conversation-messages">
-      <div class="flex flex-col gap-5 max-w-[900px] mx-auto">
+      <div id="message-list" class="flex flex-col gap-3 max-w-[900px] mx-auto">
         <!-- Date Divider -->
         <div class="flex items-center justify-center">
           <div class="font-inter font-medium text-slate-500/60 text-[11px] tracking-[0.5px] uppercase">
@@ -113,7 +113,7 @@
         </div>
         {% for message in session.messages.all %}
           {% if message.role != 1 %}
-            <div class="flex gap-3 {% if message.role == 2 %}flex-row-reverse{% endif %} chat-message-appear group/msg" data-message-id="{{ message.pk }}" data-message-role="{% if message.role == 2 %}user{% else %}assistant{% endif %}">
+            <div class="flex gap-3 {% if message.role == 2 %}flex-row-reverse{% endif %} chat-message-appear chat-msg-row" data-message-id="{{ message.pk }}" data-message-role="{% if message.role == 2 %}user{% else %}assistant{% endif %}">
               <!-- Avatar -->
               {% if message.role == 2 %}
                 {% if request.user.profile.profile_img %}
@@ -125,7 +125,7 @@
                 {% endif %}
               {% else %}
               <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm">
-                {% if message.sender_agent %}{{ message.sender_agent.name|truncatechars:1 }}{% else %}A{% endif %}
+                {% if message.sender_agent %}{{ message.sender_agent.name|truncatechars:1 }}{% elif message.sender_agent_name %}{{ message.sender_agent_name|truncatechars:1 }}{% else %}A{% endif %}
               </div>
               {% endif %}
 
@@ -133,7 +133,7 @@
               <div class="flex-1 flex flex-col {% if message.role == 2 %}items-end{% endif %} max-w-[75%]">
                 <div class="flex items-center gap-2 mb-1">
                   <div class="font-inter font-semibold text-mm-text text-[13px] leading-5">
-                    {% if message.role == 2 %}You{% elif message.sender_agent %}{{ message.sender_agent.name }}{% else %}Assistant{% endif %}
+                    {% if message.role == 2 %}You{% elif message.sender_agent %}{{ message.sender_agent.name }}{% elif message.sender_agent_name %}{{ message.sender_agent_name }}{% else %}Assistant{% endif %}
                   </div>
                   <div class="font-inter text-mm-light text-[11px] leading-4">
                     {{ message.created_at|date:"g:i A" }}
@@ -147,9 +147,12 @@
                   {% endif %}
                 </div>
                 <!-- Hover actions -->
-                <div class="chat-message-actions opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200 flex gap-1 mt-1">
+                <div class="chat-message-actions flex gap-1 mt-1">
+                  <button type="button" class="msg-action-copy p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Copy message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>
+                  </button>
                   {% if message.role == 2 %}
-                  <button type="button" class="msg-action-edit p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Edit message">
+                  <button type="button" class="msg-action-edit p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Edit text">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
                   <button type="button" class="msg-action-resend p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Resend message">
@@ -187,7 +190,7 @@
     </div>
 
     <!-- Message Input -->
-    <div class="border-t border-white/10 px-8 py-5 backdrop-blur-sm bg-white/20">
+    <div class="border-t border-white/10 px-8 py-3 backdrop-blur-sm bg-white/20">
       <div class="max-w-[900px] mx-auto">
         <form
           id="conversation-form"
@@ -208,8 +211,10 @@
               placeholder="Message {{ session.title|default:'the assistant' }}..."
               aria-label="Message input"
               autocomplete="off"
-              rows="3"
-              class="w-full bg-transparent border-none outline-none px-5 py-4 font-inter text-[14px] text-slate-700 placeholder:text-slate-400/60 resize-none"
+              rows="1"
+              class="w-full bg-transparent border-none outline-none px-5 py-3 font-inter text-[14px] text-slate-700 placeholder:text-slate-400/60 resize-none"
+              style="max-height: 120px; overflow-y: auto;"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
             ></textarea>
             <input
               type="file"
@@ -233,7 +238,7 @@
                 </svg>
               </button>
             </div>
-            <div class="flex items-center justify-between px-4 pb-3">
+            <div class="flex items-center justify-between px-4 pb-2">
               <div class="flex gap-2">
                 <button type="button" id="conversation-add-button" class="p-1.5 rounded-[8px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" title="Upload file">
                   <svg class="w-[18px] h-[18px] text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -382,7 +387,7 @@
     const appendMessage = (role, content = "", options = {}) => {
       removeEmptyState();
 
-      const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+      const container = document.getElementById("message-list") || messages;
 
       const row = document.createElement("div");
       row.className = `flex gap-4 ${role === "user" ? "flex-row-reverse" : ""}`;
@@ -410,7 +415,7 @@
       meta.appendChild(time);
 
       const bubble = document.createElement("div");
-      bubble.className = `${role === "user" ? "bg-gradient-to-br from-[#5B5FEF]/90 to-[#7B61FF]/90 text-white shadow-[0_4px_20px_rgba(91,95,239,0.3)]" : "bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90"} rounded-[16px] px-5 py-4 max-w-[600px] border border-white/30`;
+      bubble.className = `${role === "user" ? "bg-gradient-to-br from-[#5B5FEF]/90 to-[#7B61FF]/90 text-white shadow-[0_4px_20px_rgba(91,95,239,0.3)]" : "bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90"} rounded-[16px] px-4 py-3 max-w-[600px] border border-white/30`;
 
       const contentNode = document.createElement(role === "assistant" ? "div" : "span");
       contentNode.className = role === "assistant" ? "message-content message-content-markdown font-inter text-[14px] leading-5" : "message-content font-inter text-[14px] leading-5 whitespace-pre-wrap";
@@ -595,6 +600,11 @@
             contentLength: (payload.content || "").length,
             hasHtml: Boolean(payload.html),
           });
+          if (payload.auto_title && payload.session_id) {
+            if (typeof handleAutoTitle === "function") {
+              handleAutoTitle(payload.session_id, payload.auto_title);
+            }
+          }
           if (payload.type === "delta") {
             assistantText += payload.content || "";
             assistantHtml = payload.html || assistantHtml;
@@ -699,6 +709,16 @@
         await submitMessage();
       }
     });
+
+    const headerTitleEl = document.getElementById("conv-header-title");
+    if (headerTitleEl) {
+      headerTitleEl.addEventListener("click", () => {
+        const sid = parseInt(headerTitleEl.dataset.sessionId, 10);
+        if (sid && typeof renameConversation === "function") {
+          renameConversation(sid);
+        }
+      });
+    }
 
     scrollToBottom();
     decorateCodeBlocks(messages);
@@ -893,7 +913,7 @@
         meta.appendChild(senderEl);
         contentWrapper.appendChild(meta);
         const bubble = document.createElement("div");
-        bubble.className = `${data.role === "user" ? "bg-gradient-to-br from-[#5B5FEF]/90 to-[#7B61FF]/90 text-white shadow-[0_4px_20px_rgba(91,95,239,0.3)]" : "bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90"} rounded-[16px] px-5 py-4 max-w-[600px] border border-white/30`;
+        bubble.className = `${data.role === "user" ? "bg-gradient-to-br from-[#5B5FEF]/90 to-[#7B61FF]/90 text-white shadow-[0_4px_20px_rgba(91,95,239,0.3)]" : "bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90"} rounded-[16px] px-4 py-3 max-w-[600px] border border-white/30`;
         const contentNode = document.createElement("div");
         contentNode.className = "message-content message-content-markdown font-inter text-[14px] leading-5";
         if (data.html) {
@@ -905,7 +925,7 @@
         contentWrapper.appendChild(bubble);
         row.appendChild(avatar);
         row.appendChild(contentWrapper);
-        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        const container = document.getElementById("message-list") || messages;
         container.appendChild(row);
         decorateCodeBlocks(contentNode);
         scrollToBottom();
@@ -923,7 +943,7 @@
       });
 
       channel.bind("member:joined", (data) => {
-        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        const container = document.getElementById("message-list") || messages;
         const systemMsg = document.createElement("div");
         systemMsg.className = "flex justify-center py-2";
         const badge = document.createElement("div");
@@ -935,7 +955,7 @@
       });
 
       channel.bind("member:left", (data) => {
-        const container = messages.querySelector(".flex.flex-col.gap-6") || messages;
+        const container = document.getElementById("message-list") || messages;
         const systemMsg = document.createElement("div");
         systemMsg.className = "flex justify-center py-2";
         const badge = document.createElement("div");
@@ -1200,6 +1220,22 @@
     }
 
     messages.addEventListener("click", async (e) => {
+      const copyBtn = e.target.closest(".msg-action-copy");
+      if (copyBtn) {
+        const msgRow = e.target.closest("[data-message-id]");
+        if (!msgRow) return;
+        const contentEl = msgRow.querySelector(".message-content");
+        if (!contentEl) return;
+        try {
+          await copyText(contentEl.textContent.trim());
+          const svg = copyBtn.querySelector("svg");
+          const origColor = svg ? svg.getAttribute("class") : "";
+          if (svg) svg.setAttribute("class", (origColor || "").replace("text-slate-400", "text-green-500"));
+          setTimeout(() => { if (svg) svg.setAttribute("class", origColor || ""); }, 1200);
+        } catch (_) {}
+        return;
+      }
+
       const editBtn = e.target.closest(".msg-action-edit");
       const resendBtn = e.target.closest(".msg-action-resend");
       if (!editBtn && !resendBtn) return;
@@ -1212,30 +1248,66 @@
       if (editBtn) {
         const contentEl = msgRow.querySelector(".message-content");
         if (!contentEl) return;
+        if (contentEl.querySelector("textarea")) return;
         const currentText = contentEl.textContent.trim();
-        const newText = prompt("Edit message:", currentText);
-        if (newText === null || newText.trim() === "" || newText.trim() === currentText) return;
-        try {
-          const resp = await fetch(`/chat/c/${sessionId}/messages/${messageId}/edit/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-              "X-CSRFToken": csrfToken,
-              "X-Requested-With": "XMLHttpRequest",
-            },
-            body: new URLSearchParams({ content: newText.trim() }),
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            contentEl.textContent = data.content || newText.trim();
-          } else {
-            let errMsg = "Failed to save edit.";
-            try { const d = await resp.json(); errMsg = d.error || errMsg; } catch (_) {}
-            alert(errMsg);
+        const originalHtml = contentEl.innerHTML;
+
+        const editArea = document.createElement("textarea");
+        editArea.value = currentText;
+        editArea.className = "w-full bg-white/90 text-slate-800 border border-slate-300 rounded-lg px-3 py-2 font-inter text-[14px] leading-6 resize-none outline-none focus:ring-1 focus:ring-mm-primary";
+        editArea.rows = Math.min(Math.max(currentText.split("\n").length, 2), 6);
+
+        const btnRow = document.createElement("div");
+        btnRow.className = "flex justify-end gap-2 mt-2";
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.textContent = "Cancel";
+        cancelBtn.className = "px-3 py-1 rounded-lg text-sm font-inter text-slate-500 hover:bg-slate-100 transition-colors";
+        const saveEditBtn = document.createElement("button");
+        saveEditBtn.type = "button";
+        saveEditBtn.textContent = "Save";
+        saveEditBtn.className = "px-3 py-1 rounded-lg text-sm font-inter font-semibold text-white bg-mm-primary hover:bg-mm-primary/90 transition-colors";
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(saveEditBtn);
+
+        contentEl.innerHTML = "";
+        contentEl.appendChild(editArea);
+        contentEl.appendChild(btnRow);
+        editArea.focus();
+        editArea.setSelectionRange(editArea.value.length, editArea.value.length);
+
+        const restoreOriginal = () => { contentEl.innerHTML = originalHtml; };
+
+        cancelBtn.addEventListener("click", restoreOriginal);
+        editArea.addEventListener("keydown", (ev) => {
+          if (ev.key === "Escape") { restoreOriginal(); }
+        });
+
+        saveEditBtn.addEventListener("click", async () => {
+          const newText = editArea.value.trim();
+          if (!newText || newText === currentText) { restoreOriginal(); return; }
+          saveEditBtn.disabled = true;
+          saveEditBtn.textContent = "Saving...";
+          try {
+            const resp = await fetch(`/chat/c/${sessionId}/messages/${messageId}/edit/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: new URLSearchParams({ content: newText }),
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              contentEl.textContent = data.content || newText;
+            } else {
+              restoreOriginal();
+            }
+          } catch (_) {
+            restoreOriginal();
           }
-        } catch (_) {
-          alert("Network error. Edit was not saved.");
-        }
+        });
       }
 
       if (resendBtn) {

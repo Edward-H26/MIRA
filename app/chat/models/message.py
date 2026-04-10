@@ -17,6 +17,7 @@ class Message(models.Model):
     # Message text content
     content = models.TextField()
     sender_agent = models.ForeignKey("Agent", null=True, blank=True, on_delete=models.SET_NULL, related_name="messages")
+    sender_agent_name = models.CharField(max_length=100, blank=True, default="")
 
     # Timestamp when the message was created
     created_at = models.DateTimeField(auto_now_add=True)

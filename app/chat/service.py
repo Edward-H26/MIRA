@@ -363,6 +363,24 @@ def get_session_for_user(user, session_id, with_messages=False):
     return _get_session_or_404_for_user(user, session_id, with_messages=with_messages)
 
 
+def get_session_for_user_or_member(user, session_id, with_messages=False, require_admin=False):
+    try:
+        return _get_session_or_404_for_user(user, session_id, with_messages=with_messages)
+    except Http404:
+        from .models.session_member import SessionMember
+        profile = get_or_create_profile_for_user(user)
+        try:
+            session = Session.objects.get(pk=session_id)
+        except Session.DoesNotExist:
+            raise Http404
+        memberFilter = {"session": session, "user": profile}
+        if require_admin:
+            memberFilter["role"] = SessionMember.ROLE_ADMIN
+        if not SessionMember.objects.filter(**memberFilter).exists():
+            raise Http404
+        return session
+
+
 def build_agent_reply_from_stream(content):
     trimmed = (content or "").strip()
     if not trimmed:
@@ -380,17 +398,23 @@ def build_agent_reply_from_stream(content):
     return "".join(chunks).strip() or FALLBACK_TEXT
 
 
+_local_model_preload_attempted = False
+
+
 def _should_use_local_model(prompt_text, classification):
+    global _local_model_preload_attempted
+    if not safe_env_bool("CHAT_LOCAL_MODEL_ENABLED", False):
+        return False
     if classification != "simple":
         return False
-    if not local_llm.is_loaded():
-        if local_llm.is_available() and not getattr(local_llm, "_bg_loading", False):
-            local_llm._bg_loading = True
-            import threading
-            threading.Thread(target=_preload_local_model, daemon=True).start()
-        return False
-    token_limit = _safe_env_int("CHAT_LOCAL_MAX_TOKENS", 220)
-    return len((prompt_text or "").split()) <= token_limit
+    if local_llm.is_loaded():
+        token_limit = safe_env_int("CHAT_LOCAL_MAX_TOKENS", 220)
+        return len((prompt_text or "").split()) <= token_limit
+    if not _local_model_preload_attempted and local_llm.is_available():
+        _local_model_preload_attempted = True
+        import threading
+        threading.Thread(target=_preload_local_model, daemon=True).start()
+    return False
 
 
 def _preload_local_model():
@@ -398,8 +422,6 @@ def _preload_local_model():
         local_llm.generate_response("warmup")
     except Exception:
         pass
-    finally:
-        local_llm._bg_loading = False
 
 
 def stream_user_message_with_agent_reply(session, content, *, skip_user_message=False):
@@ -562,6 +584,18 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         except Exception:
             pass
 
+        if not use_local and assistant_text and assistant_text != FALLBACK_TEXT:
+            try:
+                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
+                log_event(
+                    "chat_post_response_memory",
+                    session_id=session.pk,
+                    ace_delta=ace_result.get("ace_delta"),
+                    quality_gate=ace_result.get("quality_gate", {}).get("should_apply_update"),
+                )
+            except Exception:
+                pass
+
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
@@ -615,11 +649,13 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         except Exception:
             pass
 
+    agentDisplayName = responding_agent.get("name", "") if responding_agent else ""
     assistant_message = Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
         content=assistant_text,
         sender_agent=sender_agent_orm,
+        sender_agent_name=agentDisplayName,
     )
     session.updated_at = timezone.now()
     session.save(update_fields=["updated_at"])
@@ -698,33 +734,78 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
     )
 
-    maxAgentTurns = 4
+    maxAgentTurns = 8
     if responding_agent:
         from .agent_service import parse_agent_mentions, resolve_responding_agents
-        nextMentions = parse_agent_mentions(assistant_text)
-        if nextMentions:
-            allMentioned = resolve_responding_agents(session.user.user, str(session.pk), assistant_text)
-            visitedAgents = {responding_agent.get("name", "").lower()}
-            nextAgents = [a for a in allMentioned if a.get("name", "").lower() not in visitedAgents]
-            if nextAgents:
-                nextAgent = nextAgents[0]
-                agentReply = (
-                    f"@{nextAgent['name']} {responding_agent.get('name', 'Assistant')} said:\n"
-                    f"{assistant_text[:500]}\n\nPlease respond."
-                )
-                for payload in _agent_to_agent_turn(session, agentReply, nextAgent, 1, maxAgentTurns, visitedAgents):
-                    yield payload
+        visitedAgents = {responding_agent.get("name", "").lower()}
+
+        pendingAgents = []
+        userMentioned = resolve_responding_agents(session.user.user, str(session.pk), trimmed)
+        for a in userMentioned:
+            if a.get("name", "").lower() not in visitedAgents:
+                pendingAgents.append(a)
+
+        def _collect_new_mentions(responseText):
+            mentions = parse_agent_mentions(responseText)
+            if not mentions:
+                return
+            mentioned = resolve_responding_agents(session.user.user, str(session.pk), responseText)
+            pendingNames = {p.get("name", "").lower() for p in pendingAgents}
+            for a in mentioned:
+                nameLower = a.get("name", "").lower()
+                if nameLower not in visitedAgents and nameLower not in pendingNames:
+                    pendingAgents.append(a)
+
+        _collect_new_mentions(assistant_text)
+
+        depth = 1
+        idx = 0
+        while idx < len(pendingAgents) and depth <= maxAgentTurns:
+            nextAgent = pendingAgents[idx]
+            idx += 1
+            respondingName = responding_agent.get("name", "Assistant")
+            agentReply = (
+                f"@{nextAgent['name']} {respondingName} said:\n"
+                f"{assistant_text[:500]}\n\nPlease respond."
+            )
+            for payload in _agent_to_agent_turn(session, agentReply, nextAgent, depth, maxAgentTurns, visitedAgents):
+                yield payload
+            responding_agent = nextAgent
+            assistant_text = payload.get("content", "") if isinstance(payload, dict) else ""
+            _collect_new_mentions(assistant_text)
+            depth += 1
 
 
-def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=4, visitedAgents=None):
+def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=8, visitedAgents=None):
     from app.services.gemini import generate_reply_stream
 
     systemPrompt = agent.get("systemPrompt", "")
     agentName = agent.get("name", "Agent")
+
     contextParts = []
     if systemPrompt:
         contextParts.append(f"[System Instructions]\n{systemPrompt}")
-    contextParts.append(f"[Message]\n{prompt}")
+
+    conversationContext = _build_conversation_context(session)
+    if conversationContext:
+        contextParts.append(f"[Recent Conversation]\n{conversationContext}")
+
+    try:
+        profile = get_or_create_profile_for_user(session.user.user)
+        memory_obj, _ = Memory.get_or_create_for_profile(profile)
+        bullets = memory_obj.retrieve_ranked_bullets(
+            query=prompt,
+            learner_id=str(profile.user_id),
+            context_scope_id=str(session.pk),
+            top_k=5,
+        )
+        guidance = _build_guidance_from_bullets(bullets)
+        if guidance:
+            contextParts.append(f"[Relevant Knowledge]\n{guidance}")
+    except Exception:
+        pass
+
+    contextParts.append(f"[Agent Message]\n{prompt}")
     fullPrompt = "\n\n".join(contextParts)
 
     chunks_buf = []
@@ -748,6 +829,7 @@ def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=4, visitedAgent
         role=Role.ASSISTANT,
         content=replyText,
         sender_agent=sender_agent_orm,
+        sender_agent_name=agentName,
     )
     session.updated_at = timezone.now()
     session.save(update_fields=["updated_at"])

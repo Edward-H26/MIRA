@@ -6,6 +6,8 @@ ENABLE_DEV_EVENT_LOG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
 
+os.environ.setdefault("CHAT_LOCAL_MODEL_ENABLED", "1")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

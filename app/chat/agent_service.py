@@ -295,6 +295,8 @@ def resolve_responding_agents(user, session_id: str, content: str) -> list[dict]
     seen = set()
     for mentionText in mentionedNames:
         mentionLower = mentionText.lower().replace("'", "")
+        if len(mentionLower) < 2:
+            continue
         bestMatch = None
         for agent in allAgents:
             agentName = agent.get("name", "")
@@ -309,7 +311,7 @@ def resolve_responding_agents(user, session_id: str, content: str) -> list[dict]
             if mentionLower == nameCompact or nameCompact.startswith(mentionLower):
                 bestMatch = agent
                 break
-            if any(part.startswith(mentionLower) for part in nameParts):
+            if len(mentionLower) >= 3 and any(part.startswith(mentionLower) for part in nameParts):
                 bestMatch = agent
                 break
         if bestMatch:

@@ -21,8 +21,11 @@ _easyocr_reader = None
 def _get_reader():
     global _easyocr_reader
     if _easyocr_reader is None:
-        import easyocr
-        _easyocr_reader = easyocr.Reader(["en"], gpu=False)
+        try:
+            import easyocr
+            _easyocr_reader = easyocr.Reader(["en"], gpu=False)
+        except ImportError:
+            return None
     return _easyocr_reader
 
 RECEIPT_PATTERNS = {
@@ -94,6 +97,10 @@ def extract_text_from_image(imageFile) -> OcrResult:
 
     try:
         reader = _get_reader()
+        if reader is None:
+            result.status = "failed"
+            result.error = "OCR engine is not available on this server."
+            return result
         imageArray = np.array(image)
         detections = reader.readtext(imageArray)
         rawText = "\n".join(text for _, text, _ in detections).strip()
@@ -115,15 +122,21 @@ def extract_text_from_image(imageFile) -> OcrResult:
 
 
 def extract_text_from_pdf(pdfFile) -> OcrResult:
-    import pdfplumber
     import io
 
     result = OcrResult()
     try:
+        import pdfplumber
+    except ImportError:
+        result.status = "failed"
+        result.error = "PDF processing is not available on this server."
+        return result
+
+    try:
         pdfFile.seek(0)
         fileBytes = pdfFile.read()
         with pdfplumber.open(io.BytesIO(fileBytes)) as pdf:
-            pagesText = [page.extract_text() or "" for page in pdf.pages]
+            pagesText = [page.extract_text() or "" for page in pdf.pages[:50]]
             rawText = "\n\n".join(pagesText).strip()
     except Exception as exc:
         result.status = "failed"
@@ -155,6 +168,9 @@ def extract_text_from_pdf(pdfFile) -> OcrResult:
 
 def _ocr_first_pdf_page(pdfBytes) -> str:
     try:
+        reader = _get_reader()
+        if reader is None:
+            return ""
         import pdfplumber
         with pdfplumber.open(pdfBytes) as pdf:
             if not pdf.pages:
@@ -163,7 +179,6 @@ def _ocr_first_pdf_page(pdfBytes) -> str:
             img = page.to_image(resolution=200).original
             if img.mode != "RGB":
                 img = img.convert("RGB")
-            reader = _get_reader()
             imageArray = np.array(img)
             detections = reader.readtext(imageArray)
             return "\n".join(text for _, text, _ in detections).strip()

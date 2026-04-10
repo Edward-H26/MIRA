@@ -100,9 +100,8 @@ function renameConversation(id) {
     const routes = getAppRoutes()
     const item = document.querySelector(`.conv-sidebar-item[data-id="${id}"]`)
     if (!item) return
-    const titleEl = item.querySelector(".conv-sidebar-title")
     const actionsEl = item.querySelector(".conv-sidebar-actions")
-    const currentTitle = titleEl.textContent.trim()
+    const currentTitle = item.querySelector(".conv-sidebar-title").textContent.trim()
 
     if (actionsEl) actionsEl.style.display = "none"
 
@@ -130,20 +129,40 @@ function renameConversation(id) {
     input.focus()
     input.select()
 
+    let isSaving = false
+
     const saveEdit = async () => {
-        const newTitle = input.value.trim() || "New Chat"
-        contentEl.innerHTML = originalContent
-        contentEl.querySelector(".conv-sidebar-title").textContent = newTitle
-        if (actionsEl) actionsEl.style.display = ""
+        if (isSaving) return
+        const newTitle = input.value.trim()
+        if (!newTitle) {
+            cancelEdit()
+            return
+        }
+        isSaving = true
         try {
             const formData = new FormData()
             formData.append("title", newTitle)
-            await fetch(routeFromTemplate(routes.chatSessionRenameTemplate, id), {
+            const res = await fetch(routeFromTemplate(routes.chatSessionRenameTemplate, id), {
                 method: "POST",
                 headers: { "X-CSRFToken": getCSRFToken() },
-                body: formData
+                body: formData,
             })
-        } catch (_) {}
+            const data = await res.json()
+            if (!res.ok || !data.ok) {
+                cancelEdit()
+                return
+            }
+            const confirmedTitle = data.title
+            contentEl.innerHTML = originalContent
+            const titleEl = contentEl.querySelector(".conv-sidebar-title")
+            if (titleEl) titleEl.textContent = confirmedTitle
+            const avatarEl = item.querySelector(".conv-sidebar-avatar")
+            if (avatarEl) avatarEl.textContent = confirmedTitle.charAt(0)
+            if (actionsEl) actionsEl.style.display = ""
+            syncHeaderTitle(id, confirmedTitle)
+        } catch (_) {
+            cancelEdit()
+        }
     }
 
     const cancelEdit = () => {
@@ -157,10 +176,26 @@ function renameConversation(id) {
         if (e.key === "Escape") cancelEdit()
     }
     input.onblur = (e) => {
-        if (e.relatedTarget !== saveBtn) {
-            saveEdit()
-        }
+        if (e.relatedTarget !== saveBtn) saveEdit()
     }
+}
+
+function syncHeaderTitle(sessionId, title) {
+    const headerTitle = document.getElementById("conv-header-title")
+    if (headerTitle && headerTitle.dataset.sessionId === String(sessionId)) {
+        headerTitle.textContent = title
+    }
+}
+
+function handleAutoTitle(sessionId, title) {
+    const sidebarItem = document.querySelector(`.conv-sidebar-item[data-id="${sessionId}"]`)
+    if (sidebarItem) {
+        const titleEl = sidebarItem.querySelector(".conv-sidebar-title")
+        if (titleEl) titleEl.textContent = title
+        const avatarEl = sidebarItem.querySelector(".conv-sidebar-avatar")
+        if (avatarEl) avatarEl.textContent = title.charAt(0)
+    }
+    syncHeaderTitle(sessionId, title)
 }
 
 function deleteConversation(id) {
