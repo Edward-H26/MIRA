@@ -1,5 +1,4 @@
 import json
-import os
 import re
 
 from memoria.event_log import log_event
@@ -7,6 +6,7 @@ from app.services.gemini import generate_reply_text, generate_structured_text
 from .models import Memory
 from .models.memory_bullet import MemoryBullet
 from .models.message import Role
+from .utils import safe_env_bool, safe_env_int, safe_env_float
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 JSON_OBJECT_PATTERN = re.compile(r"\{.*\}", re.DOTALL)
@@ -79,31 +79,9 @@ META_STRATEGY_SEEDS = [
 ]
 
 
-def _safe_env_float(name, default):
-    try:
-        return float(os.getenv(name, str(default)))
-    except Exception:
-        return default
-
-
-def _safe_env_int(name, default):
-    try:
-        value = int(os.getenv(name, str(default)))
-    except Exception:
-        return default
-    return value if value > 0 else default
-
-
-def _safe_env_bool(name, default):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    normalized = str(value).strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-    return default
+_safe_env_float = safe_env_float
+_safe_env_int = safe_env_int
+_safe_env_bool = safe_env_bool
 
 
 def _tokenize(text):

@@ -1,0 +1,31 @@
+## Progress: MIRA/Memoria Refactor, Bug Fixes & Features
+
+Started: 2026-04-09
+Phase: 5 (Complete)
+
+### Completed Tasks
+1. Phase 1: Extract shared utilities into app/chat/utils.py
+2. Phase 2: Remove duplicate builder functions from service.py
+3. Phase 3: Fix marketplace conversation reuse bug
+4. Phase 4: Fix agent-to-agent collaboration (3-5 turns)
+5. Phase 5: Show agent names in typing indicator
+6. Phase 6: Add message edit and resend endpoints + UI
+7. Phase 7: Add 6 corporate marketplace agents (finance + legal)
+8. Phase 8: Dead code cleanup (removed orphaned .ts file)
+9. Code review fixes: race condition, cycle guard, fuzzy matching, error feedback, explicit kwarg
+
+### Key Decisions
+- Kept service.py as single file instead of full package split (lower risk, same dedup benefit)
+- Used alias pattern (_safe_env_bool = safe_env_bool) for backward compat
+- Mention regex uses @(\w'+) with fuzzy resolution via startswith on name parts
+- Recursive _agent_to_agent_turn uses yield from with visitedAgents cycle guard
+- Message resend acquires lock BEFORE deleting subsequent messages
+- skip_user_message is an explicit keyword-only argument, not **kwargs
+
+### Validation Results
+- Django system checks: PASS (0 issues)
+- All import chains: PASS
+- URL routing: PASS (all new routes resolve)
+- Agent catalog: PASS (16 agents, 12 categories)
+- Mention parsing: PASS (single, multiple, apostrophe names)
+- Code review: 5 issues found, all fixed and re-validated

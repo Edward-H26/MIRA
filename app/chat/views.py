@@ -149,6 +149,60 @@ class ConversationMessagesView(View):
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
+def message_edit_view(request, session_id, message_id):
+    from .models import Message
+    from .models.message import Role
+
+    session = get_session_for_user(request.user, session_id)
+    try:
+        msg = Message.objects.get(pk=message_id, session=session, role=Role.USER)
+    except Message.DoesNotExist:
+        return JsonResponse({"error": "Message not found"}, status=404)
+
+    content = (request.POST.get("content") or "").strip()
+    if not content:
+        return JsonResponse({"error": "Content required"}, status=400)
+
+    msg.content = content
+    msg.save(update_fields=["content"])
+    return JsonResponse({"ok": True, "content": msg.content})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def message_resend_view(request, session_id, message_id):
+    from .models import Message
+    from .models.message import Role
+
+    session = get_session_for_user(request.user, session_id)
+    try:
+        msg = Message.objects.get(pk=message_id, session=session, role=Role.USER)
+    except Message.DoesNotExist:
+        return JsonResponse({"error": "Message not found"}, status=404)
+
+    if not session.acquire_generation_lock():
+        return JsonResponse({"error": "generation_in_progress"}, status=409)
+
+    Message.objects.filter(session=session, created_at__gt=msg.created_at).delete()
+
+    def event_stream():
+        try:
+            for payload in stream_user_message_with_agent_reply(session, msg.content, skip_user_message=True):
+                yield json.dumps(payload, ensure_ascii=False) + "\n"
+        finally:
+            session.release_generation_lock()
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="application/x-ndjson; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
 def conversation_upload_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
 
@@ -981,11 +1035,18 @@ def agent_start_chat_view(request, template_id):
         return redirect("chat:agent_marketplace")
 
     profile = get_or_create_profile_for_user(request.user)
-    session = Session.objects.create(
-        user=profile,
-        title=f"Chat with {template['name']}",
-    )
+    agentTitle = f"Chat with {template['name']}"
 
+    existing = Session.objects.filter(
+        user=profile,
+        title=agentTitle,
+        access_key__isnull=True,
+    ).order_by("-updated_at").first()
+
+    if existing:
+        return redirect("chat:conversation_detail", session_id=existing.id)
+
+    session = Session.objects.create(user=profile, title=agentTitle)
     Message.objects.create(
         session=session,
         role=Role.ASSISTANT,

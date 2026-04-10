@@ -28,8 +28,8 @@ MAX_SKILLS_PER_GENERATION = 5
 
 
 def _get_profile(user):
-    from app.chat.service import get_or_create_profile_for_user
-    return get_or_create_profile_for_user(user)
+    from .utils import get_or_create_profile
+    return get_or_create_profile(user)
 
 
 def _cluster_bullets_by_topic(bullets):

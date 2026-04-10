@@ -113,7 +113,7 @@
         </div>
         {% for message in session.messages.all %}
           {% if message.role != 1 %}
-            <div class="flex gap-3 {% if message.role == 2 %}flex-row-reverse{% endif %} chat-message-appear">
+            <div class="flex gap-3 {% if message.role == 2 %}flex-row-reverse{% endif %} chat-message-appear group/msg" data-message-id="{{ message.pk }}" data-message-role="{% if message.role == 2 %}user{% else %}assistant{% endif %}">
               <!-- Avatar -->
               {% if message.role == 2 %}
                 {% if request.user.profile.profile_img %}
@@ -146,6 +146,17 @@
                     <div class="message-content message-content-markdown font-inter text-[14px] leading-6">{{ message.content|assistant_markdown }}</div>
                   {% endif %}
                 </div>
+                <!-- Hover actions -->
+                <div class="chat-message-actions opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200 flex gap-1 mt-1">
+                  {% if message.role == 2 %}
+                  <button type="button" class="msg-action-edit p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Edit message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button type="button" class="msg-action-resend p-1 rounded-md hover:bg-white/40 text-slate-400 hover:text-slate-600 transition-colors" title="Resend message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"></path></svg>
+                  </button>
+                  {% endif %}
+                </div>
               </div>
             </div>
           {% endif %}
@@ -163,7 +174,7 @@
     <!-- Typing Indicator -->
     <div class="hidden px-8 py-3" id="typing-indicator">
       <div class="max-w-[900px] mx-auto flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm">A</div>
+        <div id="typing-indicator-avatar" class="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm">A</div>
         <div class="bg-white rounded-[18px] rounded-bl-[4px] px-4 py-3 shadow-sm border border-white/20 flex items-center gap-1.5">
           <span class="font-inter text-mm-muted text-[13px]" id="typing-indicator-text">Assistant is typing</span>
           <span class="flex gap-[3px] items-center ml-1">
@@ -550,7 +561,9 @@
       const assistantUi = appendMessage("assistant", "", { pending: true });
       input.value = "";
       setStreamingState(true);
-      showTypingIndicator("Assistant", true);
+      const mentionMatch = content.match(/@([\w']+)/);
+      const initialAgentName = mentionMatch ? mentionMatch[1] : "Assistant";
+      showTypingIndicator(initialAgentName, true);
       debugLog("request-start", { streamUrl, promptLength: content.length });
 
       const abortController = new AbortController();
@@ -601,16 +614,25 @@
             if (payload.agentName) {
               const senderLabel = assistantUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
               if (senderLabel) senderLabel.textContent = payload.agentName;
+              const avatarEl = assistantUi.bubble.closest(".flex.gap-4")?.querySelector(".rounded-full, .rounded-\\[12px\\]");
+              if (avatarEl) avatarEl.textContent = payload.agentName.charAt(0).toUpperCase();
             }
           }
 
           if (payload.type === "agent_turn") {
-            const turnUi = appendMessage("assistant", "", { pending: false });
             const turnName = payload.agentName || "Agent";
+            const turnNum = payload.turn || "";
+            const maxTurns = payload.maxTurns || "";
+            const turnStatus = turnNum && maxTurns
+              ? `${turnName} is responding (turn ${turnNum}/${maxTurns})`
+              : `${turnName} is responding`;
+            showTypingIndicator(turnName, true, turnStatus);
+            const turnUi = appendMessage("assistant", "", { pending: false, senderName: turnName });
             const senderLabel = turnUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
             if (senderLabel) senderLabel.textContent = turnName;
             updateAssistantBubble(turnUi, payload.content || "", payload.html || "");
             if (payload.message_id) lastStreamedMessageId = payload.message_id;
+            hideTypingIndicator();
             scrollToBottom();
           }
         });
@@ -824,9 +846,15 @@
     let typingTimeout = null;
     let typingDebounce = null;
 
-    const showTypingIndicator = (name, persistent = false) => {
+    const typingAvatar = document.getElementById("typing-indicator-avatar");
+
+    const showTypingIndicator = (name, persistent = false, statusText = "") => {
       if (typingIndicator && typingText) {
-        typingText.textContent = `${name || "Assistant"} is typing`;
+        const displayName = name || "Assistant";
+        typingText.textContent = statusText || `${displayName} is thinking`;
+        if (typingAvatar) {
+          typingAvatar.textContent = displayName.charAt(0).toUpperCase();
+        }
         typingIndicator.classList.remove("hidden");
         clearTimeout(typingTimeout);
         if (!persistent) {
@@ -1170,6 +1198,100 @@
         if (file) stageFile(file);
       });
     }
+
+    messages.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest(".msg-action-edit");
+      const resendBtn = e.target.closest(".msg-action-resend");
+      if (!editBtn && !resendBtn) return;
+
+      const msgRow = e.target.closest("[data-message-id]");
+      if (!msgRow) return;
+      const messageId = msgRow.dataset.messageId;
+      const csrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value || "";
+
+      if (editBtn) {
+        const contentEl = msgRow.querySelector(".message-content");
+        if (!contentEl) return;
+        const currentText = contentEl.textContent.trim();
+        const newText = prompt("Edit message:", currentText);
+        if (newText === null || newText.trim() === "" || newText.trim() === currentText) return;
+        try {
+          const resp = await fetch(`/chat/c/${sessionId}/messages/${messageId}/edit/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+              "X-CSRFToken": csrfToken,
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            body: new URLSearchParams({ content: newText.trim() }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            contentEl.textContent = data.content || newText.trim();
+          } else {
+            let errMsg = "Failed to save edit.";
+            try { const d = await resp.json(); errMsg = d.error || errMsg; } catch (_) {}
+            alert(errMsg);
+          }
+        } catch (_) {
+          alert("Network error. Edit was not saved.");
+        }
+      }
+
+      if (resendBtn) {
+        if (isStreaming) return;
+        const siblings = Array.from(messages.querySelectorAll("[data-message-id]"));
+        const msgIdx = siblings.indexOf(msgRow);
+        for (let i = siblings.length - 1; i > msgIdx; i--) {
+          siblings[i].remove();
+        }
+        const contentEl = msgRow.querySelector(".message-content");
+        const msgText = contentEl ? contentEl.textContent.trim() : "";
+        const assistantUi = appendMessage("assistant", "", { pending: true });
+        setStreamingState(true);
+        showTypingIndicator("Assistant", true);
+
+        let assistantText = "";
+        let assistantHtml = "";
+        try {
+          const resp = await fetch(`/chat/c/${sessionId}/messages/${messageId}/resend/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+              "X-CSRFToken": csrfToken,
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            body: "",
+          });
+          if (!resp.ok) throw new Error(`Resend failed (${resp.status})`);
+          await readStream(resp, (payload) => {
+            if (payload.type === "delta") {
+              assistantText += payload.content || "";
+              assistantHtml = payload.html || assistantHtml;
+              updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            } else if (payload.type === "done") {
+              assistantText = payload.content || assistantText;
+              assistantHtml = payload.html || assistantHtml;
+              updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+              hideTypingIndicator();
+              if (payload.message_id) lastStreamedMessageId = payload.message_id;
+            } else if (payload.type === "agent_turn") {
+              const turnUi = appendMessage("assistant", "", { pending: false, senderName: payload.agentName || "Agent" });
+              const senderLabel = turnUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+              if (senderLabel) senderLabel.textContent = payload.agentName || "Agent";
+              updateAssistantBubble(turnUi, payload.content || "", payload.html || "");
+              if (payload.message_id) lastStreamedMessageId = payload.message_id;
+            }
+          });
+        } catch (err) {
+          updateAssistantBubble(assistantUi, (err && err.message) || "Resend failed.");
+        } finally {
+          hideTypingIndicator();
+          setStreamingState(false);
+          input.focus();
+        }
+      }
+    });
   });
 </script>
 {% endblock %}

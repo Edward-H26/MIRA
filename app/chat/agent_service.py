@@ -4,11 +4,11 @@ from django.http import Http404
 
 from app.chat.models.agent import Agent
 from app.services import neo4j_memory as neo4j
+from .utils import get_or_create_profile
 
 
 def _get_profile(user):
-    from app.chat.service import get_or_create_profile_for_user
-    return get_or_create_profile_for_user(user)
+    return get_or_create_profile(user)
 
 
 def _agent_to_dict(a: Agent, includeOwner: bool = False) -> dict:
@@ -277,7 +277,7 @@ def update_skill_group(user, bullet_id: int, skill_group: str) -> dict:
     return {"id": bullet.pk, "skillGroup": bullet.skill_group}
 
 
-MENTION_PATTERN = re.compile(r"@(\w+)")
+MENTION_PATTERN = re.compile(r"@([\w']+)")
 
 
 def parse_agent_mentions(content: str) -> list[str]:
@@ -290,16 +290,31 @@ def resolve_responding_agents(user, session_id: str, content: str) -> list[dict]
         return []
 
     allAgents = get_all_visible_agents(user)
-    agentsByName = {a.get("name", "").lower(): a for a in allAgents}
 
     responding = []
     seen = set()
-    for name in mentionedNames:
-        nameLower = name.lower()
-        agent = agentsByName.get(nameLower)
-        if agent and nameLower not in seen:
-            responding.append(agent)
-            seen.add(nameLower)
+    for mentionText in mentionedNames:
+        mentionLower = mentionText.lower().replace("'", "")
+        bestMatch = None
+        for agent in allAgents:
+            agentName = agent.get("name", "")
+            agentKey = agentName.lower()
+            if agentKey in seen:
+                continue
+            if mentionLower == agentKey:
+                bestMatch = agent
+                break
+            nameParts = agentName.lower().replace("'", "").split()
+            nameCompact = "".join(nameParts)
+            if mentionLower == nameCompact or nameCompact.startswith(mentionLower):
+                bestMatch = agent
+                break
+            if any(part.startswith(mentionLower) for part in nameParts):
+                bestMatch = agent
+                break
+        if bestMatch:
+            responding.append(bestMatch)
+            seen.add(bestMatch.get("name", "").lower())
     return responding
 
 

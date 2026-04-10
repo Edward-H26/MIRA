@@ -20,11 +20,11 @@ from app.services.gemini import generate_reply_stream, classify_prompt as gemini
 from app.services.classifier import classify_prompt as regex_classify
 from app.services import local_llm
 from app.services.gemini import generate_reply_text
-from .ace_runtime import run_ace_chat_turn, guidance_from_bullets
+from .ace_runtime import run_ace_chat_turn, guidance_from_bullets, _build_recent_conversation_context
 from .rendering import render_assistant_markdown_html
 from .models import Memory, Message, MemoryBullet, RequestLog, Session
 from .models.message import Role
-from app.users.models import UserProfile as Profile
+from .utils import safe_env_bool, safe_env_int, get_or_create_profile
 
 PROGRESSIVE_COLORS = ["#575BEF", "#6F82FF", "#8DA0FF", "#AEBBFF", "#D6DDFF"]
 SEGMENT_COLORS = ["#9698FF", "#664FA1", "#FFC5D6", "#DAC6FF", "#B4EDE4"]
@@ -115,50 +115,12 @@ def _stream_debug_log(message):
         log_event("chat_stream_debug", message=message)
 
 
-def _safe_env_bool(name, default):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    normalized = str(value).strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-    return default
+_safe_env_bool = safe_env_bool
+_safe_env_int = safe_env_int
 
 
-def _safe_env_int(name, default):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        parsed = int(value)
-    except Exception:
-        return default
-    return parsed if parsed > 0 else default
-
-
-def _build_conversation_context(session, max_messages=12):
-    messages = list(
-        Message.objects.filter(session=session)
-        .order_by("-created_at")[:max_messages]
-    )
-    messages.reverse()
-    lines = []
-    for msg in messages:
-        role = "User" if msg.role == 2 else "Assistant"
-        if msg.role != 1:
-            lines.append(f"{role}: {msg.content[:500]}")
-    return "\n".join(lines[-max_messages:])
-
-
-def _build_guidance_from_bullets(bullets):
-    if not bullets:
-        return ""
-    lines = []
-    for b in bullets[:5]:
-        lines.append(f"- [{b.topic}] {b.content}")
-    return "\n".join(lines)
+_build_conversation_context = _build_recent_conversation_context
+_build_guidance_from_bullets = guidance_from_bullets
 
 
 def _build_local_preprocess_context(session):
@@ -186,8 +148,7 @@ def _build_local_preprocess_context(session):
 
 
 def get_or_create_profile_for_user(user):
-    profile, _ = Profile.objects.get_or_create(user=user)
-    return profile
+    return get_or_create_profile(user)
 
 
 def _get_session_queryset_for_user(user):
@@ -441,7 +402,7 @@ def _preload_local_model():
         local_llm._bg_loading = False
 
 
-def stream_user_message_with_agent_reply(session, content, **kwargs):
+def stream_user_message_with_agent_reply(session, content, *, skip_user_message=False):
     trimmed = (content or "").strip()
     if not trimmed:
         raise ValueError("Message content is required.")
@@ -449,11 +410,12 @@ def stream_user_message_with_agent_reply(session, content, **kwargs):
     _stream_debug_log(f"start session_id={session.pk} prompt_len={len(trimmed)}")
     log_event("chat_stream_start", session_id=session.pk, prompt_len=len(trimmed))
 
-    Message.objects.create(
-        session=session,
-        role=Role.USER,
-        content=trimmed,
-    )
+    if not skip_user_message:
+        Message.objects.create(
+            session=session,
+            role=Role.USER,
+            content=trimmed,
+        )
 
     # TODO: Support multiple agent responses when multiple @mentions are used
     # Currently uses the first mentioned agent's system prompt for the response
@@ -736,24 +698,25 @@ def stream_user_message_with_agent_reply(session, content, **kwargs):
         f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
     )
 
-    agentTurnDepth = kwargs.get("_agent_turn_depth", 0)
     maxAgentTurns = 4
-    if agentTurnDepth < maxAgentTurns and responding_agent:
+    if responding_agent:
         from .agent_service import parse_agent_mentions, resolve_responding_agents
-        nextMentions = parse_agent_mentions(trimmed)
-        allMentioned = resolve_responding_agents(session.user.user, str(session.pk), trimmed)
-        nextAgents = [a for a in allMentioned if a.get("name") != responding_agent.get("name")]
-        if nextAgents:
-            nextAgent = nextAgents[0]
-            agentReply = (
-                f"@{nextAgent['name']} {responding_agent.get('name', 'Assistant')} said:\n"
-                f"{assistant_text[:300]}\n\nPlease respond."
-            )
-            for payload in _agent_to_agent_turn(session, agentReply, nextAgent, agentTurnDepth + 1):
-                yield payload
+        nextMentions = parse_agent_mentions(assistant_text)
+        if nextMentions:
+            allMentioned = resolve_responding_agents(session.user.user, str(session.pk), assistant_text)
+            visitedAgents = {responding_agent.get("name", "").lower()}
+            nextAgents = [a for a in allMentioned if a.get("name", "").lower() not in visitedAgents]
+            if nextAgents:
+                nextAgent = nextAgents[0]
+                agentReply = (
+                    f"@{nextAgent['name']} {responding_agent.get('name', 'Assistant')} said:\n"
+                    f"{assistant_text[:500]}\n\nPlease respond."
+                )
+                for payload in _agent_to_agent_turn(session, agentReply, nextAgent, 1, maxAgentTurns, visitedAgents):
+                    yield payload
 
 
-def _agent_to_agent_turn(session, prompt, agent, depth):
+def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=4, visitedAgents=None):
     from app.services.gemini import generate_reply_stream
 
     systemPrompt = agent.get("systemPrompt", "")
@@ -780,7 +743,6 @@ def _agent_to_agent_turn(session, prompt, agent, depth):
     except Exception:
         pass
 
-    from .models.message import Role
     assistantMsg = Message.objects.create(
         session=session,
         role=Role.ASSISTANT,
@@ -794,20 +756,29 @@ def _agent_to_agent_turn(session, prompt, agent, depth):
         "type": "agent_turn",
         "agentName": agentName,
         "agentId": agent.get("id", ""),
+        "turn": depth,
+        "maxTurns": maxDepth,
         "message_id": assistantMsg.id,
         "content": replyText,
         "html": str(render_assistant_markdown_html(replyText)),
     }
 
-    try:
-        ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
-        log_event(
-            "chat_post_response_memory",
-            session_id=session.pk,
-            ace_delta=ace_result.get("ace_delta"),
-        )
-    except Exception:
-        pass
+    if depth < maxDepth:
+        if visitedAgents is None:
+            visitedAgents = set()
+        visitedAgents.add(agentName.lower())
+        from .agent_service import parse_agent_mentions, resolve_responding_agents
+        nextMentions = parse_agent_mentions(replyText)
+        if nextMentions:
+            nextAgents = resolve_responding_agents(session.user.user, str(session.pk), replyText)
+            nextAgents = [a for a in nextAgents if a.get("name", "").lower() not in visitedAgents]
+            if nextAgents:
+                nextAgent = nextAgents[0]
+                nextPrompt = (
+                    f"@{nextAgent['name']} {agentName} said:\n"
+                    f"{replyText[:500]}\n\nPlease respond."
+                )
+                yield from _agent_to_agent_turn(session, nextPrompt, nextAgent, depth + 1, maxDepth, visitedAgents)
 
 
 def get_memory_list_data(user, search_query="", memory_type="", sort_key="created"):
