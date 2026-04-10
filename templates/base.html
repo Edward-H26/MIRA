@@ -41,8 +41,12 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={% now 'U' %}">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+
     {% block extra_css %}{% endblock %}
     <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js" onload="if(typeof renderMathInElement==='function'){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});}"></script>
 </head>
 <body class="h-screen overflow-hidden">
     {% block body %}
@@ -186,6 +190,15 @@
                             </svg>
                             <span class="sidebar-nav-label">My Agent</span>
                         </a>
+                        <a href="{% url 'chat:agent_marketplace' %}" class="sidebar-nav-link" data-sidebar-nav="teams">
+                            <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 010 7.75"></path>
+                            </svg>
+                            <span class="sidebar-nav-label">Team</span>
+                        </a>
                         <a href="{% url 'dashboard' %}" class="sidebar-nav-link" data-sidebar-nav="dashboard">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 20V10"></path>
@@ -239,6 +252,15 @@
                     <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
                 </svg>
                 <span class="text-[10px] font-inter font-medium">My Agent</span>
+            </a>
+            <a href="{% url 'chat:agent_marketplace' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="teams">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 010 7.75"></path>
+                </svg>
+                <span class="text-[10px] font-inter font-medium">Team</span>
             </a>
             <a href="{% url 'dashboard' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="dashboard">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -75,28 +75,27 @@
         <div class="memory-card border border-[#e2e8f0] rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3" data-bullet-id="{{ bullet.pk }}">
             <div class="flex items-start justify-between gap-3">
                 <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.get_memory_type_display }}</span>
-                <div class="inline-flex items-center gap-3">
+                <div class="inline-flex items-center gap-1.5">
                     <button type="button"
-                        aria-label="Like"
-                        aria-pressed="{% if bullet.pk in user_votes and user_votes|get_vote:bullet.pk == 1 %}true{% else %}false{% endif %}"
-                        class="vote-btn vote-like border-none bg-transparent p-1 rounded-md cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == 1 %}text-mm-primary bg-mm-primary/10{% else %}text-slate-400 hover:text-mm-primary hover:bg-mm-primary/5{% endif %}"
+                        aria-label="Thumbs up"
+                        aria-pressed="{% if user_votes|get_vote:bullet.pk == 1 %}true{% else %}false{% endif %}"
+                        class="vote-btn vote-like border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == 1 %}text-emerald-600 bg-emerald-50{% else %}text-slate-400 hover:text-emerald-500 hover:bg-emerald-50/60{% endif %}"
                         data-direction="up"
                         onclick="castVote({{ bullet.pk }}, 'up', this)">
-                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == 1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" class="w-[18px] h-[18px]">
-                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h10.3a2 2 0 0 0 2-1.7l1.2-7A2 2 0 0 0 18.5 11H14z" stroke-width="1.5" stroke-linejoin="round"></path>
+                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == 1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
+                            <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3m7-2V5a3 3 0 00-3-3l-4 9v11h10.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14"></path>
                         </svg>
                     </button>
-                    <span class="vote-count font-inter font-semibold text-[13px] text-slate-500 min-w-[20px] text-center" data-type="helpful">{{ bullet.helpful_count }}</span>
-                    <span class="text-slate-200 select-none">|</span>
-                    <span class="vote-count font-inter font-semibold text-[13px] text-slate-500 min-w-[20px] text-center" data-type="harmful">{{ bullet.harmful_count }}</span>
+                    <span class="vote-count font-inter font-bold text-[13px] min-w-[24px] text-center {% if bullet.helpful_count > bullet.harmful_count %}text-emerald-600{% elif bullet.harmful_count > bullet.helpful_count %}text-red-500{% else %}text-slate-400{% endif %}" data-type="helpful" data-harmful="{{ bullet.harmful_count }}">{{ bullet.helpful_count }}</span>
+                    <span class="hidden" data-type="harmful">{{ bullet.harmful_count }}</span>
                     <button type="button"
-                        aria-label="Dislike"
+                        aria-label="Thumbs down"
                         aria-pressed="{% if user_votes|get_vote:bullet.pk == -1 %}true{% else %}false{% endif %}"
-                        class="vote-btn vote-dislike border-none bg-transparent p-1 rounded-md cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == -1 %}text-red-500 bg-red-50{% else %}text-slate-400 hover:text-red-400 hover:bg-red-50/50{% endif %}"
+                        class="vote-btn vote-dislike border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == -1 %}text-red-500 bg-red-50{% else %}text-slate-400 hover:text-red-400 hover:bg-red-50/60{% endif %}"
                         data-direction="down"
                         onclick="castVote({{ bullet.pk }}, 'down', this)">
-                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == -1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" class="w-[18px] h-[18px]">
-                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H6.7a2 2 0 0 0-2 1.7l-1.2 7A2 2 0 0 0 5.5 13H10z" stroke-width="1.5" stroke-linejoin="round"></path>
+                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == -1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
+                            <path d="M17 2H20a2 2 0 012 2v7a2 2 0 01-2 2h-3m-7 2v4a3 3 0 003 3l4-9V2H6.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10"></path>
                         </svg>
                     </button>
                 </div>
@@ -147,26 +146,34 @@ async function castVote(bulletId, direction, btn) {
         const likeSvg = likeBtn.querySelector("svg");
         const dislikeSvg = dislikeBtn.querySelector("svg");
 
-        likeBtn.className = "vote-btn vote-like border-none bg-transparent p-1 rounded-md cursor-pointer transition-all duration-200";
-        dislikeBtn.className = "vote-btn vote-dislike border-none bg-transparent p-1 rounded-md cursor-pointer transition-all duration-200";
+        likeBtn.className = "vote-btn vote-like border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200";
+        dislikeBtn.className = "vote-btn vote-dislike border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200";
         likeSvg.setAttribute("fill", "none");
         dislikeSvg.setAttribute("fill", "none");
         likeBtn.setAttribute("aria-pressed", "false");
         dislikeBtn.setAttribute("aria-pressed", "false");
 
+        var countEl = card.querySelector("[data-type='helpful']");
+        countEl.textContent = data.helpful;
+        card.querySelector("[data-type='harmful']").textContent = data.harmful;
+        countEl.className = "vote-count font-inter font-bold text-[13px] min-w-[24px] text-center";
+        if (data.helpful > data.harmful) countEl.classList.add("text-emerald-600");
+        else if (data.harmful > data.helpful) countEl.classList.add("text-red-500");
+        else countEl.classList.add("text-slate-400");
+
         if (data.userVote === 1) {
-            likeBtn.classList.add("text-mm-primary", "bg-mm-primary/10");
+            likeBtn.classList.add("text-emerald-600", "bg-emerald-50");
             likeSvg.setAttribute("fill", "currentColor");
             likeBtn.setAttribute("aria-pressed", "true");
-            dislikeBtn.classList.add("text-slate-400", "hover:text-red-400", "hover:bg-red-50/50");
+            dislikeBtn.classList.add("text-slate-400", "hover:text-red-400", "hover:bg-red-50/60");
         } else if (data.userVote === -1) {
             dislikeBtn.classList.add("text-red-500", "bg-red-50");
             dislikeSvg.setAttribute("fill", "currentColor");
             dislikeBtn.setAttribute("aria-pressed", "true");
-            likeBtn.classList.add("text-slate-400", "hover:text-mm-primary", "hover:bg-mm-primary/5");
+            likeBtn.classList.add("text-slate-400", "hover:text-emerald-500", "hover:bg-emerald-50/60");
         } else {
-            likeBtn.classList.add("text-slate-400", "hover:text-mm-primary", "hover:bg-mm-primary/5");
-            dislikeBtn.classList.add("text-slate-400", "hover:text-red-400", "hover:bg-red-50/50");
+            likeBtn.classList.add("text-slate-400", "hover:text-emerald-500", "hover:bg-emerald-50/60");
+            dislikeBtn.classList.add("text-slate-400", "hover:text-red-400", "hover:bg-red-50/60");
         }
     } catch (_) {}
 }

@@ -81,11 +81,13 @@ function initSidebarNav() {
         } else if (key === "dashboard") {
             isActive = path.startsWith(routes.chatDashboard)
         } else if (key === "agents") {
-            isActive = path.startsWith("/chat/agents/")
+            isActive = path.startsWith("/chat/agents/") && !path.startsWith("/chat/agents/marketplace")
         } else if (key === "activity") {
             isActive = path.startsWith(routes.chatActivityLog)
         } else if (key === "documents") {
             isActive = path.startsWith(routes.chatDocumentUpload)
+        } else if (key === "teams") {
+            isActive = path.startsWith("/chat/agents/marketplace")
         } else if (key === "groups") {
             isActive = path.startsWith("/chat/groups")
         }

@@ -93,9 +93,11 @@ def ensure_default_agent_on_profile_save(sender, instance, created, **kwargs):
         return
     from app.chat.models.agent import Agent
     if not Agent.objects.filter(user=instance).exists():
+        ownerUser = instance.user
+        displayName = getattr(instance, "display_name", "") or ownerUser.get_full_name() or ownerUser.username
         Agent.objects.create(
             user=instance,
-            name="My Assistant",
+            name=f"{displayName}'s Agent",
             temperature=0.7,
             max_tokens=1024,
         )

@@ -65,11 +65,16 @@ def generate_reply_stream(user_text: str):
         if meta:
             usage = meta
     if usage:
+        promptTokens = getattr(usage, "prompt_token_count", 0) or 0
+        completionTokens = getattr(usage, "candidates_token_count", 0) or 0
+        thinkingTokens = getattr(usage, "thoughts_token_count", 0) or 0
+        totalTokens = getattr(usage, "total_token_count", 0) or 0
         yield {
             "_type": "usage_metadata",
-            "prompt_tokens": getattr(usage, "prompt_token_count", 0) or 0,
-            "completion_tokens": getattr(usage, "candidates_token_count", 0) or 0,
-            "total_tokens": getattr(usage, "total_token_count", 0) or 0,
+            "prompt_tokens": promptTokens,
+            "completion_tokens": completionTokens,
+            "thinking_tokens": thinkingTokens,
+            "total_tokens": totalTokens if totalTokens else promptTokens + completionTokens,
         }
 
 

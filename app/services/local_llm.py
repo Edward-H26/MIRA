@@ -76,9 +76,20 @@ def is_available() -> bool:
     if _availability_cached is not None:
         return _availability_cached
 
-    _availability_cached = any(
-        cache_path.exists() and any(cache_path.iterdir()) for cache_path in _get_cache_paths()
+    customCachePaths = _get_cache_paths()
+    foundInCustom = any(
+        p.exists() and any(p.iterdir()) for p in customCachePaths
     )
+    if foundInCustom:
+        _availability_cached = True
+        return True
+
+    try:
+        from transformers import AutoConfig
+        AutoConfig.from_pretrained(_MODEL_ID)
+        _availability_cached = True
+    except Exception:
+        _availability_cached = False
     return _availability_cached
 
 
@@ -110,17 +121,20 @@ def _load_model_for_device(device: str):
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     cache_root = _get_cache_root()
-    tokenizer = AutoTokenizer.from_pretrained(
-        _MODEL_ID,
-        cache_dir=str(cache_root),
-        local_files_only=True,
-        trust_remote_code=True,
+    customCacheExists = any(
+        p.exists() and any(p.iterdir()) for p in _get_cache_paths()
     )
+
+    loadKwargs = {"trust_remote_code": True}
+    if customCacheExists:
+        loadKwargs["cache_dir"] = str(cache_root)
+        loadKwargs["local_files_only"] = True
+
+    tokenizer = AutoTokenizer.from_pretrained(_MODEL_ID, **loadKwargs)
+
     model_kwargs = {
-        "cache_dir": str(cache_root),
-        "local_files_only": True,
+        **loadKwargs,
         "torch_dtype": _get_torch_dtype(device),
-        "trust_remote_code": True,
     }
     if device == "cuda":
         model_kwargs["device_map"] = "auto"

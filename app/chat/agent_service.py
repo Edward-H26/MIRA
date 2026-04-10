@@ -11,8 +11,8 @@ def _get_profile(user):
     return get_or_create_profile_for_user(user)
 
 
-def _agent_to_dict(a: Agent) -> dict:
-    return {
+def _agent_to_dict(a: Agent, includeOwner: bool = False) -> dict:
+    result = {
         "id": str(a.pk),
         "name": a.name,
         "description": a.description,
@@ -20,19 +20,28 @@ def _agent_to_dict(a: Agent) -> dict:
         "temperature": float(a.temperature),
         "maxTokens": a.max_tokens,
         "isActive": a.is_active,
+        "is_active": a.is_active,
         "configuration": a.configuration or {},
         "createdAt": a.created_at.isoformat() if a.created_at else "",
         "updatedAt": a.updated_at.isoformat() if a.updated_at else "",
     }
+    if includeOwner and a.user:
+        ownerUser = a.user.user
+        displayName = getattr(a.user, "display_name", "") or ownerUser.get_full_name() or ownerUser.username
+        result["ownerName"] = displayName
+        result["isOwn"] = False
+    return result
 
 
 def get_or_create_user_agent(user) -> Agent:
     profile = _get_profile(user)
     agent = Agent.objects.filter(user=profile).first()
     if agent is None:
+        displayName = getattr(profile, "display_name", "") or user.get_full_name() or user.username
+        agentName = f"{displayName}'s Agent"
         agent = Agent.objects.create(
             user=profile,
-            name="My Assistant",
+            name=agentName,
             temperature=0.7,
             max_tokens=1024,
         )
@@ -45,6 +54,59 @@ def get_agents_for_user(user, include_inactive: bool = False) -> list[dict]:
     if not include_inactive:
         qs = qs.filter(is_active=True)
     return [_agent_to_dict(a) for a in qs.order_by("-created_at")]
+
+
+def get_all_visible_agents(user) -> list[dict]:
+    from app.chat.models.session_member import SessionMember
+    profile = _get_profile(user)
+
+    ownAgents = Agent.objects.filter(user=profile, is_active=True)
+    results = []
+    for a in ownAgents:
+        d = _agent_to_dict(a)
+        d["isOwn"] = True
+        d["ownerName"] = "You"
+        results.append(d)
+
+    memberSessions = SessionMember.objects.filter(user=profile).values_list("session_id", flat=True)
+    teammateProfiles = (
+        SessionMember.objects
+        .filter(session_id__in=memberSessions)
+        .exclude(user=profile)
+        .values_list("user_id", flat=True)
+        .distinct()
+    )
+    teamAgents = Agent.objects.filter(user_id__in=teammateProfiles, is_active=True)
+    seenIds = {a.pk for a in ownAgents}
+    for a in teamAgents:
+        if a.pk not in seenIds:
+            results.append(_agent_to_dict(a, includeOwner=True))
+            seenIds.add(a.pk)
+
+    try:
+        from .agent_catalog import get_all_template_agents
+        for t in get_all_template_agents():
+            templateId = f"template-{t['id']}"
+            if templateId not in {r.get("id") for r in results}:
+                results.append({
+                    "id": templateId,
+                    "name": t["name"],
+                    "description": t.get("description", ""),
+                    "systemPrompt": t.get("systemPrompt", ""),
+                    "temperature": t.get("temperature", 0.7),
+                    "maxTokens": t.get("maxTokens", 1024),
+                    "isActive": True,
+                    "is_active": True,
+                    "isOwn": False,
+                    "ownerName": t.get("department", "Directory"),
+                    "configuration": {},
+                    "createdAt": "",
+                    "updatedAt": "",
+                })
+    except Exception:
+        pass
+
+    return results
 
 
 def get_agent_for_user(user, agent_id: str) -> dict:
@@ -227,14 +289,17 @@ def resolve_responding_agents(user, session_id: str, content: str) -> list[dict]
     if not mentionedNames:
         return []
 
-    allAgents = get_agents_for_user(user)
+    allAgents = get_all_visible_agents(user)
     agentsByName = {a.get("name", "").lower(): a for a in allAgents}
 
     responding = []
+    seen = set()
     for name in mentionedNames:
-        agent = agentsByName.get(name.lower())
-        if agent:
+        nameLower = name.lower()
+        agent = agentsByName.get(nameLower)
+        if agent and nameLower not in seen:
             responding.append(agent)
+            seen.add(nameLower)
     return responding
 
 

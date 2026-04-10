@@ -116,11 +116,13 @@ def extract_text_from_image(imageFile) -> OcrResult:
 
 def extract_text_from_pdf(pdfFile) -> OcrResult:
     import pdfplumber
+    import io
 
     result = OcrResult()
     try:
         pdfFile.seek(0)
-        with pdfplumber.open(pdfFile) as pdf:
+        fileBytes = pdfFile.read()
+        with pdfplumber.open(io.BytesIO(fileBytes)) as pdf:
             pagesText = [page.extract_text() or "" for page in pdf.pages]
             rawText = "\n\n".join(pagesText).strip()
     except Exception as exc:
@@ -129,6 +131,17 @@ def extract_text_from_pdf(pdfFile) -> OcrResult:
         return result
 
     if not rawText:
+        try:
+            pdfFile.seek(0)
+            imageResult = _ocr_first_pdf_page(io.BytesIO(fileBytes))
+            if imageResult:
+                result.raw_text = imageResult
+                result.line_count = len(imageResult.splitlines())
+                result.word_count = len(imageResult.split())
+                result.status = "success"
+                return result
+        except Exception:
+            pass
         result.status = "failed"
         result.error = "No text could be extracted from the PDF."
         return result
@@ -138,6 +151,24 @@ def extract_text_from_pdf(pdfFile) -> OcrResult:
     result.word_count = len(rawText.split())
     result.status = "success"
     return result
+
+
+def _ocr_first_pdf_page(pdfBytes) -> str:
+    try:
+        import pdfplumber
+        with pdfplumber.open(pdfBytes) as pdf:
+            if not pdf.pages:
+                return ""
+            page = pdf.pages[0]
+            img = page.to_image(resolution=200).original
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            reader = _get_reader()
+            imageArray = np.array(img)
+            detections = reader.readtext(imageArray)
+            return "\n".join(text for _, text, _ in detections).strip()
+    except Exception:
+        return ""
 
 
 def extract_text_from_file(uploadedFile) -> OcrResult:

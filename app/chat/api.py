@@ -97,8 +97,13 @@ def api_public_daily_active_users_with_holidays(request):
 @login_required(login_url="/")
 @require_http_methods(["GET"])
 def api_agents(request):
-    from .agent_service import get_agents_for_user
-    agents = get_agents_for_user(request.user, include_inactive=True)
+    scope = request.GET.get("scope", "own")
+    if scope == "all":
+        from .agent_service import get_all_visible_agents
+        agents = get_all_visible_agents(request.user)
+    else:
+        from .agent_service import get_agents_for_user
+        agents = get_agents_for_user(request.user, include_inactive=True)
     return JsonResponse({"agents": agents, "count": len(agents)})
 
 

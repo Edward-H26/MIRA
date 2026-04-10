@@ -450,9 +450,6 @@ def agent_detail_view(request, agent_id):
 
     if request.method == "POST":
         fields = {}
-        name = (request.POST.get("name") or "").strip()
-        if name:
-            fields["name"] = name
         description = request.POST.get("description")
         if description is not None:
             fields["description"] = description.strip()
@@ -696,7 +693,16 @@ def memory_vote_view(request, bullet_id):
         existing.value = newValue
         existing.save(update_fields=["value", "updated_at"])
 
-    bullet.strength = max(0, min(100, (bullet.helpful_count - bullet.harmful_count) * 10))
+    oldStrength = bullet.strength
+    if newValue == VoteValue.LIKE:
+        bullet.strength = min(100, oldStrength + 10)
+    elif newValue == VoteValue.DISLIKE:
+        bullet.strength = max(0, oldStrength - 10)
+    elif newValue == 0:
+        if direction == "up":
+            bullet.strength = max(0, oldStrength - 10)
+        else:
+            bullet.strength = min(100, oldStrength + 10)
     bullet.save(update_fields=["helpful_count", "harmful_count", "strength"])
 
     return JsonResponse({
@@ -850,7 +856,7 @@ def document_upload_view(request):
 
             Document.objects.create(
                 user=profile,
-                filename=imageFile.name,
+                filename=uploadedFile.name,
                 raw_text=ocrResult.raw_text,
                 parsed_fields=parsedFields,
             )
@@ -964,6 +970,67 @@ def skill_install_view(request, skill_id):
 
 
 @login_required(login_url="/")
+@require_http_methods(["POST"])
+def agent_start_chat_view(request, template_id):
+    from .agent_catalog import get_template_agent_by_id as get_template_agent
+    from .models import Session, Message
+    from .models.message import Role
+
+    template = get_template_agent(template_id)
+    if not template:
+        return redirect("chat:agent_marketplace")
+
+    profile = get_or_create_profile_for_user(request.user)
+    session = Session.objects.create(
+        user=profile,
+        title=f"Chat with {template['name']}",
+    )
+
+    Message.objects.create(
+        session=session,
+        role=Role.ASSISTANT,
+        content=f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
+    )
+
+    return redirect("chat:conversation_detail", session_id=session.id)
+
+
+@login_required(login_url="/")
+def agent_marketplace_view(request):
+    from .agent_catalog import get_all_template_agents, get_template_agents_by_category, search_template_agents, AGENT_CATEGORIES
+
+    categoryFilter = (request.GET.get("category") or "").strip()
+    searchQuery = (request.GET.get("q") or "").strip()
+
+    if searchQuery:
+        agents = search_template_agents(searchQuery)
+    elif categoryFilter:
+        agents = get_template_agents_by_category(categoryFilter)
+    else:
+        agents = get_all_template_agents()
+
+    return render(request, "chat/agent_marketplace.html", {
+        "templateAgents": agents,
+        "categories": AGENT_CATEGORIES,
+        "activeCategory": categoryFilter,
+        "searchQuery": searchQuery,
+        "totalCount": len(get_all_template_agents()),
+    })
+
+
+@login_required(login_url="/")
+def agent_marketplace_detail_view(request, template_id):
+    from .agent_catalog import get_template_agent_by_id
+
+    template = get_template_agent_by_id(template_id)
+    if template is None:
+        from django.http import Http404
+        raise Http404("Agent template not found")
+
+    return render(request, "chat/agent_marketplace_detail.html", {"template": template})
+
+
+@login_required(login_url="/")
 def group_list_view(request):
     from .models import SessionMember
     profile = get_or_create_profile_for_user(request.user)
@@ -981,6 +1048,15 @@ def group_list_view(request):
             "url": s.get_absolute_url(),
         })
     return render(request, "chat/group_list.html", {"groups": groups})
+
+
+@login_required(login_url="/")
+@require_http_methods(["POST"])
+def new_chat_view(request):
+    from .models import Session
+    profile = get_or_create_profile_for_user(request.user)
+    session = Session.objects.create(user=profile, title="New Chat")
+    return redirect(session.get_absolute_url())
 
 
 @login_required(login_url="/")

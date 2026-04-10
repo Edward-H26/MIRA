@@ -29,3 +29,16 @@ def get_vote(votes_dict, bullet_id):
     if not isinstance(votes_dict, dict):
         return 0
     return votes_dict.get(bullet_id, 0)
+
+
+@register.filter(name="smart_cost")
+def smart_cost(value):
+    try:
+        val = float(value or 0)
+    except (TypeError, ValueError):
+        return "$0.00"
+    if val == 0:
+        return "$0.00"
+    if val < 0.01:
+        return f"${val:.4f}"
+    return f"${val:.2f}"

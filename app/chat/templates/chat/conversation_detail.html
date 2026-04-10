@@ -275,7 +275,9 @@
     };
 
     const scrollToBottom = () => {
-      messages.scrollTop = messages.scrollHeight;
+      requestAnimationFrame(() => {
+        messages.scrollTo({ top: messages.scrollHeight, behavior: "smooth" });
+      });
     };
 
     const removeEmptyState = () => {
@@ -451,10 +453,25 @@
       }
     };
 
+    const renderLatex = (el) => {
+      if (typeof renderMathInElement === "function") {
+        try {
+          renderMathInElement(el, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false },
+            ],
+            throwOnError: false,
+          });
+        } catch (_) {}
+      }
+    };
+
     const updateAssistantBubble = (assistantUi, content, html = "") => {
       if (html) {
         assistantUi.contentNode.innerHTML = html;
         decorateCodeBlocks(assistantUi.contentNode);
+        renderLatex(assistantUi.contentNode);
       } else {
         assistantUi.contentNode.textContent = content;
       }
@@ -533,13 +550,11 @@
       const assistantUi = appendMessage("assistant", "", { pending: true });
       input.value = "";
       setStreamingState(true);
-      showTypingIndicator("Assistant");
+      showTypingIndicator("Assistant", true);
       debugLog("request-start", { streamUrl, promptLength: content.length });
 
       const abortController = new AbortController();
       const streamTimeoutId = setTimeout(() => abortController.abort(), 90000);
-      const onBeforeUnload = () => { abortController.abort(); };
-      window.addEventListener("beforeunload", onBeforeUnload);
 
       try {
         const response = await fetch(streamUrl, {
@@ -578,6 +593,8 @@
             assistantText = payload.content || assistantText;
             assistantHtml = payload.html || assistantHtml;
             updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            hideTypingIndicator();
+            scrollToBottom();
             if (payload.message_id) {
               lastStreamedMessageId = payload.message_id;
             }
@@ -585,6 +602,16 @@
               const senderLabel = assistantUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
               if (senderLabel) senderLabel.textContent = payload.agentName;
             }
+          }
+
+          if (payload.type === "agent_turn") {
+            const turnUi = appendMessage("assistant", "", { pending: false });
+            const turnName = payload.agentName || "Agent";
+            const senderLabel = turnUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+            if (senderLabel) senderLabel.textContent = turnName;
+            updateAssistantBubble(turnUi, payload.content || "", payload.html || "");
+            if (payload.message_id) lastStreamedMessageId = payload.message_id;
+            scrollToBottom();
           }
         });
         if (!hasVisibleAssistantContent(assistantText, assistantHtml, assistantUi.contentNode)) {
@@ -604,7 +631,6 @@
       } finally {
         clearTimeout(streamTimeoutId);
         debugLog("request-end");
-        window.removeEventListener("beforeunload", onBeforeUnload);
         hideTypingIndicator();
         streamCooldown = true;
         setStreamingState(false);
@@ -798,14 +824,16 @@
     let typingTimeout = null;
     let typingDebounce = null;
 
-    const showTypingIndicator = (name) => {
+    const showTypingIndicator = (name, persistent = false) => {
       if (typingIndicator && typingText) {
         typingText.textContent = `${name || "Assistant"} is typing`;
         typingIndicator.classList.remove("hidden");
         clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-          typingIndicator.classList.add("hidden");
-        }, 3000);
+        if (!persistent) {
+          typingTimeout = setTimeout(() => {
+            typingIndicator.classList.add("hidden");
+          }, 3000);
+        }
       }
     };
 
@@ -940,7 +968,7 @@
     const fetchAgents = async () => {
       if (cachedAgents) return cachedAgents;
       try {
-        const resp = await fetch("/chat/api/agents/");
+        const resp = await fetch("/chat/api/agents/?scope=all");
         const data = await resp.json();
         cachedAgents = data.agents || [];
         return cachedAgents;
@@ -956,59 +984,115 @@
       }
     };
 
+    const buildAgentItem = (agent, idx) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mm-hover transition-colors text-left";
+      if (idx === 0) item.classList.add("bg-mm-hover");
+
+      const avatar = document.createElement("div");
+      avatar.className = "w-7 h-7 rounded-[8px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm";
+      avatar.textContent = agent.name.charAt(0).toUpperCase();
+
+      const info = document.createElement("div");
+      info.className = "flex-1 min-w-0";
+      const nameEl = document.createElement("div");
+      nameEl.className = "font-inter font-semibold text-mm-text text-[13px] truncate";
+      nameEl.textContent = agent.name;
+      const descEl = document.createElement("div");
+      descEl.className = "font-inter text-mm-light text-[11px] truncate";
+      descEl.textContent = agent.ownerName ? `by ${agent.ownerName}` : "";
+      info.appendChild(nameEl);
+      info.appendChild(descEl);
+
+      item.appendChild(avatar);
+      item.appendChild(info);
+      item.addEventListener("click", () => { insertMention(agent.name); });
+      return item;
+    };
+
     const showMentionDropdown = async (query) => {
       const agents = await fetchAgents();
       const filtered = agents.filter(a =>
-        a.name.toLowerCase().includes(query.toLowerCase())
+        a.name.toLowerCase().includes(query.toLowerCase()) ||
+        (a.ownerName || "").toLowerCase().includes(query.toLowerCase())
       );
-      if (filtered.length === 0) {
+      if (filtered.length === 0 && query) {
         closeMentionDropdown();
         return;
       }
 
       closeMentionDropdown();
       mentionDropdown = document.createElement("div");
-      mentionDropdown.className = "absolute bottom-full left-0 mb-2 w-64 bg-white border border-mm-border rounded-xl shadow-lg overflow-hidden z-50";
+      mentionDropdown.className = "absolute bottom-full left-0 mb-2 w-72 bg-white border border-mm-border rounded-xl shadow-lg overflow-hidden z-50 flex flex-col";
+      mentionDropdown.style.maxHeight = "320px";
       mentionDropdown.id = "mention-dropdown";
 
       const header = document.createElement("div");
-      header.className = "px-3 py-2 font-inter font-semibold text-mm-muted text-[11px] uppercase tracking-[0.5px] border-b border-mm-border";
+      header.className = "px-3 py-2 font-inter font-semibold text-mm-muted text-[11px] uppercase tracking-[0.5px] border-b border-mm-border flex-shrink-0";
       header.textContent = "Mention an Agent";
       mentionDropdown.appendChild(header);
 
-      filtered.forEach((agent, idx) => {
-        const item = document.createElement("button");
-        item.type = "button";
-        item.className = "w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mm-hover transition-colors text-left";
-        if (idx === 0) item.classList.add("bg-mm-hover");
+      const searchWrap = document.createElement("div");
+      searchWrap.className = "px-3 py-2 border-b border-mm-border flex-shrink-0";
+      const searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.placeholder = "Search agents...";
+      searchInput.className = "w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 font-inter text-[12px] outline-none focus:ring-1 focus:ring-mm-primary";
+      searchInput.value = query || "";
+      searchWrap.appendChild(searchInput);
+      mentionDropdown.appendChild(searchWrap);
 
-        const avatar = document.createElement("div");
-        avatar.className = "w-7 h-7 rounded-[8px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm";
-        avatar.textContent = agent.name.charAt(0).toUpperCase();
+      const listContainer = document.createElement("div");
+      listContainer.className = "overflow-y-auto flex-1";
+      listContainer.style.maxHeight = "220px";
 
-        const info = document.createElement("div");
-        info.className = "flex-1 min-w-0";
-        const nameEl = document.createElement("div");
-        nameEl.className = "font-inter font-semibold text-mm-text text-[13px] truncate";
-        nameEl.textContent = agent.name;
-        const descEl = document.createElement("div");
-        descEl.className = "font-inter text-mm-light text-[11px] truncate";
-        descEl.textContent = agent.is_active ? "Active" : "Inactive";
-        info.appendChild(nameEl);
-        info.appendChild(descEl);
+      const displayList = filtered.length > 0 ? filtered : agents;
+      const ownAgents = displayList.filter(a => a.isOwn);
+      const teamAgents = displayList.filter(a => !a.isOwn);
 
-        item.appendChild(avatar);
-        item.appendChild(info);
-
-        item.addEventListener("click", () => {
-          insertMention(agent.name);
-        });
-        mentionDropdown.appendChild(item);
+      ownAgents.forEach((agent, idx) => {
+        listContainer.appendChild(buildAgentItem(agent, idx));
       });
 
-      const inputContainer = form.closest(".max-w-\\[900px\\]") || form.parentElement;
-      inputContainer.style.position = "relative";
-      inputContainer.appendChild(mentionDropdown);
+      if (teamAgents.length > 0 && ownAgents.length > 0) {
+        const divider = document.createElement("div");
+        divider.className = "px-3 py-1.5 font-inter font-semibold text-mm-muted text-[10px] uppercase tracking-[0.5px] bg-slate-50/60";
+        divider.textContent = "Team Agents";
+        listContainer.appendChild(divider);
+      }
+
+      teamAgents.forEach((agent, idx) => {
+        listContainer.appendChild(buildAgentItem(agent, ownAgents.length + idx));
+      });
+
+      mentionDropdown.appendChild(listContainer);
+
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.toLowerCase();
+        const refiltered = agents.filter(a =>
+          a.name.toLowerCase().includes(q) ||
+          (a.ownerName || "").toLowerCase().includes(q)
+        );
+        listContainer.innerHTML = "";
+        const own = refiltered.filter(a => a.isOwn);
+        const team = refiltered.filter(a => !a.isOwn);
+        own.forEach((a, i) => listContainer.appendChild(buildAgentItem(a, i)));
+        if (team.length > 0 && own.length > 0) {
+          const d = document.createElement("div");
+          d.className = "px-3 py-1.5 font-inter font-semibold text-mm-muted text-[10px] uppercase tracking-[0.5px] bg-slate-50/60";
+          d.textContent = "Team Agents";
+          listContainer.appendChild(d);
+        }
+        team.forEach((a, i) => listContainer.appendChild(buildAgentItem(a, own.length + i)));
+      });
+
+      const formRect = form.getBoundingClientRect();
+      mentionDropdown.style.position = "fixed";
+      mentionDropdown.style.bottom = (window.innerHeight - formRect.top + 8) + "px";
+      mentionDropdown.style.left = formRect.left + "px";
+      document.body.appendChild(mentionDropdown);
+      searchInput.focus();
     };
 
     const insertMention = (agentName) => {

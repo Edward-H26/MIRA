@@ -422,13 +422,26 @@ def build_agent_reply_from_stream(content):
 def _should_use_local_model(prompt_text, classification):
     if classification != "simple":
         return False
-    if not local_llm.is_available():
+    if not local_llm.is_loaded():
+        if local_llm.is_available() and not getattr(local_llm, "_bg_loading", False):
+            local_llm._bg_loading = True
+            import threading
+            threading.Thread(target=_preload_local_model, daemon=True).start()
         return False
     token_limit = _safe_env_int("CHAT_LOCAL_MAX_TOKENS", 220)
     return len((prompt_text or "").split()) <= token_limit
 
 
-def stream_user_message_with_agent_reply(session, content):
+def _preload_local_model():
+    try:
+        local_llm.generate_response("warmup")
+    except Exception:
+        pass
+    finally:
+        local_llm._bg_loading = False
+
+
+def stream_user_message_with_agent_reply(session, content, **kwargs):
     trimmed = (content or "").strip()
     if not trimmed:
         raise ValueError("Message content is required.")
@@ -625,11 +638,29 @@ def stream_user_message_with_agent_reply(session, content):
         _stream_debug_log(
             "ace_failed_fallback "
             f"session_id={session.pk} answer_len={len(assistant_text)} "
+            f"error={exc.__class__.__name__}: {exc} "
             f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
         )
 
     if not assistant_text:
         assistant_text = FALLBACK_TEXT
+
+    sender_agent_orm = None
+    if responding_agent:
+        try:
+            from .models.agent import Agent
+            sender_agent_orm = Agent.objects.filter(name=responding_agent.get("name", "")).first()
+        except Exception:
+            pass
+
+    assistant_message = Message.objects.create(
+        session=session,
+        role=Role.ASSISTANT,
+        content=assistant_text,
+        sender_agent=sender_agent_orm,
+    )
+    session.updated_at = timezone.now()
+    session.save(update_fields=["updated_at"])
 
     chunks = []
     delta_count = 0
@@ -660,31 +691,12 @@ def stream_user_message_with_agent_reply(session, content):
             }
 
     if not chunks:
-        chunks.append(FALLBACK_TEXT)
-        assistant_text = FALLBACK_TEXT
         _stream_debug_log(f"empty_answer_fallback session_id={session.pk}")
         yield {
             "type": "delta",
-            "content": FALLBACK_TEXT,
-            "html": str(render_assistant_markdown_html(FALLBACK_TEXT)),
+            "content": assistant_text,
+            "html": str(render_assistant_markdown_html(assistant_text)),
         }
-
-    sender_agent_orm = None
-    if responding_agent:
-        try:
-            from .models.agent import Agent
-            sender_agent_orm = Agent.objects.filter(name=responding_agent.get("name", "")).first()
-        except Exception:
-            pass
-
-    assistant_message = Message.objects.create(
-        session=session,
-        role=Role.ASSISTANT,
-        content=assistant_text,
-        sender_agent=sender_agent_orm,
-    )
-    session.updated_at = timezone.now()
-    session.save(update_fields=["updated_at"])
 
     donePayload = {
         "type": "done",
@@ -723,6 +735,69 @@ def stream_user_message_with_agent_reply(session, content):
         f"delta_count={delta_count or 1} answer_len={len(assistant_text)} "
         f"elapsed_ms={int((time.monotonic() - started_at) * 1000)}"
     )
+
+    agentTurnDepth = kwargs.get("_agent_turn_depth", 0)
+    maxAgentTurns = 4
+    if agentTurnDepth < maxAgentTurns and responding_agent:
+        from .agent_service import parse_agent_mentions, resolve_responding_agents
+        nextMentions = parse_agent_mentions(trimmed)
+        allMentioned = resolve_responding_agents(session.user.user, str(session.pk), trimmed)
+        nextAgents = [a for a in allMentioned if a.get("name") != responding_agent.get("name")]
+        if nextAgents:
+            nextAgent = nextAgents[0]
+            agentReply = (
+                f"@{nextAgent['name']} {responding_agent.get('name', 'Assistant')} said:\n"
+                f"{assistant_text[:300]}\n\nPlease respond."
+            )
+            for payload in _agent_to_agent_turn(session, agentReply, nextAgent, agentTurnDepth + 1):
+                yield payload
+
+
+def _agent_to_agent_turn(session, prompt, agent, depth):
+    from app.services.gemini import generate_reply_stream
+
+    systemPrompt = agent.get("systemPrompt", "")
+    agentName = agent.get("name", "Agent")
+    contextParts = []
+    if systemPrompt:
+        contextParts.append(f"[System Instructions]\n{systemPrompt}")
+    contextParts.append(f"[Message]\n{prompt}")
+    fullPrompt = "\n\n".join(contextParts)
+
+    chunks_buf = []
+    try:
+        for chunk in generate_reply_stream(fullPrompt):
+            if isinstance(chunk, str) and chunk:
+                chunks_buf.append(chunk)
+    except Exception:
+        pass
+    replyText = "".join(chunks_buf).strip() or FALLBACK_TEXT
+
+    sender_agent_orm = None
+    try:
+        from .models.agent import Agent as AgentModel
+        sender_agent_orm = AgentModel.objects.filter(pk=int(agent.get("id", 0))).first()
+    except Exception:
+        pass
+
+    from .models.message import Role
+    assistantMsg = Message.objects.create(
+        session=session,
+        role=Role.ASSISTANT,
+        content=replyText,
+        sender_agent=sender_agent_orm,
+    )
+    session.updated_at = timezone.now()
+    session.save(update_fields=["updated_at"])
+
+    yield {
+        "type": "agent_turn",
+        "agentName": agentName,
+        "agentId": agent.get("id", ""),
+        "message_id": assistantMsg.id,
+        "content": replyText,
+        "html": str(render_assistant_markdown_html(replyText)),
+    }
 
     try:
         ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)

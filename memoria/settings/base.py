@@ -58,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "app.users.allauth_adapter.OAuthLocalhostMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "app.memoria.middleware.PageVisitEventMiddleware",
