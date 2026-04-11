@@ -890,8 +890,11 @@ def pusher_auth_view(request):
 @require_http_methods(["POST"])
 def typing_view(request, session_id):
     from app.services import pusher_service
+    from .agent_service import get_or_create_user_agent
     profile = get_or_create_profile_for_user(request.user)
-    pusher_service.send_typing(session_id, profile.pk, request.user.username)
+    agent = get_or_create_user_agent(request.user)
+    displayName = agent.name if agent else request.user.username
+    pusher_service.send_typing(session_id, profile.pk, displayName)
     return JsonResponse({"ok": True})
 
 

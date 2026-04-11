@@ -447,6 +447,28 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         agents = resolve_responding_agents(session.user.user, str(session.pk), trimmed)
         if agents:
             responding_agent = agents[0]
+            try:
+                from .notification_service import create_notification
+                from .models.notification import NotificationType
+                from .models.agent import Agent as AgentModel
+                for mentionedAgent in agents:
+                    agentId = mentionedAgent.get("id", "")
+                    if agentId and not str(agentId).startswith("template-"):
+                        try:
+                            agentOrm = AgentModel.objects.get(pk=int(agentId))
+                            if agentOrm.user and agentOrm.user != session.user:
+                                senderName = session.user.display_name or session.user.user.username
+                                create_notification(
+                                    agentOrm.user.user,
+                                    title=f"{senderName} mentioned your agent",
+                                    message=f"Your agent was @mentioned in a conversation",
+                                    notification_type=NotificationType.AGENT_RESPONSE,
+                                    related_url=f"/chat/c/{session.pk}/",
+                                )
+                        except (ValueError, AgentModel.DoesNotExist):
+                            pass
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -584,18 +606,6 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         except Exception:
             pass
 
-        if not use_local and assistant_text and assistant_text != FALLBACK_TEXT:
-            try:
-                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
-                log_event(
-                    "chat_post_response_memory",
-                    session_id=session.pk,
-                    ace_delta=ace_result.get("ace_delta"),
-                    quality_gate=ace_result.get("quality_gate", {}).get("should_apply_update"),
-                )
-            except Exception:
-                pass
-
         log_event(
             "chat_stream_ace_ok",
             session_id=session.pk,
@@ -682,11 +692,14 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                     f"session_id={session.pk} index={delta_count} chunk_len={len(chunk)} "
                     f"total_len={len(''.join(chunks))}"
                 )
-            yield {
+            deltaPayload = {
                 "type": "delta",
                 "content": chunk,
                 "html": str(render_assistant_markdown_html("".join(chunks))),
             }
+            if delta_count == 1 and responding_agent:
+                deltaPayload["agentName"] = responding_agent.get("name", "")
+            yield deltaPayload
 
     if not chunks:
         _stream_debug_log(f"empty_answer_fallback session_id={session.pk}")
@@ -774,6 +787,23 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             assistant_text = payload.get("content", "") if isinstance(payload, dict) else ""
             _collect_new_mentions(assistant_text)
             depth += 1
+
+    if not use_local and assistant_text and assistant_text != FALLBACK_TEXT:
+        import threading
+
+        def _run_post_response_learning():
+            try:
+                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
+                log_event(
+                    "chat_post_response_memory",
+                    session_id=session.pk,
+                    ace_delta=ace_result.get("ace_delta"),
+                    quality_gate=ace_result.get("quality_gate", {}).get("should_apply_update"),
+                )
+            except Exception:
+                pass
+
+        threading.Thread(target=_run_post_response_learning, daemon=True).start()
 
 
 def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=8, visitedAgents=None):

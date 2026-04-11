@@ -563,11 +563,22 @@
       let assistantHtml = "";
 
       appendMessage("user", content);
-      const assistantUi = appendMessage("assistant", "", { pending: true });
+
+      let initialAgentName = "Assistant";
+      const mentionMatch = content.match(/@([\w']+)/);
+      if (mentionMatch && cachedAgents) {
+        const partial = mentionMatch[1].toLowerCase().replace(/'/g, "");
+        const matched = cachedAgents.find(a =>
+          a.name.toLowerCase().replace(/['\s]/g, "").startsWith(partial)
+        );
+        if (matched) initialAgentName = matched.name;
+      } else if (mentionMatch) {
+        initialAgentName = mentionMatch[1];
+      }
+
+      const assistantUi = appendMessage("assistant", "", { pending: true, senderName: initialAgentName });
       input.value = "";
       setStreamingState(true);
-      const mentionMatch = content.match(/@([\w']+)/);
-      const initialAgentName = mentionMatch ? mentionMatch[1] : "Assistant";
       showTypingIndicator(initialAgentName, true);
       debugLog("request-start", { streamUrl, promptLength: content.length });
 
@@ -606,6 +617,12 @@
             }
           }
           if (payload.type === "delta") {
+            if (payload.agentName) {
+              initialAgentName = payload.agentName;
+              const senderLabel = assistantUi.bubble.closest(".flex.gap-3")?.querySelector("[data-sender-label]");
+              if (senderLabel) senderLabel.textContent = payload.agentName;
+              showTypingIndicator(payload.agentName, true);
+            }
             assistantText += payload.content || "";
             assistantHtml = payload.html || assistantHtml;
             updateAssistantBubble(assistantUi, assistantText, assistantHtml);
