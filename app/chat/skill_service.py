@@ -1,9 +1,12 @@
 import json
 import re
 
+from django.utils.text import slugify
+
 from app.services.gemini import generate_structured_text
-from app.chat.models.skill import Skill, SkillSource
-from app.chat.models.memory_bullet import MemoryBullet
+from app.services import neo4j_memory as neo4j
+
+MEMORY_TYPE_LABELS = {1: "Semantic", 2: "Episodic", 3: "Procedural"}
 
 SKILL_GENERATION_SYSTEM_PROMPT = (
     "You are a skill architect for an AI assistant. Your job is to analyze a cluster of "
@@ -35,7 +38,7 @@ def _get_profile(user):
 def _cluster_bullets_by_topic(bullets):
     clusters = {}
     for bullet in bullets:
-        topic = (bullet.topic or "general").strip().lower()
+        topic = (bullet.get("topic") or "general").strip().lower()
         if topic not in clusters:
             clusters[topic] = []
         clusters[topic].append(bullet)
@@ -45,8 +48,9 @@ def _cluster_bullets_by_topic(bullets):
 def _format_bullets_for_prompt(bullets):
     lines = []
     for bullet in bullets:
-        score = bullet.helpful_count - bullet.harmful_count
-        lines.append(f"- [{bullet.get_memory_type_display()}] (score: {score}) {bullet.content}")
+        score = bullet.get("helpfulCount", 0) - bullet.get("harmfulCount", 0)
+        memoryType = MEMORY_TYPE_LABELS.get(bullet.get("memoryType", 1), "Semantic")
+        lines.append(f"- [{memoryType}] (score: {score}) {bullet.get('content', '')}")
     return "\n".join(lines)
 
 
@@ -84,44 +88,48 @@ def generate_skill_from_bullets(user, bullets, topic="general"):
     if not name:
         return None
 
-    bulletIds = [b.pk for b in bullets]
+    bulletIds = [b.get("id", "") for b in bullets]
+    slugifiedName = slugify(name)[:120] or "skill"
 
-    skill = Skill(
-        user=profile,
+    skill = neo4j.create_skill(
+        user_id=str(profile.pk),
         name=name,
+        slug=slugifiedName,
         description=data.get("description", ""),
         content=data.get("content", ""),
         category=data.get("category", "general"),
-        source=SkillSource.GENERATED,
+        source="generated",
         source_bullet_ids=bulletIds,
     )
-    skill.save()
     return skill
 
 
 def auto_generate_skills_for_user(user):
     profile = _get_profile(user)
 
-    highScoreBullets = MemoryBullet.objects.filter(
-        memory__user=profile,
-    ).exclude(
-        topic="meta_strategy",
-    ).order_by("-helpful_count", "-strength")
+    memory = neo4j.get_or_create_memory(str(profile.pk))
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+
+    filtered = [
+        b for b in allBullets
+        if (b.get("topic") or "").strip().lower() != "meta_strategy"
+    ]
+    filtered.sort(key=lambda b: (-b.get("helpfulCount", 0), -b.get("strength", 0)))
 
     qualifiedBullets = [
-        b for b in highScoreBullets
-        if (b.helpful_count - b.harmful_count) >= MIN_BULLET_SCORE
+        b for b in filtered
+        if (b.get("helpfulCount", 0) - b.get("harmfulCount", 0)) >= MIN_BULLET_SCORE
     ]
 
     if not qualifiedBullets:
         return []
 
     clusters = _cluster_bullets_by_topic(qualifiedBullets)
-    existingSlugs = set(Skill.objects.filter(user=profile).values_list("slug", flat=True))
+    existingSkills = neo4j.get_skills_for_user(str(profile.pk))
+    existingSlugs = set(s.get("slug", "") for s in existingSkills)
     generatedSkills = []
 
     for topic, bullets in list(clusters.items())[:MAX_SKILLS_PER_GENERATION]:
-        from django.utils.text import slugify
         candidateSlug = slugify(topic)[:120] or "skill"
         if candidateSlug in existingSlugs:
             continue
@@ -129,7 +137,7 @@ def auto_generate_skills_for_user(user):
         skill = generate_skill_from_bullets(user, bullets[:8], topic=topic)
         if skill:
             generatedSkills.append(skill)
-            existingSlugs.add(skill.slug)
+            existingSlugs.add(skill.get("slug", ""))
 
     return generatedSkills
 
@@ -137,21 +145,21 @@ def auto_generate_skills_for_user(user):
 def install_template_skill(user, templateData):
     profile = _get_profile(user)
 
-    skill = Skill(
-        user=profile,
+    skill = neo4j.create_skill(
+        user_id=str(profile.pk),
         name=templateData["name"],
+        slug=slugify(templateData["name"])[:120] or "skill",
         description=templateData["description"],
         content=templateData["content"],
         category=templateData.get("category", "general"),
-        source=SkillSource.TEMPLATE,
+        source="template",
     )
-    skill.save()
     return skill
 
 
 def get_enabled_skills_for_user(user):
     profile = _get_profile(user)
-    return list(Skill.objects.filter(user=profile, is_enabled=True))
+    return neo4j.get_skills_for_user(str(profile.pk), enabled_only=True)
 
 
 def format_skills_for_prompt(skills):
@@ -160,9 +168,10 @@ def format_skills_for_prompt(skills):
 
     parts = ["=== Active Skills ==="]
     for skill in skills:
-        parts.append(f"\n## Skill: {skill.name}")
-        if skill.description:
-            parts.append(f"When to use: {skill.description}")
-        parts.append(f"\n{skill.content}")
+        parts.append(f"\n## Skill: {skill.get('name', '')}")
+        description = skill.get("description", "")
+        if description:
+            parts.append(f"When to use: {description}")
+        parts.append(f"\n{skill.get('content', '')}")
     parts.append("\n===")
     return "\n".join(parts)

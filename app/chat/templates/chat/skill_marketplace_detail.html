@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
+<div class="page-container">
     <a href="{% url 'chat:skill_marketplace' %}" class="inline-flex items-center gap-1.5 text-mm-primary hover:text-mm-primary-hover font-semibold text-[14px] mb-6">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Marketplace
@@ -27,10 +27,10 @@
         <form method="post" action="{% url 'chat:skill_install' skill_id=skill.id %}" class="flex gap-3 items-center flex-wrap" id="install-form">
             {% csrf_token %}
             {% if agents %}
-            <input type="hidden" name="agent_id" value="{{ agents.0.pk }}">
+            <input type="hidden" name="agent_id" value="{{ agents.0.id }}">
             <div class="flex items-center gap-3 flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl bg-slate-50/50">
-                <div class="w-7 h-7 rounded-[8px] bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm">
-                    {{ agents.0.name|truncatechars:1 }}
+                <div class="w-7 h-7 rounded-[8px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm">
+                    {{ agents.0.name|slice:":1"|upper }}
                 </div>
                 <span class="font-inter font-medium text-[14px] text-mm-text">{{ agents.0.name }}</span>
             </div>

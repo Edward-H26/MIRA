@@ -10,11 +10,13 @@ from .holiday_service import (
     get_daily_activity_with_holidays_payload,
 )
 from .service import (
-    get_api_analytics_summary_payload,
-    get_api_daily_active_users_payload,
     get_api_memory_bullets_payload,
     get_api_messages_payload,
     get_api_sessions_payload,
+)
+from .analytics_service import (
+    get_api_analytics_summary_payload,
+    get_api_daily_active_users_payload,
 )
 
 

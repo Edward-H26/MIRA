@@ -25,22 +25,24 @@ def home(request):
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({"error": "Unable to create session"}, status=400)
             return redirect("memoria:home")
+        sessionId = session.get("id", "") if isinstance(session, dict) else str(session.pk)
+        sessionUrl = f"/chat/c/{sessionId}/"
         pending_prompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
-        pending_prompts[str(session.pk)] = content
+        pending_prompts[sessionId] = content
         request.session[PENDING_PROMPT_SESSION_KEY] = pending_prompts
         request.session.modified = True
         log_event(
             "chat_session_created",
             request=request,
-            session_id=session.pk,
+            session_id=sessionId,
             from_page="home",
         )
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({
-                "session_id": session.pk,
-                "redirect_url": session.get_absolute_url(),
+                "session_id": sessionId,
+                "redirect_url": sessionUrl,
             })
-        return redirect(session.get_absolute_url())
+        return redirect(sessionUrl)
 
     context = get_home_context_for_user(request.user)
     return HttpResponse(template.render(context, request))

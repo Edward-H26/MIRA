@@ -42,7 +42,7 @@
 .agent-detail-form textarea:focus,
 .agent-detail-form select:focus {
     border-color: var(--primary-blue);
-    box-shadow: 0 0 0 2px rgba(91, 95, 239, 0.15);
+    box-shadow: 0 0 0 2px rgba(108, 134, 192, 0.15);
 }
 
 .agent-detail-form textarea {

@@ -4,34 +4,14 @@
     background-position: right 12px center;
 }
 
-.activity-badge-chat {
-    background: rgba(59, 130, 246, 0.1);
-    color: #2563eb;
-}
-
-.activity-badge-memory {
-    background: rgba(139, 92, 246, 0.1);
-    color: #7c3aed;
-}
-
-.activity-badge-agent {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-}
-
-.activity-badge-upload {
-    background: rgba(245, 158, 11, 0.1);
-    color: #d97706;
-}
-
-.activity-badge-login {
-    background: rgba(148, 163, 184, 0.1);
-    color: #64748b;
-}
-
+.activity-badge-chat,
+.activity-badge-memory,
+.activity-badge-agent,
+.activity-badge-upload,
+.activity-badge-login,
 .activity-badge-error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    background: rgba(108, 134, 192, 0.12);
+    color: #6C86C0;
 }
 
 @media (max-width: 768px) {

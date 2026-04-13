@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+<div class="page-container">
 
     <!-- Header -->
     <div class="flex items-center justify-between mb-2">
@@ -25,7 +25,7 @@
     <p class="font-inter text-mm-muted text-[15px] mb-6">Configure your AI agent's behavior, skills, and collaboration settings</p>
 
     <!-- Tabs -->
-    <div class="flex items-center gap-1 border-b border-mm-border mb-8">
+    <div class="h-scroll-tabs agent-tabs border-b border-mm-border mb-6 sm:mb-8">
         <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-muted hover:text-mm-primary transition-colors border-b-2 border-transparent hover:border-mm-primary/30">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
@@ -64,7 +64,7 @@
         </div>
         <div class="border border-white/30 rounded-[12px] p-5 bg-white/60 backdrop-blur-md">
             <div class="font-inter text-mm-muted text-[12px] uppercase font-semibold tracking-[0.5px] mb-1">Enabled</div>
-            <div class="font-inter font-bold text-[#065f46] text-[24px]">{{ enabled_count|default:"0" }}</div>
+            <div class="font-inter font-bold text-mm-primary text-[24px]">{{ enabled_count|default:"0" }}</div>
         </div>
         <div class="border border-white/30 rounded-[12px] p-5 bg-white/60 backdrop-blur-md">
             <div class="font-inter text-mm-muted text-[12px] uppercase font-semibold tracking-[0.5px] mb-1">Disabled</div>
@@ -111,12 +111,12 @@
             <div class="flex items-center gap-5 p-6 cursor-pointer" onclick="toggleSkillExpand(this)">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2 flex-wrap">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[#dbeafe] text-[#1e40af]">{{ skill.memoryType }}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[rgba(108,134,192,0.12)] text-mm-primary">{{ skill.memoryType }}</span>
                         {% if skill.skillGroup %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[#fef3c7] text-[#92400e]">{{ skill.skillGroup }}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[rgba(108,134,192,0.12)] text-mm-primary">{{ skill.skillGroup }}</span>
                         {% endif %}
                         {% if skill.skillEnabled %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[#d1fae5] text-[#065f46]">Active</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[rgba(108,134,192,0.12)] text-mm-primary">Active</span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[#fee2e2] text-[#991b1b]">Disabled</span>
                         {% endif %}
@@ -139,7 +139,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase mb-2">Memory Type</div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#dbeafe] text-[#1e40af]">{{ skill.memoryType }}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[rgba(108,134,192,0.12)] text-mm-primary">{{ skill.memoryType }}</span>
                     </div>
                     <div>
                         <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase mb-2">Strength</div>
@@ -181,7 +181,7 @@
         <div id="create-skill-card" class="border-2 border-dashed border-white/30 rounded-[12px] bg-white/40 backdrop-blur-md hover:border-mm-primary/40 hover:shadow-md transition-all cursor-pointer" onclick="toggleCreateSkill()">
             <div class="flex flex-col items-center justify-center py-10 px-6">
                 <div class="w-12 h-12 rounded-full bg-mm-primary/10 flex items-center justify-center mb-3">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>

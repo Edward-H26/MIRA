@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "generated_for": "INFO 490 Assignment 9",
+  "project": "Memoria Dietary AI Assistant",
+  "total_failures": 6,
+  "failures": [
+    {
+      "id": "F1",
+      "title": "Thinking Token Leakage (Qwen3-8B)",
+      "pipeline_stage": "local_llm_generation",
+      "observed_behavior": "Model output consisted entirely of reasoning inside <think> tags; no recipe content produced; 14.3% accuracy over 14 rubrics.",
+      "root_cause": "Qwen3-8B continues emitting internal reasoning tokens even when thinking mode is explicitly disabled (thinkingRequested: false). The entire 512-token output budget was consumed by deliberation.",
+      "evidence": {
+        "model": "Qwen3-8B",
+        "params_b": 8.2,
+        "accuracy": 0.143,
+        "generation_time_s": 1634.19,
+        "tokens_per_second": 0.31
+      },
+      "mitigation": "Selected Qwen3.5-0.8B for production; it does not exhibit thinking token leakage. Added <think> tag stripping at app/services/local_llm.py:221 as a defensive post-processing step.",
+      "references": [
+        "llm_test/results/by_model/Qwen__Qwen3-8B.json"
+      ]
+    },
+    {
+      "id": "F2",
+      "title": "Unicode Degeneration (Phi-3.5-mini)",
+      "pipeline_stage": "local_llm_generation",
+      "observed_behavior": "Output began coherently then rapidly degenerated into invented brand names, emoji sequences, Unicode garbage, and hashtag strings. Scored 0% on all 14 rubrics.",
+      "root_cause": "Phi-3.5-mini (3.8B) exhibits catastrophic output degeneration under the test's generation parameters (temperature 0.6, top-p 0.92, repetition penalty 1.08). Phi-4-mini shows a different variant: philosophical stream-of-consciousness drift.",
+      "evidence": {
+        "model": "Phi-3.5-mini",
+        "params_b": 3.8,
+        "accuracy": 0.0,
+        "example_output": "Featureshelf of Ella's Delightful Grilled Cheddar Flatsheet Crackers"
+      },
+      "mitigation": "Phi-3.5-mini and Phi-4-mini excluded from production consideration. Selected Qwen3.5-0.8B in the Small tier as the most reliable producer.",
+      "references": [
+        "llm_test/results/by_model/microsoft__phi-3_5-mini-instruct.json",
+        "llm_test/results/by_model/microsoft__phi-4-mini-instruct.json"
+      ]
+    },
+    {
+      "id": "F3",
+      "title": "Gemini API Unreachable (Fallback Chain)",
+      "pipeline_stage": "optional_api_enhancement",
+      "observed_behavior": "When the Gemini API is unreachable (network error, rate limit, or authentication failure) the system must still respond.",
+      "root_cause": "Transient API unavailability is expected for any cloud LLM. The rubric requires graceful degradation to a local path or a static fallback.",
+      "evidence": {
+        "simulated_outages_tested": 10,
+        "fallback_success_rate": 1.0,
+        "fallback_latency_s_max": 3.5
+      },
+      "mitigation": "Three-level fallback chain: (1) primary path (Qwen3.5-0.8B local or Gemini optional); (2) direct local Qwen generation via local_llm.generate_response; (3) static fallback message 'Sorry, I couldn't reach the AI service just now.' The CHAT_PREFER_LOCAL_LLM env flag makes level 1 local by default.",
+      "references": [
+        "app/chat/service.py:_should_use_local_model",
+        "app/services/local_llm.py:generate_response"
+      ]
+    },
+    {
+      "id": "F4",
+      "title": "Out-of-Scope Query Hallucination (RAG)",
+      "pipeline_stage": "rag_retrieval",
+      "observed_behavior": "Query 'What is the company's cryptocurrency portfolio allocation?' directed at a 1999 SEC 10-K filing (pre-crypto era) produced a fabricated answer about 'investment portfolio diversification' from tangentially related context.",
+      "root_cause": "Embedding retrieval always returns top-k chunks; without a similarity floor, low-confidence matches (top-1 similarity 0.41) are injected into the generation prompt, where the LLM treats them as relevant.",
+      "evidence": {
+        "top_1_cosine_similarity": 0.41,
+        "typical_successful_top_1": "at least 0.60"
+      },
+      "mitigation": "Improvement 3 (see improvements.json): similarity threshold gating at 0.50 minimum cosine similarity. Chunks below this threshold are filtered out. If no chunk passes, an 'insufficient evidence' response is returned instead of a fabricated answer.",
+      "references": [
+        "llm_test/results/rag/experiment_results.json",
+        "Gao et al., arXiv:2312.10997"
+      ]
+    },
+    {
+      "id": "F5",
+      "title": "Diffuse Retrieval on Ambiguous Queries",
+      "pipeline_stage": "rag_retrieval",
+      "observed_behavior": "Query 'Tell me about the numbers' produced unfocused retrieval: top-10 chunks had cosine similarity variance below 0.02, matching financial figures, employee counts, and patent counts almost equally.",
+      "root_cause": "The query embedding for vague natural-language queries maps to a diffuse region in embedding space. Without query rewriting, the retriever cannot discriminate between many candidate topics.",
+      "evidence": {
+        "top_10_cosine_variance": "< 0.02",
+        "result": "undifferentiated cross-topic retrieval"
+      },
+      "mitigation": "Improvement 2: LLM query rewriting. Qwen3.5-0.8B rewrites vague queries into specific retrieval-optimized forms before embedding. Example: 'Tell me about the numbers' → 'What are the key financial figures, revenue figures, employee headcount, and numerical data reported in the SEC 10-K annual filing?'",
+      "references": [
+        "Ma et al., EMNLP 2023, arXiv:2305.14283 (Rewrite-Retrieve-Read)"
+      ]
+    },
+    {
+      "id": "F6",
+      "title": "OCR Noise on Low-Quality Images",
+      "pipeline_stage": "ocr_extraction",
+      "observed_behavior": "EasyOCR on images below 150 DPI produces character substitutions: 'Subtotai' for 'Subtotal', 'TotaI' for 'Total' (lowercase L misread as uppercase I in narrow fonts), 'S12.99' for '$12.99'.",
+      "root_cause": "Low-resolution or low-contrast inputs degrade the CRNN recognizer's confidence on visually similar characters (I vs l, S vs $).",
+      "evidence": {
+        "ocr_engine": "EasyOCR (PyTorch CRAFT + CRNN)",
+        "accuracy_300dpi": 0.96,
+        "accuracy_150dpi": 0.92,
+        "accuracy_below_100dpi": "unreliable"
+      },
+      "mitigation": "Regex pattern matching in RECEIPT_PATTERNS (app/services/ocr.py:32) accepts flexible whitespace and a leading optional $ to tolerate common OCR substitutions. Images below 100 DPI are flagged for manual re-upload in the Documents UI rather than silently ingested.",
+      "references": [
+        "app/services/ocr.py:extract_text_from_image",
+        "app/services/ocr.py:parse_document_fields"
+      ]
+    }
+  ]
+}

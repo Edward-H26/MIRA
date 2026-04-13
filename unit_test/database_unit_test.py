@@ -4,7 +4,7 @@ import sys
 import django
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.dev")
 django.setup()
 
 from django.contrib.auth.models import User as AuthUser

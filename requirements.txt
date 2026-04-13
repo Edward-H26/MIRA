@@ -75,3 +75,5 @@ scikit-learn>=1.5.0
 easyocr>=1.7.0
 pdfplumber>=0.11.0
 pusher>=3.3.4
+dj-database-url>=2.1.0
+psycopg2-binary>=2.9.9

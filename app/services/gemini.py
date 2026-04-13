@@ -2,7 +2,14 @@ from google import genai
 from google.genai import types
 from django.conf import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+GEMINI_REQUEST_TIMEOUT_MS = 30_000
+GEMINI_CLASSIFIER_TIMEOUT_MS = 8_000
+DEFAULT_STREAM_MAX_OUTPUT_TOKENS = 2048
+
+client = genai.Client(
+    api_key=settings.GEMINI_API_KEY,
+    http_options=types.HttpOptions(timeout=GEMINI_REQUEST_TIMEOUT_MS),
+)
 MODEL_ID = "gemini-3-flash-preview"
 CLASSIFIER_MODEL_ID = "gemini-3.1-flash-lite-preview"
 
@@ -50,11 +57,11 @@ def _extract_response_text(response) -> str:
     return "".join(chunks).strip()
 
 
-def generate_reply_stream(user_text: str):
+def generate_reply_stream(user_text: str, *, max_output_tokens: int = DEFAULT_STREAM_MAX_OUTPUT_TOKENS):
     response = client.models.generate_content_stream(
         model=MODEL_ID,
         contents=user_text,
-        config=_build_generation_config(),
+        config=_build_generation_config(max_output_tokens=max_output_tokens),
     )
     usage = None
     for chunk in response:
@@ -105,22 +112,46 @@ def generate_structured_text(
     return _extract_response_text(response)
 
 
+MULTIMODAL_OCR_INSTRUCTION = (
+    "You are an OCR engine. Extract ALL text visible in the image exactly as it appears, "
+    "preserving line breaks, numbers, dates, and punctuation. Do not summarize, add "
+    "commentary, or translate. If the content looks like a receipt, invoice, form, or "
+    "contract, keep the structure intact. If no text is visible, return an empty string."
+)
+
+
+def extract_text_multimodal(image_bytes: bytes, mime_type: str = "image/png") -> str:
+    if not image_bytes:
+        return ""
+    config = types.GenerateContentConfig(
+        max_output_tokens=4096,
+        system_instruction=MULTIMODAL_OCR_INSTRUCTION,
+        thinking_config=types.ThinkingConfig(thinking_level="low"),
+    )
+    response = client.models.generate_content(
+        model=MODEL_ID,
+        contents=[
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+            "Extract all text from this image.",
+        ],
+        config=config,
+    )
+    return _extract_response_text(response)
+
+
 def classify_prompt(user_text: str) -> str:
     trimmed = (user_text or "").strip()
     if not trimmed:
         return "simple"
 
     try:
-        config_kwargs = {
-            "max_output_tokens": 8,
-        }
-        if CLASSIFIER_SYSTEM_INSTRUCTION:
-            config_kwargs["system_instruction"] = CLASSIFIER_SYSTEM_INSTRUCTION
-        config = types.GenerateContentConfig(**config_kwargs)
-
+        config = types.GenerateContentConfig(
+            max_output_tokens=8,
+            system_instruction=CLASSIFIER_SYSTEM_INSTRUCTION,
+        )
         response = client.models.generate_content(
             model=CLASSIFIER_MODEL_ID,
-            contents=f"Classify this user query as SIMPLE or COMPLEX. Reply with one word only.\n\nQuery: {trimmed}",
+            contents=trimmed,
             config=config,
         )
         result = _extract_response_text(response).upper().strip()

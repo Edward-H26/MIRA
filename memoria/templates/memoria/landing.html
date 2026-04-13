@@ -7,10 +7,13 @@
     <title>Memoria | Landing</title>
     <link rel="stylesheet" href="{% static 'memoria/landing.css' %}">
     <link rel="stylesheet" href="{% static 'memoria/landing-overrides.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'memoria/landing-scroll.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}?v={% now 'U' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
     <style>
       :root {
-        --primary-blue: #5B5FEF;
+        --primary-blue: #6C86C0;
         --primary-hover: #4D4FD9;
       }
     </style>
@@ -23,6 +26,7 @@
           alt="Memoria background"
           class="w-full h-full object-cover"
         >
+        <div class="beam-layer" aria-hidden="true"></div>
       </div>
 
       <div class="relative z-10">
@@ -46,9 +50,9 @@
           {% endif %}
         </nav>
 
-        <section class="px-5 py-12 md:py-20 lg:py-24 text-center max-w-4xl mx-auto">
-          <div class="space-y-6 md:space-y-8">
-            <h1 class="font-semibold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#1b1b1b] tracking-tight">
+        <section id="hero" data-scroll="hero" class="px-5 py-12 md:py-20 lg:py-24 text-center max-w-4xl mx-auto">
+          <div class="hero-inner space-y-6 md:space-y-8">
+            <h1 id="hero-heading" class="reveal-split font-semibold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#1b1b1b] tracking-tight">
               A self-evolving agentic assistant that adapts as you work.
             </h1>
             <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
@@ -69,14 +73,115 @@
           </div>
         </section>
 
-        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
+        <section id="pitch-intro" class="px-5 py-12 md:py-20 max-w-5xl mx-auto text-center">
+          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+            Your team's AI agents, working together even when you're not.
+          </h2>
+          <span class="underline-sweep mx-auto mt-5"></span>
+          <p class="text-[#727272] text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
+            Memoria gives every employee a personal AI agent that learns how they work and coordinates across departments, so your team keeps moving forward even when someone is out sick, in a meeting, or on vacation.
+          </p>
+        </section>
+
+        <section id="hook" class="px-5 py-12 md:py-20 max-w-6xl mx-auto text-center">
+          <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight max-w-4xl mx-auto leading-tight">
+            Ever had a hard deadline, but the one person you need is just not available?
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mt-12 md:mt-16">
+            <article class="problem-card" data-accent="blue">
+              <div class="problem-card__halo"></div>
+              <div class="problem-icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 10V3.5a1.5 1.5 0 00-3 0V10a4 4 0 103 0z"/>
+                  <circle cx="12" cy="15" r="2"/>
+                </svg>
+              </div>
+              <h3>Out Sick</h3>
+              <p>The team is stuck waiting on answers only one person can give.</p>
+              <div class="problem-card__tag">Hard to replace knowledge</div>
+            </article>
+            <article class="problem-card" data-accent="blue">
+              <div class="problem-card__halo"></div>
+              <div class="problem-icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="5" width="18" height="16" rx="2"/>
+                  <path d="M3 11h18M8 3v4M16 3v4"/>
+                  <circle cx="9" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+                  <circle cx="15" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+                </svg>
+              </div>
+              <h3>In a Meeting</h3>
+              <p>Todo lists pile up while the right person is booked back-to-back.</p>
+              <div class="problem-card__tag">Booked all day</div>
+            </article>
+            <article class="problem-card" data-accent="blue">
+              <div class="problem-card__halo"></div>
+              <div class="problem-icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="7" width="18" height="14" rx="2"/>
+                  <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  <path d="M3 13h18"/>
+                </svg>
+              </div>
+              <h3>On Vacation</h3>
+              <p>Months of context walk out the door the moment they log off.</p>
+              <div class="problem-card__tag">Context gone for weeks</div>
+            </article>
+          </div>
+        </section>
+
+        <section id="problem-stats" class="px-5 py-12 md:py-20 max-w-6xl mx-auto text-center">
+          <div class="mb-10 md:mb-14">
+            <h2 class="reveal-split text-3xl md:text-4xl font-semibold text-[#1b1b1b] tracking-tight">
+              The hidden cost of lost context.
+            </h2>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
+              When context leaves with a person, your team absorbs the cost in time, rework, and missed deadlines.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mt-10 md:mt-14">
+            <div class="stat-row">
+              <div class="stat-number" data-value="95" data-suffix="%">0%</div>
+              <p class="stat-row__copy">
+                Most enterprise AI deployments fail because the tools do not remember how your team actually works.
+              </p>
+              <p class="stat-row__source">MIT, State of AI in Business, 2025</p>
+            </div>
+            <div class="stat-row">
+              <div class="stat-number" data-value="9" data-suffix="%">0%</div>
+              <p class="stat-row__copy">
+                Of every workday employees lose just reorienting themselves whenever context switches hands.
+              </p>
+              <p class="stat-row__source">Harvard Business Review, 2022</p>
+            </div>
+            <div class="stat-row">
+              <div class="stat-number" data-value="20" data-suffix="%">0%</div>
+              <p class="stat-row__copy">
+                Of a typical employee's time is spent hunting for information that already lives somewhere in the company.
+              </p>
+              <p class="stat-row__source">McKinsey Global Institute, 2012</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="solution" class="px-5 py-16 md:py-24 max-w-5xl mx-auto text-center">
+          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+            Stop setting up AI. Just work.
+          </h2>
+          <span class="underline-sweep mx-auto mt-5"></span>
+          <p class="text-[#727272] text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
+            Your personal AI agents learn from your conversations and collaborate across teams to keep work moving automatically.
+          </p>
+        </section>
+
+        <section id="feature-cards" class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <div class="flex items-center justify-center">
+            <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3">
                   <h4 class="font-semibold text-sm text-[#1b1b1b]">Assistant Learning</h4>
                 </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
                     <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Help me draft an email to the team
@@ -122,13 +227,13 @@
               </div>
             </div>
 
-            <div class="flex items-center justify-center">
+            <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3 flex items-center justify-between">
                   <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
                       <button class="landing-clickable text-xs text-[#4063FE] hover:underline" type="button">View all</button>
                 </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
                     <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       What do you remember about my project?
@@ -188,12 +293,12 @@
               </div>
             </div>
 
-            <div class="flex items-center justify-center">
+            <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3">
                   <h4 class="font-semibold text-sm text-[#1b1b1b]">Context Maintained</h4>
                 </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
+                <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
                     <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Make it more concise
@@ -246,204 +351,308 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-8">
-            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Learns as you work</h3>
-            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Transparent memory you can trust</h3>
-            <h3 class="text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Consistent results with minimal effort</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Learns how you work</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Shares context across teammates</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Keeps you in the loop</h3>
           </div>
         </section>
 
-        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div class="flex items-center justify-center">
-              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
-                <div class="border-b pb-3">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Assistant Learning</h4>
-                </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Help me draft an email to the team
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      I'll draft that for you. Should I use your usual friendly but professional tone?
-                    </div>
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Yes, exactly!
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
-                      <p class="mb-2">Here's your draft:</p>
-                      <div class="bg-white rounded-lg p-3 text-xs border border-[#e5e5e5]">
-                        <p class="mb-2">Hi team,</p>
-                        <p class="mb-2">Hope you're all doing well! Just wanted to share a quick update on our progress...</p>
-                        <p>Best regards</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Perfect! Can you make it a bit more concise?
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Done! I've tightened it up while keeping your friendly tone.
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 text-xs text-[#4063FE] bg-[#e8eaf6] rounded-lg px-3 py-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                    </svg>
-                    <span>Remembered your communication style and preference for brevity</span>
-                  </div>
+        <section id="personal-agent" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
+          <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+              Personal AI Agent
+            </h2>
+            <span class="underline-sweep mx-auto mt-4"></span>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+              No prompts. No setup. Your agent learns how you work and syncs your team around you 24/7.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <article class="step-card">
+              <span class="step-badge">01</span>
+              <h3>Your conversations become memory</h3>
+              <p>Slack threads, docs, and meeting notes are captured as you work so nothing has to be repeated.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-badge">02</span>
+              <h3>AI learns your workflow and context</h3>
+              <p>Builds a model of how you think, decide, and collaborate so it can act on your behalf.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-badge">03</span>
+              <h3>An agent that responds like you</h3>
+              <p>Teammates get instant answers in your voice while you keep your head down on deep work.</p>
+            </article>
+          </div>
+
+          <div class="mt-20 md:mt-28 agent-demo-wrap">
+            <div class="agent-demo max-w-4xl mx-auto" data-demo="amy">
+              <div class="agent-demo__header">
+                <div class="agent-demo__title">
+                  <span class="agent-demo__avatar">A</span>
+                  Amy's Agent
                 </div>
               </div>
-            </div>
-            <div class="space-y-4">
-              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Learns as you work</h2>
-              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
-                The assistant watches how you approach tasks and remembers your preferences over time, so it can better anticipate your needs in future interactions.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div class="space-y-4 order-2 lg:order-1">
-              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Transparent memory you can trust</h2>
-              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
-                See what the assistant remembers, edit what it stores, and always know what's shaping the advice you get. Every piece of context is visible and in your control.
-              </p>
-            </div>
-            <div class="flex items-center justify-center order-1 lg:order-2">
-              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
-                <div class="border-b pb-3 flex items-center justify-between">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
-                  <button class="landing-clickable text-xs text-[#4063FE] hover:underline" type="button">View all</button>
+              <div class="demo-loop">
+                <div class="agent-bubble-user">
+                  <span>A vendor is 48 hours late. Can you escalate and draft the email?</span>
                 </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      What do you remember about my project?
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Here's what I know:
-                    </div>
-                  </div>
-                  <div class="space-y-2 ml-4">
-                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
-                      <span>Project: E-commerce redesign</span>
-                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
-                    </div>
-                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
-                      <span>Tech stack: React + TypeScript</span>
-                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
-                    </div>
-                    <div class="bg-[#e8eaf6] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
-                      <span>Deadline: Q1 2026</span>
-                      <button class="landing-clickable text-[#4063FE]" type="button">x</button>
-                    </div>
-                  </div>
-                  <div class="text-xs text-[#727272] italic pl-4">
-                    Tap any item to edit or remove
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Can you show me my design preferences?
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Sure! You prefer:
-                    </div>
-                  </div>
-                  <div class="space-y-2 ml-4">
-                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
-                      <span>UI</span>
-                      <span>Minimalist UI with lots of whitespace</span>
-                    </div>
-                    <div class="bg-[#fff4e6] rounded-lg px-3 py-2 text-xs flex items-center gap-2">
-                      <span>CTA</span>
-                      <span>Bold CTAs with high contrast</span>
-                    </div>
+                <div class="agent-bubble-reply">
+                  <span class="agent-bubble-reply__name">Amy's Agent</span>
+                  <div class="agent-bubble-reply__body">
+                    Amy flags vendor delays at the 48-hour mark and escalates via email. I'll use a proven template from past projects and draft the email in Amy's tone, ready for your review.
                   </div>
                 </div>
+                <div class="agent-demo__footer">
+                  <span class="agent-demo__chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                    vendor_escalation_email.draft
+                  </span>
+                  <span>ready to send</span>
+                </div>
+              </div>
+              <div class="demo-typing-wrap"><span class="demo-typing"><span></span><span></span><span></span></span><span class="demo-typing-label">Amy's agent is thinking…</span></div>
+              <div class="agent-demo__compose">
+                <input type="text" class="agent-demo__input" placeholder="Enter what you think here..." readonly>
+                <button type="button" class="agent-demo__send">Approve</button>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div class="flex items-center justify-center">
-              <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
-                <div class="border-b pb-3">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Context Maintained</h4>
+        <section id="agent-to-agent" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
+          <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+              Agent-to-Agent Collaboration
+            </h2>
+            <span class="underline-sweep mx-auto mt-4"></span>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+              Your agents coordinate and hand off tasks across teams with zero setup so work keeps moving even when people cannot.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <article class="step-card">
+              <span class="step-badge">01</span>
+              <h3>Invite any teammate's agent</h3>
+              <p>The agent joins the task with full context already loaded, no onboarding required.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-badge">02</span>
+              <h3>Agents share context and hand off work</h3>
+              <p>No briefing meetings needed. Agents sync state and split the load across departments.</p>
+            </article>
+            <article class="step-card">
+              <span class="step-badge">03</span>
+              <h3>You guide, agents run the rest</h3>
+              <p>Stay in the loop or step back. Every decision routes through a human before it ships.</p>
+            </article>
+          </div>
+
+          <div class="mt-20 md:mt-28 agent-demo-wrap">
+            <div class="agent-demo max-w-4xl mx-auto" data-demo="handoff">
+              <div class="agent-demo__header">
+                <div class="agent-demo__title">
+                  <span class="agent-demo__avatar">T</span>
+                  Team collaboration
                 </div>
-                <div class="space-y-3 text-sm flex-1 overflow-y-auto">
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Make it more concise
-                    </div>
+              </div>
+              <div class="demo-loop">
+                <div class="agent-bubble-user">
+                  <span>New client needs a Slack integration for their team.</span>
+                </div>
+                <div class="agent-bubble-reply">
+                  <span class="agent-bubble-reply__name">Kevin's Agent</span>
+                  <div class="agent-bubble-reply__body">
+                    Found a similar Slack integration Kevin built for Acme. Pulling the relevant code, validating against the new client's requirements, and drafting a plan to pass to Amy's agent for the build.
                   </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Done! I've shortened the paragraph while keeping the key points.
-                    </div>
+                </div>
+                <div class="agent-bubble-reply">
+                  <span class="agent-bubble-reply__name">Amy's Agent</span>
+                  <div class="agent-bubble-reply__body">
+                    Checking budget and past implementations. Three-day estimate looks clean. Sending a build-ready spec back to Kevin's agent.
                   </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Now add a call to action
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Added a CTA at the end: "Ready to get started? Join us today."
-                    </div>
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Make it urgent
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      Updated to: "Limited spots available - join us today!"
-                    </div>
-                  </div>
-                  <div class="flex justify-end">
-                    <div class="bg-[#4063FE] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      Add discount
-                    </div>
-                  </div>
-                  <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
-                      "Limited spots - join today and save 20%!"
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 text-xs text-[#727272] bg-[#f9f9f9] rounded-lg px-3 py-2 border border-[#e5e5e5]">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    <span>No need to repeat context - I remember what we're working on</span>
-                  </div>
+                </div>
+                <div class="agent-demo__footer">
+                  <span class="agent-demo__chip">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                    Build-ready spec delivered
+                  </span>
+                  <span>awaiting your approval</span>
+                </div>
+              </div>
+              <div class="agent-demo__typing-stack">
+                <div class="demo-typing-wrap" data-agent="K"><span class="demo-typing"><span></span><span></span><span></span></span><span class="demo-typing-label">Kevin's agent is thinking…</span></div>
+                <div class="demo-typing-wrap" data-agent="A"><span class="demo-typing"><span></span><span></span><span></span></span><span class="demo-typing-label">Amy's agent is thinking…</span></div>
+              </div>
+              <div class="agent-demo__compose">
+                <input type="text" class="agent-demo__input" placeholder="Enter what you think here..." readonly>
+                <button type="button" class="agent-demo__send">Approve</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="competition" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
+          <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+              Where every other AI tool falls short.
+            </h2>
+            <span class="underline-sweep mx-auto mt-4"></span>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+              We studied every competitor in the space. None combine all three of the capabilities your team actually needs.
+            </p>
+          </div>
+          <div class="compare-grid grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+            <article class="compare-card">
+              <div class="compare-card__icon compare-card__icon--muted">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+              </div>
+              <span class="compare-card__kicker">Most AI assistants</span>
+              <h3 class="compare-card__title">Learn how you work</h3>
+              <p class="compare-card__copy">They remember your preferences, but they cannot coordinate with anyone else's AI.</p>
+              <span class="compare-card__limit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                No cross-team handoff
+              </span>
+            </article>
+            <article class="compare-card">
+              <div class="compare-card__icon compare-card__icon--muted">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                </svg>
+              </div>
+              <span class="compare-card__kicker">Knowledge tools</span>
+              <h3 class="compare-card__title">Capture team knowledge</h3>
+              <p class="compare-card__copy">They store documents, but they lose the context of how decisions actually got made.</p>
+              <span class="compare-card__limit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                No process context
+              </span>
+            </article>
+            <article class="compare-card compare-card--memoria">
+              <div class="compare-card__icon compare-card__icon--hero">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="7" r="3"/>
+                  <path d="M6 21v-2a6 6 0 0 1 12 0v2"/>
+                  <circle cx="19" cy="5" r="1.5" fill="currentColor"/>
+                  <circle cx="5" cy="5" r="1.5" fill="currentColor"/>
+                  <path d="M18 7l-2 2M6 7l2 2"/>
+                </svg>
+              </div>
+              <span class="compare-card__kicker">Memoria</span>
+              <h3 class="compare-card__title">Agent-to-agent, human in the loop</h3>
+              <p class="compare-card__copy">Learning, coordination, and human approval in one place. That combination is our moat.</p>
+              <span class="compare-card__win">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                All three, combined
+              </span>
+            </article>
+          </div>
+        </section>
+
+        <section id="target-customer" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
+          <div class="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+              Built for teams that refuse to stop.
+            </h2>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-6">
+              Small and mid-size enterprises with cross-functional teams, where losing one person means months of rebuilding context and people need answers from other departments every single day.
+            </p>
+          </div>
+          <div class="target-grid grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+            <article class="target-card">
+              <div class="target-card__icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div class="target-card__label">Scale</div>
+              <h4 class="target-card__title">SMEs</h4>
+              <p class="target-card__copy">Teams of 20 to 500 that move too fast for heavyweight process tools and too carefully for chaos.</p>
+            </article>
+            <article class="target-card">
+              <div class="target-card__icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                  <path d="M10 6.5h4M10 17.5h4M6.5 10v4M17.5 10v4"/>
+                </svg>
+              </div>
+              <div class="target-card__label">Shape</div>
+              <h4 class="target-card__title">Cross-functional</h4>
+              <p class="target-card__copy">Product, engineering, sales, and ops handing work across each other every single day.</p>
+            </article>
+            <article class="target-card">
+              <div class="target-card__icon">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 15 15"/>
+                </svg>
+              </div>
+              <div class="target-card__label">Tempo</div>
+              <h4 class="target-card__title">Context-heavy</h4>
+              <p class="target-card__copy">Work where ramp-up time kills momentum whenever someone steps away from their desk.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="integrations-orbit" class="px-5 py-20 md:py-28 max-w-7xl mx-auto relative overflow-hidden">
+          <div class="text-center mb-12 md:mb-16">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+              Plug into the tools you already use.
+            </h2>
+            <span class="underline-sweep mx-auto mt-4"></span>
+            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
+              Memoria connects through the public APIs your team already runs on, so your agent stays in the loop across chat, mail, calendars, and code.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 items-center">
+            <div id="orbit-stage" class="orbit-stage">
+              <div class="orbit-center">
+                <img src="{% static 'images/logo.svg' %}" alt="Memoria">
+              </div>
+              <div class="orbit-ring">
+                <div class="orbit-tile" data-category="messaging" data-brand="slack" style="--angle: 0deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/slack.svg' %}" alt="Slack">
+                </div>
+                <div class="orbit-tile" data-category="messaging" data-brand="discord" style="--angle: 45deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/discord.svg' %}" alt="Discord">
+                </div>
+                <div class="orbit-tile" data-category="productivity" data-brand="notion" style="--angle: 90deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/notion.svg' %}" alt="Notion">
+                </div>
+                <div class="orbit-tile" data-category="messaging" data-brand="whatsapp" style="--angle: 135deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/whatsapp.svg' %}" alt="WhatsApp">
+                </div>
+                <div class="orbit-tile" data-category="messaging" data-brand="gmail" style="--angle: 180deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/gmail.svg' %}" alt="Gmail">
+                </div>
+                <div class="orbit-tile" data-category="messaging" data-brand="telegram" style="--angle: 225deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/telegram.svg' %}" alt="Telegram">
+                </div>
+                <div class="orbit-tile" data-category="code" data-brand="github" style="--angle: 270deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/github.svg' %}" alt="GitHub">
+                </div>
+                <div class="orbit-tile" data-category="calendar" data-brand="gcal" style="--angle: 315deg; --radius: 200px;">
+                  <img src="{% static 'images/integrations/gcal.svg' %}" alt="Google Calendar">
                 </div>
               </div>
             </div>
-            <div class="space-y-4">
-              <h2 class="text-3xl md:text-4xl font-semibold text-[#1b1b1b]">Consistent results with minimal effort</h2>
-              <p class="text-[#727272] text-base md:text-lg leading-relaxed">
-                Save time from re-teaching context and build on past conversations so each prompt can be simpler and more focused.
-              </p>
-            </div>
+            <ul class="category-rail space-y-2 text-sm">
+              <li data-category="messaging">Messaging</li>
+              <li data-category="productivity">Productivity</li>
+              <li data-category="calendar">Calendar</li>
+              <li data-category="code">Code</li>
+              <li data-category="mail">Mail</li>
+            </ul>
           </div>
         </section>
 
@@ -462,6 +671,12 @@
         </section>
       </div>
     </div>
+
+    <script src="{% static 'vendor/lenis.min.js' %}"></script>
+    <script src="{% static 'vendor/gsap.min.js' %}"></script>
+    <script src="{% static 'vendor/ScrollTrigger.min.js' %}"></script>
+    <script src="{% static 'vendor/split-type.min.js' %}"></script>
+    <script src="{% static 'js/landing-scroll.js' %}?v={% now 'U' %}"></script>
 
     {% if not user.is_authenticated %}
       <dialog id="login-modal" class="landing-modal">

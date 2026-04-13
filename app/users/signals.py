@@ -6,6 +6,7 @@ import requests
 from allauth.account.signals import user_signed_up
 from django.contrib.auth.models import User as AuthUser
 from django.core.files.base import ContentFile
+from django.db import IntegrityError, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -66,19 +67,24 @@ def _build_unique_username(base, user_id):
 
 
 def _sync_google_user_names(user, extra_data):
-    desired_username = _build_unique_username(_build_google_username(extra_data), user.id)
+    base_name = _build_google_username(extra_data)
     display_name = _capitalize_first(
         extra_data.get("name")
         or extra_data.get("given_name")
-        or desired_username
+        or base_name
     )
 
-    update_fields = []
-    if user.username != desired_username:
+    for _ in range(20):
+        desired_username = _build_unique_username(base_name, user.id)
+        if user.username == desired_username:
+            break
         user.username = desired_username
-        update_fields.append("username")
-    if update_fields:
-        user.save(update_fields=update_fields)
+        try:
+            with transaction.atomic():
+                user.save(update_fields=["username"])
+            break
+        except IntegrityError:
+            continue
 
     profile, _ = UserProfile.objects.get_or_create(user=user)
     if not profile.display_name:

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
+<div class="page-container">
     <div class="mb-6">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Activity Log</h1>
         <p class="font-inter text-[#64748b] text-[16px] mt-1">Track all agent and system events</p>
@@ -26,20 +26,22 @@
 
     <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
         <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Timeline</h2>
-        <div class="flex flex-col divide-y divide-[#e2e8f0]">
+        <div class="flex flex-col divide-y divide-[#e2e8f0]/70">
             {% for log in logs %}
-            <div class="flex items-center gap-4 p-4 rounded-xl hover:bg-[#f8fafc] transition-colors">
-                <div class="activity-dot {% if log.eventType == 'error' %}bg-[#f59e0b]{% elif log.eventType == 'chat' or log.eventType == 'memory' %}bg-[#3b82f6]{% else %}bg-[#10b981]{% endif %} w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3">
-                        {% if log.agentName %}
-                        <span class="font-inter font-semibold text-[#0f172a] text-[14px]">{{ log.agentName }}</span>
-                        {% endif %}
-                        <span class="font-inter font-medium text-[12px] px-2.5 py-0.5 rounded-full activity-badge-{{ log.eventType }}">{{ log.eventType }}</span>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-white/50 transition-colors">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="activity-dot {% if log.eventType == 'error' %}bg-[#f59e0b]{% elif log.eventType == 'chat' or log.eventType == 'memory' %}bg-[#3b82f6]{% else %}bg-[#10b981]{% endif %} w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            {% if log.agentName %}
+                            <span class="font-inter font-semibold text-[#0f172a] text-[14px]">{{ log.agentName }}</span>
+                            {% endif %}
+                            <span class="font-inter font-medium text-[11px] sm:text-[12px] px-2 sm:px-2.5 py-0.5 rounded-full activity-badge-{{ log.eventType }}">{{ log.eventType }}</span>
+                        </div>
+                        <p class="font-inter text-[#64748b] text-[13px] mt-0.5 sm:truncate">{{ log.description }}</p>
                     </div>
-                    <p class="font-inter text-[#64748b] text-[13px] mt-0.5 truncate">{{ log.description }}</p>
                 </div>
-                <span class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0 whitespace-nowrap">{{ log.createdAt }}</span>
+                <span class="font-inter text-[#94a3b8] text-[11px] sm:text-[12px] flex-shrink-0 whitespace-nowrap pl-[22px] sm:pl-0">{{ log.createdAt }}</span>
             </div>
             {% empty %}
             <div class="py-12 text-center">

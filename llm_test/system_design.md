@@ -1,12 +1,12 @@
-# Multi-Model Benchmarking, Cost Analysis, and Routing Strategy for the Memoria AI Dietary Assistant
+# Multi-Model Benchmarking, Cost Analysis, and Routing Strategy for the Memoria AI Assistant
 
 ---
 
 ## Abstract
 
-Deploying large language models (LLMs) for production conversational AI systems requires careful balancing of response quality, inference latency, and operational cost. This paper presents a systematic benchmarking study of 15 open-weight language models spanning five parameter categories, from ultra-light (0.135B) to extra-large (8.2B), evaluated against 35 prompts drawn from five distinct CL-bench prompt categories for the Memoria dietary AI assistant. Our evaluation reveals a counterintuitive finding: the 0.8B-parameter Qwen3.5-0.8B model achieves the highest accuracy (78.6%) among all tested models, outperforming several models with ten times as many parameters. We develop a comprehensive cost model covering six traffic tiers from 1,000 to 100,000,000 daily active users (DAU) and identify a break-even crossover at approximately 15,000 messages per day (~3,000 DAU) where local GPU hosting becomes more cost-effective than cloud API inference. We propose and evaluate three multi-model routing patterns: classification-based routing ($28.02/day, 87.1% blended accuracy), parallel consensus ($92.71/day, ~95% accuracy), and cascading fallback ($32.71/day, 87.5% accuracy). The recommended hybrid architecture, combining a zero-latency regex classifier with local Qwen3.5-0.8B for simple queries and Gemini 3 Flash for complex queries, achieves 67.3% cost reduction compared to pure API deployment while maintaining quality parity. These findings provide actionable infrastructure planning guidance for practitioners deploying memory-augmented conversational AI systems under resource constraints.
+Deploying large language models (LLMs) for production conversational AI systems requires careful balancing of response quality, inference latency, and operational cost. This paper presents a systematic benchmarking study of 15 open-weight language models spanning five parameter categories, from ultra-light (0.135B) to extra-large (8.2B), evaluated against 35 prompts drawn from five distinct CL-bench prompt categories for the Memoria AI assistant. Our evaluation reveals a counterintuitive finding: the 0.8B-parameter Qwen3.5-0.8B model achieves the highest accuracy (78.6%) among all tested models, outperforming several models with ten times as many parameters. We develop a comprehensive cost model covering six traffic tiers from 1,000 to 100,000,000 daily active users (DAU) and identify a break-even crossover at approximately 15,000 messages per day (~3,000 DAU) where local GPU hosting becomes more cost-effective than cloud API inference. We propose and evaluate three multi-model routing patterns: classification-based routing ($28.02/day, 87.1% blended accuracy), parallel consensus ($92.71/day, ~95% accuracy), and cascading fallback ($32.71/day, 87.5% accuracy). The recommended hybrid architecture, combining a zero-latency regex classifier with local Qwen3.5-0.8B for simple queries and Gemini 3 Flash for complex queries, achieves 67.3% cost reduction compared to pure API deployment while maintaining quality parity. These findings provide actionable infrastructure planning guidance for practitioners deploying memory-augmented conversational AI systems under resource constraints.
 
-**Keywords:** language model benchmarking, cost-efficient deployment, multi-model routing, dietary AI, adaptive context engineering
+**Keywords:** language model benchmarking, cost-efficient deployment, multi-model routing, adaptive context engineering
 
 ---
 
@@ -14,9 +14,9 @@ Deploying large language models (LLMs) for production conversational AI systems 
 
 ### 1.1 Problem Context
 
-The rapid proliferation of large language models has introduced a fundamental tension in production AI system design: the models that produce the highest-quality outputs frequently impose the greatest inference costs. For domain-specific conversational AI applications, particularly those requiring persistent memory and context synthesis, this tension becomes especially acute. The Memoria AI dietary assistant exemplifies this challenge. As a context-heavy application that must recall user preferences, track dietary constraints across sessions, and synthesize nutritional guidance from accumulated episodic knowledge, Memoria demands both high response fidelity and sustainable operational economics.
+The rapid proliferation of large language models has introduced a fundamental tension in production AI system design: the models that produce the highest-quality outputs frequently impose the greatest inference costs. For domain-specific conversational AI applications, particularly those requiring persistent memory and context synthesis, this tension becomes especially acute. The Memoria AI assistant exemplifies this challenge. As a context-heavy application that must recall user preferences, track constraints across sessions, and synthesize guidance from accumulated episodic knowledge, Memoria demands both high response fidelity and sustainable operational economics.
 
-Current deployment practices tend toward two extremes. On one end, organizations default to premium cloud API models such as GPT-4, Claude, or Gemini, accepting per-query costs that scale linearly with user growth. On the other end, cost-sensitive deployments select small open-weight models that minimize infrastructure expenses but risk unacceptable quality degradation. Neither approach adequately addresses the needs of a production system that must serve thousands of daily users while maintaining the contextual reasoning quality that a memory-augmented dietary assistant demands.
+Current deployment practices tend toward two extremes. On one end, organizations default to premium cloud API models such as GPT-4, Claude, or Gemini, accepting per-query costs that scale linearly with user growth. On the other end, cost-sensitive deployments select small open-weight models that minimize infrastructure expenses but risk unacceptable quality degradation. Neither approach adequately addresses the needs of a production system that must serve thousands of daily users while maintaining the contextual reasoning quality that a memory-augmented AI assistant demands.
 
 The landscape of open-weight models has expanded dramatically in recent years, with model families such as Qwen (Bai et al., 2023), Phi (Abdin et al., 2024), Mistral (Jiang et al., 2023), and LiquidAI's LFM architecture (LiquidAI, 2024) offering capable alternatives across a wide range of parameter counts. However, the relationship between parameter count and task-specific performance remains poorly characterized, particularly for constrained generation tasks that require adherence to domain-specific output formats and contextual grounding rather than open-ended creative text production.
 
@@ -24,7 +24,7 @@ The landscape of open-weight models has expanded dramatically in recent years, w
 
 This study addresses four research questions that collectively inform the system design of the Memoria AI assistant:
 
-**RQ1 (Size versus Quality):** What is the relationship between model parameter count and task-specific accuracy for memory-augmented dietary conversation, and does the conventional assumption that larger models produce better outputs hold in this domain?
+**RQ1 (Size versus Quality):** What is the relationship between model parameter count and task-specific accuracy for memory-augmented conversation, and does the conventional assumption that larger models produce better outputs hold in this domain?
 
 **RQ2 (Cost Scaling):** How do infrastructure costs scale across six traffic levels from prototype (1,000 DAU) to global platform (100,000,000 DAU) for local hosting, cloud API, and hybrid deployment configurations?
 
@@ -66,7 +66,7 @@ The Upper Confidence Bound (UCB) algorithm (Auer et al., 2002) provides the theo
 
 ### 3.1 Overall Architecture
 
-The Memoria AI dietary assistant is implemented as a Django 6.0.1 web application that integrates three core subsystems: a conversational interface layer, an Adaptive Context Engine (ACE) runtime, and a hybrid inference pipeline. The architecture follows a modular design pattern where each subsystem communicates through well-defined service interfaces, enabling independent scaling and replacement of components.
+The Memoria AI assistant is implemented as a Django 6.0.1 web application that integrates three core subsystems: a conversational interface layer, an Adaptive Context Engine (ACE) runtime, and a hybrid inference pipeline. The architecture follows a modular design pattern where each subsystem communicates through well-defined service interfaces, enabling independent scaling and replacement of components.
 
 ```
 +------------------------------------------------------------------+
@@ -124,7 +124,7 @@ The client communicates with the Django web layer through an NDJSON (Newline Del
 
 The Memoria system implements a tri-memory architecture inspired by cognitive science models of human memory. Each memory bullet is classified into one of three channels, each with distinct decay characteristics:
 
-**Semantic Memory (1% decay rate):** Stores factual knowledge and domain concepts with the slowest decay rate, reflecting the persistence of encyclopedic knowledge. In the dietary domain, semantic memories capture nutritional facts, food composition data, and general dietary principles. The low decay rate (1%) ensures that foundational knowledge remains accessible across long time horizons.
+**Semantic Memory (1% decay rate):** Stores factual knowledge and domain concepts with the slowest decay rate, reflecting the persistence of encyclopedic knowledge. In the user domain, semantic memories capture factual knowledge, reference data, and general principles. The low decay rate (1%) ensures that foundational knowledge remains accessible across long time horizons.
 
 **Episodic Memory (5% decay rate):** Records specific interaction events and contextual experiences with moderate decay. Episodic memories capture user-specific events such as "the user reported eating salmon for dinner on Tuesday" or "the user expressed frustration with calorie tracking." The 5% decay rate allows recent episodes to strongly influence responses while naturally fading older episodes that may no longer be relevant.
 
@@ -221,7 +221,7 @@ The CL-bench taxonomy defines four primary domains: Domain Knowledge Reasoning (
 
 **5. Empirical Discovery and Simulation (7 prompts, code: EDS):** Prompts drawn from the Observational Data, Simulation Environment, and Experimental Data sub-categories. These tasks require models to analyze empirical evidence, derive conclusions from observational patterns, and interpret simulation outputs within the provided context.
 
-Prompts were selected from the CL-bench training split using a fixed random seed (42) to ensure reproducibility, with stratified sampling across sub-categories within each domain. Each CL-bench prompt consists of a system message defining the agent role and operational constraints, a user message providing context and task requirements, and a set of binary evaluation rubrics (ranging from 4 to 52 per task, mean 13.6). The rubric-per-task count in CL-bench significantly exceeds the 14-rubric framework used in our primary dietary recipe benchmark, providing a more granular evaluation surface.
+Prompts were selected from the CL-bench training split using a fixed random seed (42) to ensure reproducibility, with stratified sampling across sub-categories within each domain. Each CL-bench prompt consists of a system message defining the agent role and operational constraints, a user message providing context and task requirements, and a set of binary evaluation rubrics (ranging from 4 to 52 per task, mean 13.6). The rubric-per-task count in CL-bench significantly exceeds the 14-rubric framework used in our primary constrained-generation benchmark, providing a more granular evaluation surface.
 
 ### 4.4 Evaluation Framework
 
@@ -229,7 +229,7 @@ Each model-prompt pair was evaluated using a 14-point rubric covering seven aggr
 
 1. **Format Compliance** (2 points): Does the output match the requested format (JSON, bullet list, step sequence, etc.)?
 2. **Constraint Adherence** (2 points): Are all explicit constraints in the prompt satisfied?
-3. **Factual Accuracy** (2 points): Is the nutritional and dietary information correct?
+3. **Factual Accuracy** (2 points): Is the information correct?
 4. **Contextual Grounding** (2 points): Does the response reference and correctly use provided context?
 5. **Completeness** (2 points): Does the response address all parts of the prompt?
 6. **Coherence** (2 points): Is the response logically organized and internally consistent?
@@ -283,7 +283,7 @@ Table 2 summarizes the tier-level performance averages.
 
 **Finding 4: Cost efficiency varies by orders of magnitude.** Per-query cost ranges from $0.000847 (phi-2) to $0.226971 (Qwen3-8B), a 268x range. Critically, the highest-accuracy model (Qwen3.5-0.8B at $0.003553/query) is 64x cheaper than the second-highest-accuracy model in the Extra-Large tier (Mistral-7B at $0.149489/query), despite achieving higher accuracy.
 
-**Finding 5: Instruction tuning quality dominates parameter count.** Within the Qwen family, comparing Qwen3.5-0.8B (78.6%), Qwen3-0.6B (64.3%), and Qwen2.5-0.5B (57.1%) reveals that the 3.5-generation instruction tuning yields a 21.5 percentage point improvement over the 2.5-generation at comparable parameter counts. The quality of the instruction-tuning data and alignment procedure, rather than raw parameter count, appears to be the dominant factor for constrained dietary conversation tasks.
+**Finding 5: Instruction tuning quality dominates parameter count.** Within the Qwen family, comparing Qwen3.5-0.8B (78.6%), Qwen3-0.6B (64.3%), and Qwen2.5-0.5B (57.1%) reveals that the 3.5-generation instruction tuning yields a 21.5 percentage point improvement over the 2.5-generation at comparable parameter counts. The quality of the instruction-tuning data and alignment procedure, rather than raw parameter count, appears to be the dominant factor for constrained conversation tasks.
 
 ### 4.7 Discussion: Why Smaller Models Won
 
@@ -293,7 +293,7 @@ First, **quantization degradation** disproportionately affects models in the 3B 
 
 Second, **thinking token leakage** was observed in several models, particularly Qwen3.5-4B and Qwen3-8B. These models, trained with chain-of-thought reasoning capabilities, sometimes emit internal reasoning tokens (enclosed in `<think>...</think>` tags) in their final output. When these thinking tokens contaminate the response, the output fails format compliance and coherence checks, resulting in low rubric scores despite potentially correct underlying reasoning.
 
-Third, **overfitting to general benchmarks** may explain why models that perform well on standard evaluation suites (MMLU, HumanEval, etc.) underperform on our domain-specific task. The dietary conversation task prioritizes constraint adherence and contextual grounding over broad knowledge retrieval, creating a mismatch with the optimization objectives of larger models trained for general-purpose performance.
+Third, **overfitting to general benchmarks** may explain why models that perform well on standard evaluation suites (MMLU, HumanEval, etc.) underperform on our domain-specific task. The constrained conversation task prioritizes constraint adherence and contextual grounding over broad knowledge retrieval, creating a mismatch with the optimization objectives of larger models trained for general-purpose performance.
 
 Fourth, **instruction-tuning data quality** appears to be the most significant factor. The Qwen3.5 series benefits from what we hypothesize to be a substantially improved instruction-tuning dataset compared to earlier Qwen generations, as evidenced by the consistent performance improvement across the 0.8B, 2B, and 4B variants of the 3.5 generation relative to their predecessors.
 
@@ -580,7 +580,7 @@ Latency performance varies substantially across model tiers and routing patterns
 - P50: ~2.0s (most queries resolved by local model)
 - P95: ~8.0s (fallback queries incur double inference: local generation + confidence check + API re-generation)
 
-The cascading pattern's P95 latency of 8.0s is problematic for user experience. Research on conversational AI response times suggests that users perceive delays beyond 5 seconds as sluggish and may abandon the interaction. Pattern A's P95 of 4.0s remains within acceptable bounds for a dietary assistant where users are accustomed to brief thinking pauses.
+The cascading pattern's P95 latency of 8.0s is problematic for user experience. Research on conversational AI response times suggests that users perceive delays beyond 5 seconds as sluggish and may abandon the interaction. Pattern A's P95 of 4.0s remains within acceptable bounds for a memory-augmented AI assistant where users are accustomed to brief thinking pauses.
 
 ### 7.2 Cost Reduction Results
 
@@ -652,11 +652,11 @@ The central empirical finding of this study, that Qwen3.5-0.8B (0.8B parameters)
 
 **Quantization as confound.** The 4-bit quantization applied to models exceeding 4B parameters is not a neutral compression technique. While quantization introduces negligible perplexity increases on standard language modeling benchmarks (Dettmers et al., 2023), its impact on instruction following is more severe. The precision reduction disproportionately affects the attention head weights responsible for tracking structured output formats, constraints, and multi-step instructions. In our evaluation, the failure mode is not factual incorrectness but rather format deviation: quantized models produce correct information wrapped in unusable output structures.
 
-**Instruction tuning quality versus parameter count.** Within the Qwen model family, the 3.5-generation consistently outperforms the 3.0 and 2.5 generations at comparable parameter counts. Qwen3.5-0.8B (78.6%) outperforms Qwen3-0.6B (64.3%) by 14.3 percentage points despite similar parameter counts. Qwen3.5-2B (71.4%) outperforms Qwen2.5-7B-Instruct (57.1%) despite having 3.8x fewer parameters. These comparisons strongly suggest that the quality of instruction-tuning data and the alignment procedure are more predictive of task-specific performance than raw parameter count, at least for the constrained dietary generation task evaluated here.
+**Instruction tuning quality versus parameter count.** Within the Qwen model family, the 3.5-generation consistently outperforms the 3.0 and 2.5 generations at comparable parameter counts. Qwen3.5-0.8B (78.6%) outperforms Qwen3-0.6B (64.3%) by 14.3 percentage points despite similar parameter counts. Qwen3.5-2B (71.4%) outperforms Qwen2.5-7B-Instruct (57.1%) despite having 3.8x fewer parameters. These comparisons strongly suggest that the quality of instruction-tuning data and the alignment procedure are more predictive of task-specific performance than raw parameter count, at least for the constrained generation task evaluated here.
 
 **Thinking token leakage.** Several models trained with chain-of-thought capabilities (notably Qwen3.5-4B and Qwen3-8B) exhibit a failure mode we term "thinking leakage," where internal reasoning tokens, typically enclosed in `<think>...</think>` XML tags, contaminate the final output. When these tokens appear in the response, the output fails format compliance checks and may confuse downstream parsing logic. This phenomenon is particularly prevalent under 4-bit quantization, which may disrupt the model's learned boundary between internal reasoning and external output.
 
-**Task-model alignment.** The dietary conversation task prioritizes specific capabilities (constraint tracking, format adherence, contextual grounding) that are well-served by focused instruction tuning at small parameter counts. Larger models allocate capacity to broader capabilities (multilingual generation, code synthesis, mathematical reasoning) that are unused in this domain. The smaller models' parameter budget is more efficiently allocated to the specific capabilities that our evaluation rubric measures.
+**Task-model alignment.** The constrained conversation task prioritizes specific capabilities (constraint tracking, format adherence, contextual grounding) that are well-served by focused instruction tuning at small parameter counts. Larger models allocate capacity to broader capabilities (multilingual generation, code synthesis, mathematical reasoning) that are unused in this domain. The smaller models' parameter budget is more efficiently allocated to the specific capabilities that our evaluation rubric measures.
 
 ### 8.2 Implications for the Broader LLM Deployment Community
 
@@ -672,7 +672,7 @@ Third, **hybrid architectures provide robust cost-quality tradeoffs.** The class
 
 This study has several limitations that should be acknowledged:
 
-**Single task type.** Our evaluation focuses exclusively on dietary conversation, a specific domain with particular format and constraint requirements. The finding that smaller models outperform larger ones may not generalize to other domains, particularly those requiring broad world knowledge, creative generation, or mathematical reasoning.
+**Single task type.** Our evaluation focuses exclusively on constrained conversation, a specific domain with particular format and constraint requirements. The finding that smaller models outperform larger ones may not generalize to other domains, particularly those requiring broad world knowledge, creative generation, or mathematical reasoning.
 
 **Consumer GPU constraint.** The 8 GB VRAM limitation of the RTX 4060 forces quantization on models exceeding 4B parameters. On hardware with more VRAM (e.g., A100 with 80 GB), the same models could run in full precision, potentially recovering the quality lost to quantization. Our results are therefore specific to the consumer GPU deployment scenario.
 
@@ -698,9 +698,9 @@ The economic analysis demonstrates that multi-model architectures, once consider
 
 ### 9.1 Principal Findings
 
-This paper presents a comprehensive multi-model benchmarking study, cost analysis, and routing strategy evaluation for the Memoria AI dietary assistant. Our four principal findings are:
+This paper presents a comprehensive multi-model benchmarking study, cost analysis, and routing strategy evaluation for the Memoria AI assistant. Our four principal findings are:
 
-**Finding 1:** Among 15 models spanning five parameter categories (0.135B to 8.2B), the Qwen3.5-0.8B model (0.8B parameters) achieves the highest accuracy (78.6%) at a cost of $0.003553 per query, demonstrating that instruction-tuning quality dominates parameter count for constrained dietary generation tasks. Models in the 3B to 5B range, subject to 4-bit quantization on consumer GPU hardware, exhibit catastrophic quality collapse with tier-average accuracy of only 4.8%.
+**Finding 1:** Among 15 models spanning five parameter categories (0.135B to 8.2B), the Qwen3.5-0.8B model (0.8B parameters) achieves the highest accuracy (78.6%) at a cost of $0.003553 per query, demonstrating that instruction-tuning quality dominates parameter count for constrained generation tasks. Models in the 3B to 5B range, subject to 4-bit quantization on consumer GPU hardware, exhibit catastrophic quality collapse with tier-average accuracy of only 4.8%.
 
 **Finding 2:** The break-even crossover between local GPU hosting and cloud API deployment occurs at approximately 15,000 messages per day (~3,000 DAU). Below this threshold, fixed GPU provisioning costs exceed marginal API costs; above it, local inference becomes increasingly economical, achieving 67.3% cost reduction at 10,000 DAU and 84.1% reduction at 100,000 DAU compared to pure Gemini 3 Flash API deployment.
 
@@ -726,9 +726,9 @@ Five directions for future work emerge from this study:
 
 **2. Adaptive threshold tuning.** Implement an online learning system that adjusts the complexity threshold dynamically based on real-time cost and quality metrics. During budget-constrained periods, the threshold rises to route more queries locally; during quality-sensitive periods (e.g., after negative user feedback), the threshold falls to route more queries to the API.
 
-**3. Model distillation pipeline.** Use the Gemini 3 Flash API as a teacher model to distill a custom local model specifically trained on Memoria's dietary conversation domain. This could close the quality gap between local and API inference, potentially enabling pure local deployment at higher quality levels.
+**3. Model distillation pipeline.** Use the Gemini 3 Flash API as a teacher model to distill a custom local model specifically trained on Memoria's conversation domain. This could close the quality gap between local and API inference, potentially enabling pure local deployment at higher quality levels.
 
-**4. Expanded benchmark coverage.** Extend the evaluation to additional dietary domains (food photography analysis, recipe generation, grocery list optimization) and conversational contexts (multi-turn negotiations, emotional support, motivational coaching) to validate the generalizability of our findings.
+**4. Expanded benchmark coverage.** Extend the evaluation to additional domains (document analysis, structured generation, optimization tasks) and conversational contexts (multi-turn negotiations, emotional support, motivational coaching) to validate the generalizability of our findings.
 
 **5. Quantization-aware fine-tuning.** Investigate whether fine-tuning larger models (3B to 5B parameters) with quantization-aware training (QAT) can recover the quality lost to post-training quantization, potentially unlocking superior performance from models in the Large tier that currently exhibit catastrophic failure.
 

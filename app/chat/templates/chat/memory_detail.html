@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[900px] mx-auto px-12 py-8">
+<div class="page-container page-container--narrow">
     <div class="memory-detail-breadcrumb font-inter text-[13px] text-mm-muted mb-5">
         <a href="{% url 'chat:memory' %}">Memory</a>
         <span class="mx-1">/</span>
@@ -24,29 +24,41 @@
     </div>
 
     <div class="flex flex-col gap-4">
-        {% for bullet in memory.memorybullet_set.all %}
-        <div class="border border-[#e2e8f0] rounded-xl p-4 bg-white">
+        {% for bullet in memory.bullets %}
+        <div class="border border-[#e2e8f0] rounded-xl p-5 bg-white" data-bullet-id="{{ bullet.id }}">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex gap-2 items-center">
-                    <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.get_memory_type_display }}</span>
+                    <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.memoryTypeLabel }}</span>
                     {% if bullet.topic %}
                     <span class="font-inter text-[12px] text-mm-muted">{{ bullet.topic }}</span>
                     {% endif %}
                 </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" aria-label="Thumbs up" class="vote-btn vote-like p-2 rounded-lg border border-transparent hover:border-emerald-200 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-all" data-direction="up" onclick="castVote('{{ bullet.id }}', 'up', this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3m7-2V5a3 3 0 00-3-3l-4 9v11h10.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14"></path>
+                        </svg>
+                    </button>
+                    <span class="vote-count font-inter font-bold text-[14px] min-w-[28px] text-center text-slate-500" data-type="helpful">{{ bullet.helpful_count }}</span>
+                    <button type="button" aria-label="Thumbs down" class="vote-btn vote-dislike p-2 rounded-lg border border-transparent hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all" data-direction="down" onclick="castVote('{{ bullet.id }}', 'down', this)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 2H20a2 2 0 012 2v7a2 2 0 01-2 2h-3m-7 2v4a3 3 0 003 3l4-9V2H6.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10"></path>
+                        </svg>
+                    </button>
+                    <span class="hidden" data-type="harmful">{{ bullet.harmful_count }}</span>
+                </div>
             </div>
-            <p class="font-inter text-[14px] text-mm-text leading-[1.6] m-0 mb-3">{{ bullet.content }}</p>
+            <p class="font-inter text-[14px] text-mm-text leading-[1.6] m-0 mb-4">{{ bullet.content }}</p>
             <div class="flex items-center gap-4 mb-3">
-                <span class="font-inter text-[12px] text-mm-muted">Strength</span>
-                <div class="flex-1 max-w-[200px]">
+                <span class="font-inter text-[12px] text-mm-muted font-semibold uppercase tracking-wide">Strength</span>
+                <div class="flex-1 max-w-[240px]">
                     <div class="memory-strength-track">
-                        <div class="memory-strength-fill" style="width: {{ bullet.strength }}%"></div>
+                        <div class="memory-strength-fill" data-strength-fill style="width: {{ bullet.strength }}%"></div>
                     </div>
                 </div>
-                <span class="font-inter text-[12px] font-medium text-mm-text">{{ bullet.strength }}%</span>
+                <span class="font-inter text-[13px] font-semibold text-mm-text" data-strength-label>{{ bullet.strength }}%</span>
             </div>
-            <div class="flex gap-4 flex-wrap font-inter text-[12px] text-[#64748b]">
-                <span><span class="font-medium text-mm-text">Helpful:</span> {{ bullet.helpful_count }}</span>
-                <span><span class="font-medium text-mm-text">Harmful:</span> {{ bullet.harmful_count }}</span>
+            <div class="flex gap-5 flex-wrap font-inter text-[12px] text-[#64748b]">
                 <span><span class="font-medium text-mm-text">TTL:</span> {{ bullet.ttl_days }} days</span>
                 <span><span class="font-medium text-mm-text">Last accessed:</span> {{ bullet.last_accessed }}</span>
             </div>
@@ -56,4 +68,58 @@
         {% endfor %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCSRFToken() {
+    var cookie = document.cookie.split("; ").find(function(c) { return c.startsWith("csrftoken="); });
+    if (cookie) return cookie.split("=")[1];
+    var input = document.querySelector("input[name='csrfmiddlewaretoken']");
+    if (input) return input.value;
+    return "";
+}
+
+async function castVote(bulletId, direction, btn) {
+    var card = btn.closest("[data-bullet-id]");
+    if (!card) return;
+
+    var formData = new FormData();
+    formData.append("direction", direction);
+
+    try {
+        var resp = await fetch("/chat/memory/" + bulletId + "/vote/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCSRFToken() },
+            body: formData,
+        });
+        if (!resp.ok) return;
+        var data = await resp.json();
+
+        card.querySelector("[data-type='helpful']").textContent = data.helpful;
+        card.querySelector("[data-type='harmful']").textContent = data.harmful;
+
+        var strengthFill = card.querySelector("[data-strength-fill]");
+        var strengthLabel = card.querySelector("[data-strength-label]");
+        if (strengthFill) strengthFill.style.width = data.strength + "%";
+        if (strengthLabel) strengthLabel.textContent = data.strength + "%";
+
+        var likeBtn = card.querySelector(".vote-like");
+        var dislikeBtn = card.querySelector(".vote-dislike");
+        likeBtn.className = "vote-btn vote-like p-2 rounded-lg border transition-all";
+        dislikeBtn.className = "vote-btn vote-dislike p-2 rounded-lg border transition-all";
+
+        if (data.userVote === 1) {
+            likeBtn.classList.add("border-emerald-300", "bg-emerald-50", "text-emerald-600");
+            dislikeBtn.classList.add("border-transparent", "text-slate-400");
+        } else if (data.userVote === -1) {
+            dislikeBtn.classList.add("border-red-300", "bg-red-50", "text-red-500");
+            likeBtn.classList.add("border-transparent", "text-slate-400");
+        } else {
+            likeBtn.classList.add("border-transparent", "text-slate-400");
+            dislikeBtn.classList.add("border-transparent", "text-slate-400");
+        }
+    } catch (_) {}
+}
+</script>
 {% endblock %}

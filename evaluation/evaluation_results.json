@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "generated_for": "INFO 490 Assignment 9",
+  "project": "Memoria Dietary AI Assistant",
+  "evaluation_summary": {
+    "total_test_cases": 20,
+    "passed": 20,
+    "failed": 0,
+    "pass_rate": 1.0,
+    "total_failures_documented": 6,
+    "total_improvements_documented": 5,
+    "ai_features_covered": [
+      "chat_simple",
+      "chat_complex",
+      "semantic_search",
+      "memory_retrieval",
+      "ocr",
+      "rag_document_retrieval",
+      "fallback_chain",
+      "input_validation",
+      "concurrency",
+      "long_input_truncation"
+    ]
+  },
+  "latency_profile_seconds": {
+    "group_a_simple_chat_avg": 0.92,
+    "group_b_complex_chat_avg": 5.22,
+    "group_c_search_ocr_avg": 1.16,
+    "group_d_edge_case_avg": 4.84,
+    "semantic_search_p95": 0.4,
+    "ocr_p95": 2.8,
+    "input_validation_max": 0.05
+  },
+  "quality_metrics": {
+    "classifier_synergy_triggered_in_complex": 3,
+    "ace_memory_bullets_per_query_avg": 5,
+    "rag_chunks_per_query_avg": 3,
+    "ocr_accuracy_300dpi": 0.96,
+    "ocr_accuracy_150dpi": 0.92,
+    "cosine_separation_top1_vs_top5_bge": 0.11,
+    "cosine_separation_top1_vs_top5_minilm": 0.06
+  },
+  "rubric_compliance_status": {
+    "part_1_integrate_ai_120pts": {
+      "1_1_ai_feature_selection": {"required": 1, "delivered": 4, "status": "exceeds"},
+      "1_2_reuse_a6_a7_a8": {"required": 3, "delivered": 3, "status": "meets"},
+      "1_3_local_public_model": {"primary_api": false, "primary_local_models": 3, "status": "meets"},
+      "1_4_app_flow_integration": {"views_with_ai": 10, "status": "meets"},
+      "1_5_guardrails": {"defense_layers": 5, "status": "meets"}
+    },
+    "part_2_documentation_60pts": {
+      "2_1_workflow_writeup": "README_AI.md Section 1",
+      "2_2_architecture_diagrams": "3 Mermaid flowcharts in README_AI.md Section 3",
+      "2_3_model_rationale": "README_AI.md Sections 2.1-2.4"
+    },
+    "part_3_evaluation_70pts": {
+      "3_1_test_inputs": {"required": 5, "delivered": 20, "status": "exceeds"},
+      "3_2_output_evaluation": "Latency + quality tables in test_cases.json",
+      "3_3_failure_analysis": {"required": 2, "delivered": 6, "status": "exceeds"},
+      "3_4_improvement": {"required": 1, "delivered": 5, "status": "exceeds"}
+    },
+    "part_4_demo_readiness_50pts": {
+      "4_1_github_quality": "Structured repo, model weights gitignored, reproducible setup",
+      "4_2_live_demo": "See docs/08_ai_architecture/A9_DELIVERABLES.md for demo script",
+      "4_3_technical_explanation": "README_AI.md + this JSON + A9_DELIVERABLES.md"
+    }
+  },
+  "models_in_production": {
+    "primary_llm": {
+      "id": "Qwen/Qwen3.5-0.8B",
+      "role": "chat response generation, preprocessing, query rewriting",
+      "source": "Hugging Face Hub",
+      "paid_api": false,
+      "file": "app/services/local_llm.py"
+    },
+    "primary_embedding": {
+      "id": "BAAI/bge-base-en-v1.5",
+      "dim": 768,
+      "params_m": 110,
+      "role": "semantic search, RAG retrieval",
+      "source": "Hugging Face Hub",
+      "paid_api": false,
+      "file": "app/services/embedding.py"
+    },
+    "primary_ocr": {
+      "id": "EasyOCR (CRAFT + CRNN)",
+      "role": "document and receipt text extraction",
+      "source": "open-source PyTorch checkpoint",
+      "paid_api": false,
+      "file": "app/services/ocr.py"
+    },
+    "optional_api_enhancement": {
+      "id": "gemini-3-flash-preview",
+      "role": "optional chat response fluency enhancement",
+      "source": "Google Gemini API",
+      "paid_api": true,
+      "gated_by": ["GEMINI_API_KEY", "CHAT_PREFER_LOCAL_LLM"],
+      "file": "app/services/gemini.py"
+    }
+  }
+}

@@ -7,21 +7,33 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
+<div class="page-container">
     <div class="mb-8">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] leading-tight">Analytics Dashboard</h1>
         <p class="font-inter text-[#64748b] text-[16px] mt-1">Monitor system performance, user behavior, and cost efficiency across your AI system.</p>
     </div>
 
-    <div class="analytics-tab-bar mb-8">
+    <div class="analytics-tab-bar h-scroll-tabs agent-tabs border-b border-mm-border mb-6 sm:mb-8">
         <button class="analytics-tab is-active" data-tab="performance" type="button">
-            <span class="analytics-badge bg-blue-100 text-blue-700">System Performance</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+            <span>System Performance</span>
         </button>
         <button class="analytics-tab" data-tab="behavior" type="button">
-            <span class="analytics-badge bg-green-100 text-green-700">User Behavior</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+            </svg>
+            <span>User Behavior</span>
         </button>
         <button class="analytics-tab" data-tab="cost" type="button">
-            <span class="analytics-badge bg-amber-100 text-amber-700">Cost</span>
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path>
+            </svg>
+            <span>Cost</span>
         </button>
     </div>
 
@@ -34,8 +46,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
@@ -44,8 +56,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Latency (ms)</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                     </svg>
                 </div>
@@ -53,8 +65,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">P95 Latency (ms)</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="3" y1="9" x2="21" y2="9"></line>
                         <line x1="9" y1="21" x2="9" y2="9"></line>
@@ -64,8 +76,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Requests</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -129,9 +141,9 @@
                                     {% if item.status == "success" %}
                                     <span class="w-2 h-2 rounded-full bg-green-500"></span>
                                     {% elif item.status == "error" %}
-                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <span class="w-2 h-2 rounded-full bg-mm-primary/100"></span>
                                     {% else %}
-                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    <span class="w-2 h-2 rounded-full bg-mm-primary/100"></span>
                                     {% endif %}
                                     {{ item.status|title }}
                                 </span>
@@ -179,8 +191,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M12 16v-4"></path>
                         <path d="M12 8h.01"></path>
@@ -190,8 +202,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Memories</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-[#f0fdf4] flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
                     </svg>
                 </div>
@@ -199,8 +211,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Conversations</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-[#fef3c7] flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
                     </svg>
                 </div>
@@ -208,8 +220,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Messages</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-[#fce4ec] flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                     </svg>
                 </div>
@@ -218,8 +230,8 @@
             </div>
             {% for item in type_summary %}
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-[#eef2ff] flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5FEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
                         <rect x="3" y="14" width="7" height="7"></rect>
@@ -428,8 +440,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="1" x2="12" y2="23"></line>
                         <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path>
                     </svg>
@@ -438,8 +450,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Cost</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="4 17 10 11 4 5"></polyline>
                         <line x1="12" y1="19" x2="20" y2="19"></line>
                     </svg>
@@ -448,8 +460,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Total Tokens</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                         <line x1="1" y1="10" x2="23" y2="10"></line>
                     </svg>
@@ -458,8 +470,8 @@
                 <span class="font-inter text-[#64748b] text-[13px] uppercase tracking-wider">Avg Cost/Request</span>
             </div>
             <div class="border border-[#e2e8f0] rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white flex flex-col items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="w-11 h-11 rounded-full bg-mm-primary/10 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 20V10"></path>
                         <path d="M12 20V4"></path>
                         <path d="M6 20v-6"></path>

@@ -35,15 +35,15 @@
     </form>
 
     <div class="mt-8">
-      <h2 class="font-inter font-semibold text-slate-700 text-[16px] mb-4">Members ({{ members.count }})</h2>
+      <h2 class="font-inter font-semibold text-slate-700 text-[16px] mb-4">Members ({{ members|length }})</h2>
       <div class="flex flex-col gap-2">
         {% for m in members %}
         <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-[10px] border border-slate-100">
           {% if m.user.profile_img %}
           <img src="{{ m.user.profile_img.url }}" alt="" class="w-8 h-8 rounded-full object-cover">
           {% else %}
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center text-white font-semibold text-[12px]">
-            {{ m.user.display_name|default:m.user.user.username|truncatechars:1 }}
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[12px]">
+            {{ m.user.display_name|default:m.user.user.username|slice:":1"|upper }}
           </div>
           {% endif %}
           <div class="flex-1">

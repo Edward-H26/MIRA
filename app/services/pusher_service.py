@@ -1,6 +1,9 @@
 import os
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
@@ -75,6 +78,7 @@ def send_message(session_id: str | int, message: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -90,6 +94,7 @@ def send_message_edited(session_id: str | int, message: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -105,6 +110,7 @@ def send_message_deleted(session_id: str | int, message_id: str | int) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -120,6 +126,7 @@ def send_typing(session_id: str | int, user_id: str | int, user_name: str) -> bo
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -135,6 +142,7 @@ def send_stop_typing(session_id: str | int, user_id: str | int) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -150,6 +158,7 @@ def send_member_joined(session_id: str | int, agent: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -165,6 +174,7 @@ def send_member_left(session_id: str | int, data: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -180,6 +190,7 @@ def send_notification(user_id: str | int, notification: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 
@@ -195,6 +206,7 @@ def broadcast_skill_generated(session_id: str | int, skill: dict) -> bool:
         )
         return True
     except Exception:
+        logger.warning("pusher_trigger_failed", exc_info=True)
         return False
 
 

@@ -30,7 +30,9 @@ if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY missing")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Default to False so any environment that imports base without overriding
+# stays secure by default. dev.py explicitly sets DEBUG = True.
+DEBUG = False
 
 ALLOWED_HOSTS = []
 ENABLE_DEV_EVENT_LOG = False
@@ -80,6 +82,7 @@ AUTHENTICATION_BACKENDS = (
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 SOCIALACCOUNT_AUTO_SIGNUP = True
+# Skip the intermediate "Continue" confirmation page; click goes straight to Google.
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 ROOT_URLCONF = "memoria.urls"

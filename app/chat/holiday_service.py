@@ -1,6 +1,6 @@
 import requests
 
-from .service import get_api_daily_active_users_payload
+from .analytics_service import get_api_daily_active_users_payload
 
 HOLIDAY_API_BASE = "https://date.nager.at/api/v3"
 

@@ -1,4 +1,3 @@
-from app.chat.models.audit_log import AuditLog
 from app.services import neo4j_memory as neo4j
 
 
@@ -16,58 +15,42 @@ def log_audit(
 ) -> dict:
     profile = _get_profile(user)
 
-    kwargs = {
-        "user": profile,
-        "event_type": event_type,
-        "description": description,
-        "metadata": metadata or {},
-    }
-    if agent_id:
-        try:
-            from app.chat.models.agent import Agent
-            kwargs["agent"] = Agent.objects.filter(pk=int(agent_id)).first()
-        except (ValueError, TypeError):
-            pass
-
-    log = AuditLog.objects.create(**kwargs)
-
-    try:
-        neo4j.create_audit_log(
-            user_id=str(profile.pk),
-            event_type=event_type,
-            description=description,
-            agent_id=agent_id,
-            metadata=metadata,
-        )
-    except Exception:
-        pass
+    result = neo4j.create_audit_log(
+        user_id=str(profile.pk),
+        event_type=event_type,
+        description=description,
+        agent_id=agent_id,
+        metadata=metadata,
+    )
 
     return {
-        "id": str(log.pk),
-        "eventType": log.event_type,
-        "description": log.description,
-        "agentName": log.agent.name if log.agent else None,
-        "createdAt": log.created_at.isoformat() if log.created_at else "",
+        "id": result.get("id", ""),
+        "eventType": result.get("eventType", ""),
+        "description": result.get("description", ""),
+        "agentName": result.get("agentName"),
+        "createdAt": result.get("createdAt", ""),
     }
 
 
 def get_audit_log_for_user(user, event_type: str = "", limit: int = 100) -> list[dict]:
     profile = _get_profile(user)
-    qs = AuditLog.objects.filter(user=profile).select_related("agent")
-    if event_type:
-        qs = qs.filter(event_type=event_type)
-    qs = qs.order_by("-created_at")[:limit]
+
+    logs = neo4j.get_audit_logs(
+        user_id=str(profile.pk),
+        event_type=event_type,
+        limit=limit,
+    )
 
     return [
         {
-            "id": str(log.pk),
-            "eventType": log.event_type,
-            "description": log.description,
-            "agentName": log.agent.name if log.agent else None,
-            "agentId": str(log.agent.pk) if log.agent else None,
-            "createdAt": log.created_at.isoformat() if log.created_at else "",
+            "id": log.get("id", ""),
+            "eventType": log.get("eventType", ""),
+            "description": log.get("description", ""),
+            "agentName": log.get("agentName"),
+            "agentId": log.get("agentId"),
+            "createdAt": log.get("createdAt", ""),
         }
-        for log in qs
+        for log in logs
     ]
 
 

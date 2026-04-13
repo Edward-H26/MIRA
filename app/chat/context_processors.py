@@ -1,20 +1,32 @@
-from .service import get_sidebar_sessions_for_user
+from app.services import neo4j_memory as neo4j
+
+
+def _user_id(request):
+    try:
+        profile = request.user.profile
+        return str(profile.pk)
+    except Exception:
+        return str(request.user.pk)
 
 
 def user_sessions(request):
     if not request.user.is_authenticated:
         return {"sessions": []}
-    return {"sessions": get_sidebar_sessions_for_user(request.user)}
+    try:
+        sessions = neo4j.get_sessions_for_user(_user_id(request))
+        return {"sessions": sessions}
+    except Exception:
+        return {"sessions": []}
 
 
 def user_notifications(request):
     if not request.user.is_authenticated:
         return {"unreadNotificationCount": 0, "recentNotifications": []}
     try:
-        from .notification_service import get_unread_count, get_recent_notifications
+        uid = _user_id(request)
         return {
-            "unreadNotificationCount": get_unread_count(request.user),
-            "recentNotifications": get_recent_notifications(request.user, limit=5),
+            "unreadNotificationCount": neo4j.get_unread_notification_count(uid),
+            "recentNotifications": neo4j.get_notifications(uid, limit=5),
         }
     except Exception:
         return {"unreadNotificationCount": 0, "recentNotifications": []}

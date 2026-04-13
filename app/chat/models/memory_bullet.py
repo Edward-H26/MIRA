@@ -1,8 +1,9 @@
 from django.db import models
 from django.utils import timezone
 import hashlib
-import math
 import re
+
+from app.chat import decay
 
 class MemoryType(models.IntegerChoices):
     SEMANTIC = 1, "Semantic"
@@ -113,18 +114,15 @@ class MemoryBullet(models.Model):
 
     @staticmethod
     def component_score(strength, last_index, decay_rate, access_clock):
-        if strength <= 0:
-            return 0.0
-        base = max(0.0, min(1.0, 1.0 - decay_rate))
-        t = max(access_clock - (last_index or access_clock), 0)
-        return strength * math.pow(base, t)
+        return decay.component_score(strength, last_index, decay_rate, access_clock)
 
     @staticmethod
     def compute_strength_score(bullet, access_clock):
-        return (
-            MemoryBullet.component_score(bullet.semantic_strength, bullet.semantic_access_index, 0.01, access_clock)
-            + MemoryBullet.component_score(bullet.episodic_strength, bullet.episodic_access_index, 0.05, access_clock)
-            + MemoryBullet.component_score(bullet.procedural_strength, bullet.procedural_access_index, 0.002, access_clock)
+        return decay.total_strength(
+            bullet.semantic_strength, bullet.semantic_access_index,
+            bullet.episodic_strength, bullet.episodic_access_index,
+            bullet.procedural_strength, bullet.procedural_access_index,
+            access_clock,
         )
 
     @staticmethod

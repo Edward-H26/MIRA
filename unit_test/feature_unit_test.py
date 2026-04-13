@@ -6,7 +6,7 @@ from unittest.mock import patch
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.development")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "memoria.settings.dev")
 django.setup()
 
 from django.contrib.auth.models import User as AuthUser
@@ -19,8 +19,6 @@ from app.chat.models.memory_bullet import MemoryType
 from app.chat.service import (
     create_home_session_for_user,
     get_activity_chart_png,
-    get_analytics_dashboard_context,
-    get_api_analytics_summary_payload,
     get_api_memory_bullets_payload,
     get_api_messages_payload,
     get_api_sessions_payload,
@@ -32,6 +30,10 @@ from app.chat.service import (
     get_session_for_user,
     get_sidebar_sessions_for_user,
     stream_user_message_with_agent_reply,
+)
+from app.chat.analytics_service import (
+    get_analytics_dashboard_context,
+    get_api_analytics_summary_payload,
 )
 from app.chat.holiday_service import (
     HolidayAPIUnavailableError,

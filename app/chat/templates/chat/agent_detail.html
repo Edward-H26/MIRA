@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 py-8">
+<div class="page-container">
 
     <!-- Header -->
     <div class="flex items-center justify-between mb-2">
@@ -25,7 +25,7 @@
     <p class="font-inter text-mm-muted text-[15px] mb-6">Configure your AI agent's behavior, skills, and collaboration settings</p>
 
     <!-- Tabs -->
-    <div class="flex items-center gap-1 border-b border-mm-border mb-8">
+    <div class="h-scroll-tabs agent-tabs border-b border-mm-border mb-6 sm:mb-8">
         <a href="{% url 'chat:agent_detail' agent_id=agent.id %}" class="flex items-center gap-2 px-4 py-3 font-inter font-semibold text-[14px] text-mm-primary border-b-2 border-mm-primary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>

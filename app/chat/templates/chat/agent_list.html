@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
+<div class="page-container">
 
     <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
@@ -63,7 +63,7 @@
                     <h3 class="font-inter font-semibold text-[#0f172a] text-[16px] m-0 truncate">{{ agent.name }}</h3>
                 </div>
                 {% if agent.isActive %}
-                <span class="flex-shrink-0 text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[#d1fae5] text-[#065f46]">Active</span>
+                <span class="flex-shrink-0 text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[rgba(108,134,192,0.12)] text-mm-primary">Active</span>
                 {% else %}
                 <span class="flex-shrink-0 text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[#f1f5f9] text-[#475569]">Inactive</span>
                 {% endif %}

@@ -200,7 +200,6 @@ function handleAutoTitle(sessionId, title) {
 
 function deleteConversation(id) {
     const routes = getAppRoutes()
-    if (!confirm("Are you sure you want to delete this conversation?")) return
     const item = document.querySelector(`.conv-sidebar-item[data-id="${id}"]`)
     if (item) item.remove()
     fetch(routeFromTemplate(routes.chatSessionDeleteTemplate, id), {
@@ -264,6 +263,13 @@ function initContextMenu() {
         menu.classList.add("hidden")
         overlay.classList.add("hidden")
         activeConversationId = null
+        const wrapper = menu.querySelector("[data-action='delete-wrapper']")
+        if (wrapper) {
+            const startBtn = wrapper.querySelector("[data-action='delete-start']")
+            const confirmDiv = wrapper.querySelector("[data-action='delete-confirm']")
+            if (startBtn) startBtn.classList.remove("hidden")
+            if (confirmDiv) confirmDiv.classList.add("hidden")
+        }
     }
 
     window.showContextMenu = showContextMenu
@@ -281,6 +287,18 @@ function initContextMenu() {
         const id = activeConversationId
         hideContextMenu()
         renameConversation(id)
+    })
+
+    menu.querySelector("[data-action='delete-start']").addEventListener("click", () => {
+        const wrapper = menu.querySelector("[data-action='delete-wrapper']")
+        wrapper.querySelector("[data-action='delete-start']").classList.add("hidden")
+        wrapper.querySelector("[data-action='delete-confirm']").classList.remove("hidden")
+    })
+
+    menu.querySelector("[data-action='delete-cancel']").addEventListener("click", () => {
+        const wrapper = menu.querySelector("[data-action='delete-wrapper']")
+        wrapper.querySelector("[data-action='delete-start']").classList.remove("hidden")
+        wrapper.querySelector("[data-action='delete-confirm']").classList.add("hidden")
     })
 
     menu.querySelector("[data-action='delete']").addEventListener("click", () => {
@@ -432,7 +450,11 @@ function initMobileNav() {
             const convPrefix = routes.chatConversationDetailTemplate.replace("0/", "")
             isActive = path === routes.home || path === homeNoSlash || path.startsWith(convPrefix)
         } else if (key === "agent") {
-            isActive = path.startsWith("/chat/agents/")
+            isActive = path.startsWith("/chat/agents/") && !path.startsWith("/chat/agents/marketplace")
+        } else if (key === "teams") {
+            isActive = path.startsWith("/chat/agents/marketplace") || path.startsWith("/chat/skills/marketplace") || path.startsWith("/chat/groups")
+        } else if (key === "dashboard") {
+            isActive = path === "/dashboard/" || path.startsWith("/chat/analytics")
         }
 
         link.classList.toggle("is-active", isActive)
@@ -455,22 +477,72 @@ function initConversationSidebarSearch() {
     })
 }
 
+function ensureConvBackdrop() {
+    let backdrop = document.querySelector("[data-conv-sidebar-backdrop]")
+    if (backdrop) return backdrop
+    backdrop = document.createElement("div")
+    backdrop.setAttribute("data-conv-sidebar-backdrop", "")
+    document.body.appendChild(backdrop)
+    backdrop.addEventListener("click", () => closeConvSidebar())
+    return backdrop
+}
+
+function openConvSidebar() {
+    const sidebar = document.querySelector("[data-conv-sidebar]")
+    if (!sidebar) return
+    sidebar.classList.remove("max-md:hidden")
+    sidebar.classList.add("is-open")
+    ensureConvBackdrop()
+    const tab = document.getElementById("mobile-conv-tab")
+    if (tab) tab.classList.add("is-active")
+}
+
+function closeConvSidebar() {
+    const sidebar = document.querySelector("[data-conv-sidebar]")
+    if (!sidebar) return
+    sidebar.classList.remove("is-open")
+    if (window.matchMedia("(max-width: 767px)").matches) {
+        sidebar.classList.add("max-md:hidden")
+    }
+    const tab = document.getElementById("mobile-conv-tab")
+    if (tab) tab.classList.remove("is-active")
+}
+
 function toggleConvSidebar() {
     const sidebar = document.querySelector("[data-conv-sidebar]")
     if (!sidebar) return
-    const isHidden = sidebar.classList.contains("max-lg:hidden")
-    if (isHidden) {
-        sidebar.classList.remove("max-lg:hidden")
-        sidebar.classList.add("fixed", "inset-0", "z-50", "w-full")
+    if (sidebar.classList.contains("is-open")) {
+        closeConvSidebar()
     } else {
-        sidebar.classList.add("max-lg:hidden")
-        sidebar.classList.remove("fixed", "inset-0", "z-50", "w-full")
+        openConvSidebar()
+    }
+}
+
+function initMobileConvTab() {
+    const tab = document.getElementById("mobile-conv-tab")
+    if (!tab) return
+    tab.addEventListener("click", (e) => {
+        e.preventDefault()
+        toggleConvSidebar()
+    })
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeConvSidebar()
+    })
+    const sidebar = document.querySelector("[data-conv-sidebar]")
+    if (sidebar) {
+        sidebar.addEventListener("click", (e) => {
+            const link = e.target.closest(".conv-sidebar-item a, [data-close-conv-sidebar]")
+            if (link && window.matchMedia("(max-width: 767px)").matches) {
+                setTimeout(() => closeConvSidebar(), 50)
+            }
+        })
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     initSidebarNav()
     initMobileNav()
+    initMobileConvTab()
     initSearchModal()
     initConversationSidebarSearch()
     initContextMenu()

@@ -353,21 +353,55 @@ AGENT_CATEGORIES = [
 ]
 
 
-COLLABORATION_SUFFIX = (
-    "\n\n## Collaboration Protocol\n"
-    "You are part of a team of agents. When your response does not fully complete the task, "
-    "or when a question falls outside your expertise, you MUST @mention the most relevant agent "
-    "by name to continue the conversation. Use the format @AgentFirstNameLastName (e.g., @JordanWells, "
-    "@KatherineOsei, @ElenaVolkov). Available agents include specialists in finance, legal, data analysis, "
-    "project management, operations, HR, customer success, content strategy, technical writing, and meeting facilitation.\n\n"
-    "If the task requires multiple perspectives or is not yet complete, end your response with a specific @mention "
-    "and a clear request for the next agent. Do NOT leave tasks incomplete without delegating to the appropriate specialist."
-)
+CATEGORY_COLLABORATORS = {
+    "productivity": ["project-management", "collaboration", "documentation"],
+    "marketing": ["analytics", "documentation", "operations"],
+    "human-resources": ["compliance", "operations", "productivity"],
+    "project-management": ["analytics", "productivity", "collaboration"],
+    "analytics": ["project-management", "finance", "operations"],
+    "finance": ["legal", "analytics", "compliance"],
+    "legal": ["finance", "compliance", "operations"],
+    "compliance": ["legal", "finance", "operations"],
+    "customer-support": ["marketing", "operations", "productivity"],
+    "documentation": ["productivity", "marketing", "project-management"],
+    "operations": ["analytics", "project-management", "finance"],
+    "collaboration": ["project-management", "productivity", "documentation"],
+}
+
+
+def _build_collaboration_suffix_for_agent(agentCategory):
+    relatedCategories = CATEGORY_COLLABORATORS.get(agentCategory, [])
+    relevantAgents = [
+        a for a in TEMPLATE_AGENTS
+        if a["category"] in relatedCategories or a["category"] == agentCategory
+    ][:8]
+
+    agentLines = []
+    for a in relevantAgents:
+        nameParts = a["name"].split("'")[0].replace(" ", "")
+        agentLines.append(f"- @{nameParts}: {a['description']}")
+    agentList = "\n".join(agentLines)
+
+    return (
+        "\n\n## Collaboration Protocol\n"
+        "You are part of a team. Here are agents most relevant to your work:\n\n"
+        f"{agentList}\n\n"
+        "Other specialists are available. If you need someone not listed, "
+        "@mention them using the compact handle shown above (e.g., @KatherineOsei). "
+        "Never include spaces, apostrophes, or the suffix \"'s Agent\" inside the mention; "
+        "the interface expands the pill visually.\n\n"
+        "### Rules:\n"
+        "1. @mention the specific agent using the compact handle and explain what you need from them.\n"
+        "2. Summarize your work and what the next agent should focus on.\n"
+        "3. When the task is complete, end with: "
+        '"The task is complete. @User, here is a summary of what was accomplished."\n'
+        "4. Do NOT leave tasks incomplete without delegating or concluding.\n"
+    )
 
 
 def get_all_template_agents() -> list[dict]:
     return [
-        {**agent, "systemPrompt": agent.get("systemPrompt", "") + COLLABORATION_SUFFIX}
+        {**agent, "systemPrompt": agent.get("systemPrompt", "") + _build_collaboration_suffix_for_agent(agent["category"])}
         for agent in TEMPLATE_AGENTS
     ]
 

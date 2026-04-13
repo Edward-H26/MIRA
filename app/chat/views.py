@@ -4,205 +4,211 @@ import time
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.decorators import method_decorator
+from django.shortcuts import redirect, render
 from django.utils import timezone
-from django.views import View
 from django.views.decorators.http import require_http_methods
-from django.views.generic import DetailView, ListView
 
+from app.services import neo4j_memory as neo4j
 from memoria.event_log import log_event
-from .models import Memory, MemoryBullet
 from .service import (
     stream_user_message_with_agent_reply,
-    get_analytics_dashboard_context_with_reports,
     get_or_create_profile_for_user,
     get_memory_list_data,
-    get_memory_bullet_report_export_rows,
-    get_memory_strength_chart_png,
     get_memory_summary,
-    get_memory_type_chart_png,
-    get_activity_chart_png,
-    get_session_report_export_rows,
     get_session_for_user,
     get_session_for_user_or_member,
     get_sidebar_sessions_for_user,
+)
+from .analytics_service import (
+    get_analytics_dashboard_context_with_reports,
+    get_memory_bullet_report_export_rows,
+    get_session_report_export_rows,
+    get_request_log_export_rows,
+)
+from .chart_service import (
+    get_memory_strength_chart_png,
+    get_memory_type_chart_png,
+    get_activity_chart_png,
     get_latency_over_time_chart_png,
     get_latency_by_model_chart_png,
     get_error_rate_chart_png,
     get_daily_cost_chart_png,
     get_token_usage_chart_png,
     get_cost_by_model_chart_png,
-    get_request_log_export_rows,
 )
 
 PENDING_PROMPT_SESSION_KEY = "pending_chat_prompts"
 
 
-@method_decorator(login_required(login_url="/"), name="dispatch")
-class MemoryListView(ListView):
-    model = MemoryBullet
-    template_name = "chat/memory.html"
-    context_object_name = "bullets"
+@login_required(login_url="/")
+def memory_list_view(request):
+    searchQuery = (request.POST.get("q") or request.GET.get("q") or "").strip()
+    memoryType = (request.POST.get("type") or request.GET.get("type") or "").strip()
+    sortKey = (request.POST.get("sort") or request.GET.get("sort") or "created").strip()
+    payload = get_memory_list_data(
+        request.user,
+        search_query=searchQuery,
+        memory_type=memoryType,
+        sort_key=sortKey,
+    )
+    profile = get_or_create_profile_for_user(request.user)
+    bullets = payload["queryset"]
+    bulletIds = [b.get("id", "") for b in bullets if b.get("id")]
+    userVotes = neo4j.get_user_votes_batch(str(profile.pk), bulletIds)
+    context = {
+        "bullets": bullets,
+        "memory_type_choices": payload["memory_type_choices"],
+        "active_memory_type": payload["active_memory_type"],
+        "search_query": payload["search_query"],
+        "sort_label": payload["sort_label"],
+        "active_sort": payload["active_sort"],
+        "user_votes": userVotes,
+    }
+    context.update(get_memory_summary(request.user))
+    return render(request, "chat/memory.html", context)
 
-    def post(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
 
-    def get_queryset(self):
-        search_query = (self.request.POST.get("q") or self.request.GET.get("q") or "").strip()
-        memory_type = (self.request.POST.get("type") or self.request.GET.get("type") or "").strip()
-        sort_key = (self.request.POST.get("sort") or self.request.GET.get("sort") or "created").strip()
-        payload = get_memory_list_data(
-            self.request.user,
-            search_query=search_query,
-            memory_type=memory_type,
-            sort_key=sort_key,
+@login_required(login_url="/")
+def conversation_messages_view(request, session_id):
+    if request.method == "GET":
+        return _conversation_messages_get(request, session_id)
+    return _conversation_messages_post(request, session_id)
+
+
+def _conversation_messages_get(request, session_id):
+    try:
+        session = get_session_for_user(request.user, session_id, with_messages=True)
+    except Http404:
+        profile = get_or_create_profile_for_user(request.user)
+        members = neo4j.get_members_for_session(str(session_id))
+        isMember = any(str(m.get("userId", "")) == str(profile.pk) for m in members)
+        if not isMember:
+            raise Http404
+        session = neo4j.get_session_by_id(str(session_id))
+        if session is None:
+            raise Http404
+        session["messages"] = neo4j.get_messages_for_session(str(session_id))
+    try:
+        from .notification_service import mark_read_by_related_url
+        mark_read_by_related_url(request.user, f"/chat/c/{session['id']}/")
+    except Exception:
+        pass
+    isGenerating = neo4j.ensure_generation_lock_fresh(session["id"])
+    pendingPrompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
+    pendingPrompt = pendingPrompts.pop(str(session["id"]), "")
+    if pendingPrompts:
+        request.session[PENDING_PROMPT_SESSION_KEY] = pendingPrompts
+    else:
+        request.session.pop(PENDING_PROMPT_SESSION_KEY, None)
+    if pendingPrompt:
+        request.session.modified = True
+    return render(
+        request,
+        "chat/conversation_detail.html",
+        {
+            "session": session,
+            "pending_prompt": pendingPrompt,
+            "generation_in_progress": isGenerating,
+        },
+    )
+
+
+def _conversation_messages_post(request, session_id):
+    session = get_session_for_user(request.user, session_id)
+    profile = get_or_create_profile_for_user(request.user)
+    session["_user"] = request.user
+    session["_profile_id"] = str(profile.pk)
+    content = (request.POST.get("message") or "").strip()
+    if not content:
+        return JsonResponse({"error": "Empty message"}, status=400)
+    sessionId = session["id"]
+    log_event("chat_message_submit", request=request, session_id=sessionId)
+    if not neo4j.acquire_session_generation_lock(sessionId):
+        log_event("chat_generation_rejected_locked", request=request, session_id=sessionId)
+        return JsonResponse(
+            {"error": "generation_in_progress", "message": "Previous response is still generating."},
+            status=409,
         )
-        self._list_payload = payload
-        return payload["queryset"]
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            "memory_type_choices": self._list_payload["memory_type_choices"],
-            "active_memory_type": self._list_payload["active_memory_type"],
-            "search_query": self._list_payload["search_query"],
-            "sort_label": self._list_payload["sort_label"],
-            "active_sort": self._list_payload["active_sort"],
-        })
-        context.update(get_memory_summary(self.request.user))
-        from .models.memory_vote import MemoryVote
-        profile = get_or_create_profile_for_user(self.request.user)
-        userVotes = {
-            v["bullet_id"]: v["value"]
-            for v in MemoryVote.objects.filter(user=profile).values("bullet_id", "value")
-        }
-        context["user_votes"] = userVotes
-        return context
+    autoTitle = None
+    if session.get("title", "") in ("New Chat", "") and not neo4j.session_has_messages(sessionId):
+        autoTitle = content[:60].strip()
+        if autoTitle:
+            neo4j.update_session(sessionId, title=autoTitle)
 
-
-@method_decorator(login_required(login_url="/"), name="dispatch")
-class ConversationMessagesView(View):
-    def get(self, request, session_id):
+    if request.headers.get("x-requested-with") != "XMLHttpRequest":
         try:
-            session = get_session_for_user(request.user, session_id, with_messages=True)
-        except Http404:
-            from .models import Session, SessionMember
-            session = get_object_or_404(Session, pk=session_id)
-            profile = get_or_create_profile_for_user(request.user)
-            if not SessionMember.objects.filter(session=session, user=profile).exists():
-                raise Http404
-        is_generating = session.ensure_generation_lock_fresh()
-        pending_prompts = dict(request.session.get(PENDING_PROMPT_SESSION_KEY, {}))
-        pending_prompt = pending_prompts.pop(str(session.pk), "")
-        if pending_prompts:
-            request.session[PENDING_PROMPT_SESSION_KEY] = pending_prompts
-        else:
-            request.session.pop(PENDING_PROMPT_SESSION_KEY, None)
-        if pending_prompt:
-            request.session.modified = True
-        return render(
-            request,
-            "chat/conversation_detail.html",
-            {
-                "session": session,
-                "pending_prompt": pending_prompt,
-                "generation_in_progress": is_generating,
-            },
-        )
+            for _ in stream_user_message_with_agent_reply(session, content):
+                pass
+        finally:
+            neo4j.release_session_generation_lock(sessionId)
+        return redirect(f"/chat/c/{sessionId}/")
 
-    def post(self, request, session_id):
-        session = get_session_for_user(request.user, session_id)
-        content = (request.POST.get("message") or "").strip()
-        if not content:
-            return JsonResponse({"error": "Empty message"}, status=400)
-        log_event("chat_message_submit", request=request, session_id=session.pk)
-        if not session.acquire_generation_lock():
-            log_event("chat_generation_rejected_locked", request=request, session_id=session.pk)
-            return JsonResponse(
-                {"error": "generation_in_progress", "message": "Previous response is still generating."},
-                status=409,
-            )
+    def event_stream():
+        titleInjected = not autoTitle
+        try:
+            for payload in stream_user_message_with_agent_reply(session, content):
+                if not titleInjected:
+                    payload = {**payload, "auto_title": autoTitle, "session_id": sessionId}
+                    titleInjected = True
+                yield json.dumps(payload, ensure_ascii=False) + "\n"
+        finally:
+            neo4j.release_session_generation_lock(sessionId)
 
-        autoTitle = None
-        if session.title in ("New Chat", "") and not session.messages.exists():
-            autoTitle = content[:60].strip()
-            if autoTitle:
-                session.title = autoTitle
-                session.save(update_fields=["title"])
-
-        if request.headers.get("x-requested-with") != "XMLHttpRequest":
-            try:
-                for _ in stream_user_message_with_agent_reply(session, content):
-                    pass
-            finally:
-                session.release_generation_lock()
-            return redirect(session.get_absolute_url())
-
-        def event_stream():
-            titleInjected = not autoTitle
-            try:
-                for payload in stream_user_message_with_agent_reply(session, content):
-                    if not titleInjected:
-                        payload = {**payload, "auto_title": autoTitle, "session_id": session.pk}
-                        titleInjected = True
-                    yield json.dumps(payload, ensure_ascii=False) + "\n"
-            finally:
-                session.release_generation_lock()
-
-        response = StreamingHttpResponse(
-            event_stream(),
-            content_type="application/x-ndjson; charset=utf-8",
-        )
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-        return response
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="application/x-ndjson; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def message_edit_view(request, session_id, message_id):
-    from .models import Message
-    from .models.message import Role
-
-    session = get_session_for_user(request.user, session_id)
-    try:
-        msg = Message.objects.get(pk=message_id, session=session, role=Role.USER)
-    except Message.DoesNotExist:
-        return JsonResponse({"error": "Message not found"}, status=404)
-
+    get_session_for_user(request.user, session_id)
     content = (request.POST.get("content") or "").strip()
     if not content:
         return JsonResponse({"error": "Content required"}, status=400)
-
-    msg.content = content
-    msg.save(update_fields=["content"])
-    return JsonResponse({"ok": True, "content": msg.content})
+    updated = neo4j.edit_message(str(message_id), content)
+    if updated is None:
+        return JsonResponse({"error": "Message not found"}, status=404)
+    return JsonResponse({"ok": True, "content": updated.get("content", content)})
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def message_resend_view(request, session_id, message_id):
-    from .models import Message
-    from .models.message import Role
-
     session = get_session_for_user(request.user, session_id)
-    try:
-        msg = Message.objects.get(pk=message_id, session=session, role=Role.USER)
-    except Message.DoesNotExist:
+    profile = get_or_create_profile_for_user(request.user)
+    session["_user"] = request.user
+    session["_profile_id"] = str(profile.pk)
+    sessionId = session["id"]
+
+    allMessages = neo4j.get_messages_for_session(sessionId)
+    targetMsg = None
+    for m in allMessages:
+        if str(m.get("id", "")) == str(message_id) and m.get("role") == "user":
+            targetMsg = m
+            break
+    if targetMsg is None:
         return JsonResponse({"error": "Message not found"}, status=404)
 
-    if not session.acquire_generation_lock():
+    if not neo4j.acquire_session_generation_lock(sessionId):
         return JsonResponse({"error": "generation_in_progress"}, status=409)
 
-    Message.objects.filter(session=session, created_at__gt=msg.created_at).delete()
+    targetCreatedAt = targetMsg.get("createdAt", "")
+    for m in allMessages:
+        if m.get("createdAt", "") > targetCreatedAt:
+            neo4j.delete_message(str(m["id"]))
 
     def event_stream():
         try:
-            for payload in stream_user_message_with_agent_reply(session, msg.content, skip_user_message=True):
+            for payload in stream_user_message_with_agent_reply(session, targetMsg.get("content", ""), skip_user_message=True):
                 yield json.dumps(payload, ensure_ascii=False) + "\n"
         finally:
-            session.release_generation_lock()
+            neo4j.release_session_generation_lock(sessionId)
 
     response = StreamingHttpResponse(
         event_stream(),
@@ -217,6 +223,7 @@ def message_resend_view(request, session_id, message_id):
 @require_http_methods(["POST"])
 def conversation_upload_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
+    sessionId = session["id"]
 
     uploadedFile = request.FILES.get("file")
     if not uploadedFile:
@@ -231,7 +238,7 @@ def conversation_upload_view(request, session_id):
     try:
         ocrResult = extract_text_from_file(uploadedFile)
     except Exception as exc:
-        log_event("chat_upload_ocr_crash", session_id=session.pk, error=str(exc))
+        log_event("chat_upload_ocr_crash", session_id=sessionId, error=str(exc))
         return JsonResponse({"error": f"Document processing failed: {exc}"}, status=400)
 
     if ocrResult.status != "success":
@@ -240,7 +247,7 @@ def conversation_upload_view(request, session_id):
     userMessage = (request.POST.get("message") or "").strip()
     truncatedText = ocrResult.raw_text[:500]
 
-    displayContent = userMessage or f"Analyze this document"
+    displayContent = userMessage or "Analyze this document"
     displayContent += f"\n[Attached: {uploadedFile.name}]"
 
     aiPromptParts = []
@@ -252,21 +259,20 @@ def conversation_upload_view(request, session_id):
     )
     aiPrompt = "\n\n".join(aiPromptParts)
 
-    log_event("chat_document_upload", request=request, session_id=session.pk)
+    log_event("chat_document_upload", request=request, session_id=sessionId)
 
-    if not session.acquire_generation_lock():
+    if not neo4j.acquire_session_generation_lock(sessionId):
         return JsonResponse({"error": "generation_in_progress"}, status=409)
 
-    from .models import Message
-    from .models.message import Role
-    Message.objects.create(session=session, role=Role.USER, content=displayContent)
+    profile = get_or_create_profile_for_user(request.user)
+    neo4j.create_message(sessionId, displayContent, str(profile.pk), role="user")
 
     def event_stream():
         try:
             for payload in stream_user_message_with_agent_reply(session, aiPrompt, skip_user_message=True):
                 yield json.dumps(payload, ensure_ascii=False) + "\n"
         finally:
-            session.release_generation_lock()
+            neo4j.release_session_generation_lock(sessionId)
 
     response = StreamingHttpResponse(
         event_stream(),
@@ -277,33 +283,33 @@ def conversation_upload_view(request, session_id):
     return response
 
 
-@method_decorator(login_required(login_url="/"), name="dispatch")
-class MemoryBulletsView(DetailView):
-    model = Memory
-    template_name = "chat/memory_detail.html"
-    context_object_name = "memory"
-    pk_url_kwarg = "memory_id"
-
-    def get_queryset(self):
-        profile = get_or_create_profile_for_user(self.request.user)
-        return (
-            Memory.objects.filter(user=profile)
-            .prefetch_related("memorybullet_set")
-            .order_by("-updated_at")
-        )
+@login_required(login_url="/")
+def memory_bullets_view(request, memory_id):
+    profile = get_or_create_profile_for_user(request.user)
+    memory = neo4j.get_memory(str(memory_id))
+    if memory is not None:
+        bullets = neo4j.get_bullets_for_memory(str(memory_id), learner_id=str(profile.user_id))
+        memory["bullets"] = bullets
+        return render(request, "chat/memory_detail.html", {"memory": memory})
+    bullet = neo4j.get_bullet(str(memory_id))
+    if bullet is None:
+        raise Http404
+    memory = {"id": memory_id, "bullets": [bullet], "access_clock": "", "created_at": "", "updated_at": ""}
+    return render(request, "chat/memory_detail.html", {"memory": memory})
 
 
 @login_required(login_url="/")
 @require_http_methods(["GET"])
 def conversation_lock_status_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
-    is_generating = session.ensure_generation_lock_fresh()
+    sessionId = session["id"]
+    isGenerating = neo4j.ensure_generation_lock_fresh(sessionId)
     return JsonResponse(
         {
-            "session_id": session.pk,
-            "generation_in_progress": is_generating,
-            "generation_started_at": session.generation_started_at.isoformat() if session.generation_started_at else None,
-            "updated_at": session.updated_at.isoformat(),
+            "session_id": sessionId,
+            "generation_in_progress": isGenerating,
+            "generation_started_at": session.get("generationStartedAt"),
+            "updated_at": session.get("updatedAt", ""),
         }
     )
 
@@ -312,20 +318,20 @@ def conversation_lock_status_view(request, session_id):
 @require_http_methods(["GET"])
 def conversation_wait_for_unlock_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
+    sessionId = session["id"]
     try:
-        timeout_seconds = int(request.GET.get("timeout", "55"))
+        timeoutSeconds = int(request.GET.get("timeout", "55"))
     except (TypeError, ValueError):
-        timeout_seconds = 55
-    timeout_seconds = min(max(timeout_seconds, 5), 120)
+        timeoutSeconds = 55
+    timeoutSeconds = min(max(timeoutSeconds, 5), 120)
 
-    deadline = time.monotonic() + timeout_seconds
+    deadline = time.monotonic() + timeoutSeconds
     while True:
-        session.refresh_from_db(fields=["generation_in_progress", "generation_started_at", "updated_at"])
-        is_generating = session.ensure_generation_lock_fresh()
-        if not is_generating:
+        isGenerating = neo4j.ensure_generation_lock_fresh(sessionId)
+        if not isGenerating:
             return JsonResponse(
                 {
-                    "session_id": session.pk,
+                    "session_id": sessionId,
                     "generation_in_progress": False,
                     "timed_out": False,
                 }
@@ -333,7 +339,7 @@ def conversation_wait_for_unlock_view(request, session_id):
         if time.monotonic() >= deadline:
             return JsonResponse(
                 {
-                    "session_id": session.pk,
+                    "session_id": sessionId,
                     "generation_in_progress": True,
                     "timed_out": True,
                 }
@@ -348,19 +354,19 @@ def session_rename_view(request, session_id):
     title = (request.POST.get("title") or "").strip()
     if not title:
         return JsonResponse({"error": "Title is required"}, status=400)
-    session.title = title[:200]
-    session.save(update_fields=["title"])
-    log_event("chat_session_updated", request=request, session_id=session.pk, action="rename")
-    return JsonResponse({"ok": True, "title": session.title})
+    trimmedTitle = title[:200]
+    neo4j.update_session(session["id"], title=trimmedTitle)
+    log_event("chat_session_updated", request=request, session_id=session["id"], action="rename")
+    return JsonResponse({"ok": True, "title": trimmedTitle})
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def session_delete_view(request, session_id):
     session = get_session_for_user(request.user, session_id)
-    deleted_id = session.pk
-    session.delete()
-    log_event("chat_session_updated", request=request, session_id=deleted_id, action="delete")
+    deletedId = session["id"]
+    neo4j.delete_session(deletedId)
+    log_event("chat_session_updated", request=request, session_id=deletedId, action="delete")
     return JsonResponse({"ok": True})
 
 
@@ -443,11 +449,13 @@ def export_request_log_report(request):
     )
 
 
+@login_required(login_url="/")
 @require_http_methods(["GET"])
 def vega_daily_users_chart_view(request):
     return render(request, "chat/vega_daily_users.html")
 
 
+@login_required(login_url="/")
 @require_http_methods(["GET"])
 def vega_daily_messages_chart_view(request):
     return render(request, "chat/vega_daily_messages.html")
@@ -538,10 +546,12 @@ def agent_detail_view(request, agent_id):
         return redirect("chat:agent_detail", agent_id=agent_id)
 
     profile = get_or_create_profile_for_user(request.user)
-    from .models import Document
-    skillCount = MemoryBullet.objects.filter(memory__user=profile, is_skill=True).count()
-    memoryCount = MemoryBullet.objects.filter(memory__user=profile).count()
-    fileCount = Document.objects.filter(user=profile, agent_id=agent_id).count()
+    memory = neo4j.get_or_create_memory(str(profile.pk))
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    skillCount = sum(1 for b in allBullets if b.get("isSkill"))
+    memoryCount = len(allBullets)
+    docs = neo4j.get_documents_for_user(str(profile.pk), agent_id=str(agent_id))
+    fileCount = len(docs)
     return render(request, "chat/agent_detail.html", {
         "agent": agent,
         "skill_count": skillCount,
@@ -641,18 +651,19 @@ def my_agent_redirect_view(request):
 @login_required(login_url="/")
 def agent_files_view(request, agent_id):
     from .agent_service import get_agent_for_user
-    from .models import Document
+
+    MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 
     agent = get_agent_for_user(request.user, str(agent_id))
-    profile = request.user.profile
+    profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
 
     if request.method == "POST":
-        from .models.document import MAX_UPLOAD_SIZE_BYTES
         uploaded = request.FILES.get("file")
         if uploaded:
             size = uploaded.size
             if size > MAX_UPLOAD_SIZE_BYTES:
-                documents = Document.objects.filter(user=profile, agent_id=agent_id)
+                documents = neo4j.get_documents_for_user(userId, agent_id=str(agent_id))
                 return render(request, "chat/agent_files.html", {
                     "agent": agent,
                     "documents": documents,
@@ -678,19 +689,17 @@ def agent_files_view(request, agent_id):
                 except Exception:
                     rawText = "(binary file)"
 
-            Document.objects.create(
-                user=profile,
-                agent_id=agent_id,
+            neo4j.create_document(
+                user_id=userId,
                 filename=uploaded.name,
                 description=request.POST.get("description", ""),
-                file=uploaded,
                 file_size=sizeLabel,
                 raw_text=rawText,
-                ttl_days=None,
+                agent_id=str(agent_id),
             )
         return redirect("chat:agent_files", agent_id=agent_id)
 
-    documents = Document.objects.filter(user=profile, agent_id=agent_id)
+    documents = neo4j.get_documents_for_user(userId, agent_id=str(agent_id))
     return render(request, "chat/agent_files.html", {
         "agent": agent,
         "documents": documents,
@@ -701,11 +710,9 @@ def agent_files_view(request, agent_id):
 @require_http_methods(["POST"])
 def agent_file_delete_view(request, agent_id, document_id):
     from .agent_service import get_agent_for_user
-    from .models import Document
 
     get_agent_for_user(request.user, str(agent_id))
-    profile = request.user.profile
-    Document.objects.filter(id=document_id, user=profile, agent_id=agent_id).delete()
+    neo4j.delete_document(str(document_id))
     return redirect("chat:agent_files", agent_id=agent_id)
 
 
@@ -713,12 +720,10 @@ def agent_file_delete_view(request, agent_id, document_id):
 @require_http_methods(["POST"])
 def agent_file_update_description_view(request, agent_id, document_id):
     from .agent_service import get_agent_for_user
-    from .models import Document
 
     get_agent_for_user(request.user, str(agent_id))
-    profile = request.user.profile
     description = request.POST.get("description", "")
-    Document.objects.filter(id=document_id, user=profile, agent_id=agent_id).update(description=description)
+    neo4j.update_document(str(document_id), description=description)
     return redirect("chat:agent_files", agent_id=agent_id)
 
 
@@ -727,8 +732,10 @@ def agent_memory_view(request, agent_id):
     from .agent_service import get_agent_for_user
 
     agent = get_agent_for_user(request.user, str(agent_id))
-    profile = request.user.profile
-    bullets = MemoryBullet.objects.filter(memory__user=profile).order_by("-strength", "-created_at")
+    profile = get_or_create_profile_for_user(request.user)
+    memory = neo4j.get_or_create_memory(str(profile.pk))
+    bullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    bullets.sort(key=lambda b: (-b.get("strength", 0), b.get("createdAt", "")), reverse=False)
 
     return render(request, "chat/agent_memory.html", {
         "agent": agent,
@@ -739,57 +746,89 @@ def agent_memory_view(request, agent_id):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def memory_vote_view(request, bullet_id):
-    from .models.memory_vote import MemoryVote, VoteValue
+    VOTE_LIKE = 1
+    VOTE_DISLIKE = -1
 
     direction = request.POST.get("direction", "up")
-    newValue = VoteValue.LIKE if direction == "up" else VoteValue.DISLIKE
-    profile = request.user.profile
-    bullet = MemoryBullet.objects.filter(id=bullet_id, memory__user=profile).first()
+    newValue = VOTE_LIKE if direction == "up" else VOTE_DISLIKE
+    profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
+    bulletIdStr = str(bullet_id)
+
+    bullet = neo4j.get_bullet(bulletIdStr)
     if not bullet:
         return JsonResponse({"error": "Not found"}, status=404)
 
-    existing = MemoryVote.objects.filter(user=profile, bullet=bullet).first()
+    existingVote = neo4j.get_user_vote(userId, bulletIdStr)
 
-    if existing is None:
-        MemoryVote.objects.create(user=profile, bullet=bullet, value=newValue)
-        if newValue == VoteValue.LIKE:
-            bullet.helpful_count += 1
+    helpfulCount = int(bullet.get("helpfulCount", 0))
+    harmfulCount = int(bullet.get("harmfulCount", 0))
+
+    if existingVote is None:
+        neo4j.upsert_vote(userId, bulletIdStr, newValue)
+        if newValue == VOTE_LIKE:
+            helpfulCount += 1
         else:
-            bullet.harmful_count += 1
-    elif existing.value == newValue:
-        if existing.value == VoteValue.LIKE:
-            bullet.helpful_count = max(0, bullet.helpful_count - 1)
+            harmfulCount += 1
+    elif existingVote == newValue:
+        if existingVote == VOTE_LIKE:
+            helpfulCount = max(0, helpfulCount - 1)
         else:
-            bullet.harmful_count = max(0, bullet.harmful_count - 1)
-        existing.delete()
+            harmfulCount = max(0, harmfulCount - 1)
+        neo4j.delete_vote(userId, bulletIdStr)
         newValue = 0
     else:
-        if existing.value == VoteValue.LIKE:
-            bullet.helpful_count = max(0, bullet.helpful_count - 1)
-            bullet.harmful_count += 1
+        if existingVote == VOTE_LIKE:
+            helpfulCount = max(0, helpfulCount - 1)
+            harmfulCount += 1
         else:
-            bullet.harmful_count = max(0, bullet.harmful_count - 1)
-            bullet.helpful_count += 1
-        existing.value = newValue
-        existing.save(update_fields=["value", "updated_at"])
+            harmfulCount = max(0, harmfulCount - 1)
+            helpfulCount += 1
+        neo4j.upsert_vote(userId, bulletIdStr, newValue)
 
-    oldStrength = bullet.strength
-    if newValue == VoteValue.LIKE:
-        bullet.strength = min(100, oldStrength + 10)
-    elif newValue == VoteValue.DISLIKE:
-        bullet.strength = max(0, oldStrength - 10)
+    def _safeFloat(value, fallback=0.0):
+        try:
+            result = float(value)
+        except (TypeError, ValueError):
+            return fallback
+        if result != result or result in (float("inf"), float("-inf")):
+            return fallback
+        return result
+
+    oldStrength = int(_safeFloat(bullet.get("strength"), 0))
+    if newValue == VOTE_LIKE:
+        strength = min(100, oldStrength + 10)
+    elif newValue == VOTE_DISLIKE:
+        strength = max(0, oldStrength - 10)
     elif newValue == 0:
         if direction == "up":
-            bullet.strength = max(0, oldStrength - 10)
+            strength = max(0, oldStrength - 10)
         else:
-            bullet.strength = min(100, oldStrength + 10)
-    bullet.save(update_fields=["helpful_count", "harmful_count", "strength"])
+            strength = min(100, oldStrength + 10)
+    else:
+        strength = oldStrength
+
+    MEMORY_TYPE_MAP = {1: "semantic", 2: "episodic", 3: "procedural"}
+    memoryType = int(_safeFloat(bullet.get("memoryType"), 1))
+    channel = MEMORY_TYPE_MAP.get(memoryType, "semantic")
+    channelKey = f"{channel}_strength"
+    oldChannelStrength = _safeFloat(bullet.get(f"{channel}Strength"), 0.0)
+    voteAdjust = 15.0 if newValue == VOTE_LIKE else (-15.0 if newValue == VOTE_DISLIKE else ((-15.0 if direction == "up" else 15.0)))
+    newChannelStrength = max(0.0, min(100.0, oldChannelStrength + voteAdjust))
+
+    neo4j.update_bullet(
+        bulletIdStr,
+        helpful_count=helpfulCount,
+        harmful_count=harmfulCount,
+        strength=strength,
+        **{channelKey: round(newChannelStrength, 2)},
+    )
 
     return JsonResponse({
-        "bulletId": bullet.pk,
-        "helpful": bullet.helpful_count,
-        "harmful": bullet.harmful_count,
-        "strength": bullet.strength,
+        "bulletId": bulletIdStr,
+        "helpful": helpfulCount,
+        "harmful": harmfulCount,
+        "strength": strength,
         "userVote": newValue,
     })
 
@@ -798,21 +837,30 @@ def memory_vote_view(request, bullet_id):
 def dashboard_view(request):
     from .agent_service import get_or_create_user_agent
     from .audit_service import get_activity_feed_for_user
-    from .models import Session, SessionMember, Message as Msg
-    from .models.skill import Skill
 
     profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
     agent = get_or_create_user_agent(request.user)
     activityFeed = get_activity_feed_for_user(request.user, limit=10)
     recentSessions = get_sidebar_sessions_for_user(request.user)[:5]
 
-    totalSessions = Session.objects.filter(user=profile).count()
-    totalMemories = MemoryBullet.objects.filter(memory__user=profile).count()
-    totalSkills = Skill.objects.filter(user=profile, is_enabled=True).count()
-    totalGroups = SessionMember.objects.filter(
-        user=profile, session__access_key__isnull=False,
-    ).exclude(session__access_key="").count()
-    totalMessages = Msg.objects.filter(session__user=profile).count()
+    allSessions = neo4j.get_sessions_for_user(userId)
+    totalSessions = len(allSessions)
+
+    memory = neo4j.get_or_create_memory(userId)
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    totalMemories = len(allBullets)
+
+    allSkills = neo4j.get_skills_for_user(userId, enabled_only=True)
+    totalSkills = len(allSkills)
+
+    memberSessions = neo4j.get_sessions_for_member(userId)
+    totalGroups = sum(1 for s in memberSessions if s.get("accessKey"))
+
+    totalMessages = 0
+    for s in allSessions:
+        msgs = neo4j.get_messages_for_session(s["id"], limit=9999)
+        totalMessages += len(msgs)
 
     return render(request, "chat/dashboard.html", {
         "agent": agent,
@@ -909,16 +957,14 @@ def stop_typing_view(request, session_id):
 
 @login_required(login_url="/")
 def document_hub_view(request):
-    from .models import Document
     profile = get_or_create_profile_for_user(request.user)
-    documents = Document.objects.filter(user=profile)
+    documents = neo4j.get_documents_for_user(str(profile.pk))
     return render(request, "chat/document_hub.html", {"documents": documents})
 
 
 @login_required(login_url="/")
 def document_upload_view(request):
     from .forms import DocumentUploadForm
-    from .models import Document
     from app.services.ocr import extract_text_from_file, parse_document_fields
 
     if request.method == "POST":
@@ -937,8 +983,8 @@ def document_upload_view(request):
 
             profile = get_or_create_profile_for_user(request.user)
 
-            Document.objects.create(
-                user=profile,
+            neo4j.create_document(
+                user_id=str(profile.pk),
                 filename=uploadedFile.name,
                 raw_text=ocrResult.raw_text,
                 parsed_fields=parsedFields,
@@ -989,8 +1035,9 @@ def skill_marketplace_detail_view(request, skill_id):
         raise Http404("Skill template not found")
 
     profile = get_or_create_profile_for_user(request.user)
-    from .models.agent import Agent
-    agents = Agent.objects.filter(user=profile, is_active=True).order_by("name")
+    allAgents = neo4j.get_agents_for_user(str(profile.pk))
+    agents = [a for a in allAgents if a.get("isActive", True)]
+    agents.sort(key=lambda a: a.get("name", ""))
 
     return render(request, "chat/skill_marketplace_detail.html", {
         "skill": skill,
@@ -1003,7 +1050,6 @@ def skill_marketplace_detail_view(request, skill_id):
 def skill_install_view(request, skill_id):
     from .skill_catalog import get_skill_by_id
     from .skill_service import install_template_skill
-    from .models.skill import Skill
 
     templateData = get_skill_by_id(skill_id)
     if templateData is None:
@@ -1011,10 +1057,12 @@ def skill_install_view(request, skill_id):
 
     agentId = (request.POST.get("agent_id") or "").strip()
     profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
 
     from django.utils.text import slugify
     candidateSlug = slugify(templateData["name"])[:120]
-    if Skill.objects.filter(user=profile, slug=candidateSlug).exists():
+    existingSkill = neo4j.get_skill_by_slug(userId, candidateSlug)
+    if existingSkill:
         return JsonResponse({
             "ok": False,
             "error": "already_installed",
@@ -1023,13 +1071,15 @@ def skill_install_view(request, skill_id):
 
     newSkill = install_template_skill(request.user, templateData)
 
+    skillPk = newSkill.get("id", "") if isinstance(newSkill, dict) else getattr(newSkill, "pk", "")
+
     try:
         from .audit_service import log_audit
         log_audit(
             request.user,
             event_type="skill_installed",
             description=f"Installed template skill: {templateData['name']}",
-            metadata={"skillId": templateData["id"], "skillPk": newSkill.pk},
+            metadata={"skillId": templateData["id"], "skillPk": skillPk},
         )
     except Exception:
         pass
@@ -1038,7 +1088,7 @@ def skill_install_view(request, skill_id):
         return JsonResponse({
             "ok": True,
             "message": f"Skill '{templateData['name']}' installed successfully.",
-            "skillId": newSkill.pk,
+            "skillId": skillPk,
         })
 
     if agentId:
@@ -1056,34 +1106,35 @@ def skill_install_view(request, skill_id):
 @require_http_methods(["POST"])
 def agent_start_chat_view(request, template_id):
     from .agent_catalog import get_template_agent_by_id as get_template_agent
-    from .models import Session, Message
-    from .models.message import Role
 
     template = get_template_agent(template_id)
     if not template:
         return redirect("chat:agent_marketplace")
 
     profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
     agentTitle = f"Chat with {template['name']}"
 
-    existing = Session.objects.filter(
-        user=profile,
-        title=agentTitle,
-        access_key__isnull=True,
-    ).order_by("-updated_at").first()
+    allSessions = neo4j.get_sessions_for_user(userId)
+    existing = None
+    for s in allSessions:
+        if s.get("title") == agentTitle and not s.get("accessKey"):
+            existing = s
+            break
 
     if existing:
-        return redirect("chat:conversation_detail", session_id=existing.id)
+        return redirect("chat:conversation_detail", session_id=existing["id"])
 
-    session = Session.objects.create(user=profile, title=agentTitle)
-    Message.objects.create(
-        session=session,
-        role=Role.ASSISTANT,
-        content=f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
+    session = neo4j.create_session(userId, agentTitle)
+    neo4j.create_message(
+        session["id"],
+        f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
+        userId,
+        role="assistant",
         sender_agent_name=template["name"],
     )
 
-    return redirect("chat:conversation_detail", session_id=session.id)
+    return redirect("chat:conversation_detail", session_id=session["id"])
 
 
 @login_required(login_url="/")
@@ -1123,20 +1174,21 @@ def agent_marketplace_detail_view(request, template_id):
 
 @login_required(login_url="/")
 def group_list_view(request):
-    from .models import SessionMember
     profile = get_or_create_profile_for_user(request.user)
-    memberships = SessionMember.objects.filter(user=profile).select_related("session")
+    userId = str(profile.pk)
+    memberSessions = neo4j.get_sessions_for_member(userId)
     groups = []
-    for m in memberships:
-        s = m.session
+    for s in memberSessions:
+        sessionId = s.get("id", "")
+        memberCount = neo4j.count_session_members(sessionId)
         groups.append({
-            "id": s.pk,
-            "title": s.title,
-            "description": s.description,
-            "access_key": s.access_key,
-            "member_count": s.members.count(),
-            "role": m.role,
-            "url": s.get_absolute_url(),
+            "id": sessionId,
+            "title": s.get("title", ""),
+            "description": s.get("description", ""),
+            "access_key": s.get("accessKey", ""),
+            "member_count": memberCount,
+            "role": s.get("memberRole", "member"),
+            "url": f"/chat/c/{sessionId}/",
         })
     return render(request, "chat/group_list.html", {"groups": groups})
 
@@ -1144,143 +1196,161 @@ def group_list_view(request):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def new_chat_view(request):
-    from .models import Session
     profile = get_or_create_profile_for_user(request.user)
-    session = Session.objects.create(user=profile, title="New Chat")
-    return redirect(session.get_absolute_url())
+    session = neo4j.create_session(str(profile.pk), "New Chat")
+    return redirect(f"/chat/c/{session['id']}/")
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def group_create_view(request):
     import uuid
-    from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
+    userId = str(profile.pk)
     title = request.POST.get("title", "").strip()
     description = request.POST.get("description", "").strip()
-    access_key = request.POST.get("access_key", "").strip()
+    accessKey = request.POST.get("access_key", "").strip()
     if not title:
         return redirect("memoria:home")
-    if not access_key:
-        access_key = uuid.uuid4().hex[:12]
-    if Session.objects.filter(access_key=access_key).exists():
-        access_key = uuid.uuid4().hex[:12]
-    session = Session.objects.create(
-        user=profile, title=title, description=description,
-        access_key=access_key,
-    )
-    SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_ADMIN)
+    if not accessKey:
+        accessKey = uuid.uuid4().hex[:12]
+    existingSession = neo4j.get_session_by_access_key(accessKey)
+    if existingSession:
+        accessKey = uuid.uuid4().hex[:12]
+    session = neo4j.create_session(userId, title)
+    sessionId = session["id"]
+    neo4j.update_session(sessionId, description=description, access_key=accessKey)
+    neo4j.add_member_to_session(sessionId, userId, role="admin")
     try:
         from app.services import pusher_service
-        pusher_service.send_member_joined(session.pk, {
-            "userId": profile.pk,
+        pusher_service.send_member_joined(sessionId, {
+            "userId": userId,
             "userName": request.user.username,
             "role": "admin",
         })
     except Exception:
         pass
-    return redirect("chat:conversation_detail", session_id=session.id)
+    return redirect("chat:conversation_detail", session_id=sessionId)
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def group_join_view(request):
-    from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
-    access_key = request.POST.get("access_key", "").strip()
-    if not access_key:
+    userId = str(profile.pk)
+    accessKey = request.POST.get("access_key", "").strip()
+    if not accessKey:
         return redirect("memoria:home")
-    session = Session.objects.filter(access_key=access_key).first()
+    session = neo4j.get_session_by_access_key(accessKey)
     if not session:
         return redirect("memoria:home")
-    if SessionMember.objects.filter(session=session, user=profile).exists():
-        return redirect("chat:conversation_detail", session_id=session.pk)
-    SessionMember.objects.create(session=session, user=profile, role=SessionMember.ROLE_MEMBER)
+    sessionId = session["id"]
+    members = neo4j.get_members_for_session(sessionId)
+    isAlreadyMember = any(str(m.get("userId", "")) == userId for m in members)
+    if isAlreadyMember:
+        return redirect("chat:conversation_detail", session_id=sessionId)
+    neo4j.add_member_to_session(sessionId, userId, role="member")
     try:
         from app.services import pusher_service
-        pusher_service.send_member_joined(session.pk, {
-            "userId": profile.pk,
+        pusher_service.send_member_joined(sessionId, {
+            "userId": userId,
             "userName": request.user.username,
             "role": "member",
         })
     except Exception:
         pass
     from django.contrib import messages as django_messages
-    django_messages.success(request, f"You joined \"{session.title}\"")
+    sessionTitle = session.get("title", "")
+    django_messages.success(request, f"You joined \"{sessionTitle}\"")
     try:
         from .notification_service import create_notification
         from .models.notification import NotificationType
+        sessionUrl = f"/chat/c/{sessionId}/"
         create_notification(
             request.user,
-            title=f"Joined group: {session.title}",
-            message=f"You are now a member of {session.title}.",
+            title=f"Joined group: {sessionTitle}",
+            message=f"You are now a member of {sessionTitle}.",
             notification_type=NotificationType.SYSTEM_ALERT,
-            related_url=session.get_absolute_url(),
+            related_url=sessionUrl,
         )
-        adminMembers = SessionMember.objects.filter(session=session, role=SessionMember.ROLE_ADMIN)
+        adminMembers = [m for m in members if m.get("role") == "admin"]
         for adminMember in adminMembers:
-            create_notification(
-                adminMember.user.user,
-                title=f"{profile.display_name or request.user.username} joined your group",
-                message=f"A new member joined {session.title}.",
-                notification_type=NotificationType.SYSTEM_ALERT,
-                related_url=session.get_absolute_url(),
-            )
+            adminUserId = adminMember.get("userId")
+            if adminUserId:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                try:
+                    adminUser = User.objects.get(pk=adminUserId)
+                    displayName = getattr(profile, "display_name", "") or request.user.username
+                    create_notification(
+                        adminUser,
+                        title=f"{displayName} joined your group",
+                        message=f"A new member joined {sessionTitle}.",
+                        notification_type=NotificationType.SYSTEM_ALERT,
+                        related_url=sessionUrl,
+                    )
+                except User.DoesNotExist:
+                    pass
     except Exception:
         pass
-    return redirect("chat:conversation_detail", session_id=session.pk)
+    return redirect("chat:conversation_detail", session_id=sessionId)
 
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def group_leave_view(request, session_id):
-    from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
-    membership = SessionMember.objects.filter(session_id=session_id, user=profile).first()
-    if not membership:
+    userId = str(profile.pk)
+    sessionIdStr = str(session_id)
+    members = neo4j.get_members_for_session(sessionIdStr)
+    isMember = any(str(m.get("userId", "")) == userId for m in members)
+    if not isMember:
         return redirect("memoria:home")
-    membership.delete()
+    neo4j.remove_member_from_session(sessionIdStr, userId)
     try:
         from app.services import pusher_service
-        pusher_service.send_member_left(session_id, {
-            "userId": profile.pk,
+        pusher_service.send_member_left(sessionIdStr, {
+            "userId": userId,
             "userName": request.user.username,
         })
     except Exception:
         pass
-    remainingCount = SessionMember.objects.filter(session_id=session_id).count()
+    remainingCount = neo4j.count_session_members(sessionIdStr)
     if remainingCount == 0:
-        Session.objects.filter(pk=session_id).delete()
+        neo4j.delete_session(sessionIdStr)
     return redirect("memoria:home")
 
 
 @login_required(login_url="/")
 def group_settings_view(request, session_id):
-    from .models import Session, SessionMember
     profile = get_or_create_profile_for_user(request.user)
-    session = get_object_or_404(Session, pk=session_id)
-    membership = SessionMember.objects.filter(session=session, user=profile, role=SessionMember.ROLE_ADMIN).first()
-    if not membership:
+    userId = str(profile.pk)
+    sessionIdStr = str(session_id)
+    session = neo4j.get_session_by_id(sessionIdStr)
+    if session is None:
+        raise Http404
+    members = neo4j.get_members_for_session(sessionIdStr)
+    isAdmin = any(
+        str(m.get("userId", "")) == userId and m.get("role") == "admin"
+        for m in members
+    )
+    if not isAdmin:
         raise Http404
 
     if request.method == "POST":
         action = request.POST.get("action", "")
         if action == "disband":
-            session.delete()
+            neo4j.delete_session(sessionIdStr)
             return redirect("memoria:home")
         title = request.POST.get("title", "").strip()
         description = request.POST.get("description", "").strip()
-        updateFields = []
+        updateKwargs = {}
         if title:
-            session.title = title[:200]
-            updateFields.append("title")
-        session.description = description
-        updateFields.append("description")
-        if updateFields:
-            session.save(update_fields=updateFields)
+            updateKwargs["title"] = title[:200]
+        updateKwargs["description"] = description
+        neo4j.update_session(sessionIdStr, **updateKwargs)
         return redirect("chat:group_settings", session_id=session_id)
 
-    members = SessionMember.objects.filter(session=session).select_related("user", "user__user")
     return render(request, "chat/group_settings.html", {
         "session": session,
         "members": members,

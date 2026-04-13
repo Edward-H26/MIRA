@@ -1,11 +1,12 @@
+import hashlib
 import json
+import math
 import re
 
 from memoria.event_log import log_event
 from app.services.gemini import generate_reply_text, generate_structured_text
-from .models import Memory
-from .models.memory_bullet import MemoryBullet
-from .models.message import Role
+from app.services import neo4j_memory as neo4j
+from . import decay
 from .utils import safe_env_bool, safe_env_int, safe_env_float
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
@@ -132,32 +133,36 @@ def guidance_from_bullets(bullets):
         return ""
     lines = ["=== Guidance from Prior Experience ==="]
     for idx, bullet in enumerate(bullets, 1):
-        lines.append(f"{idx}. [+{bullet.helpful_count}/-{bullet.harmful_count}] {bullet.content}")
+        helpful = bullet.get("helpfulCount", 0) if isinstance(bullet, dict) else bullet.helpful_count
+        harmful = bullet.get("harmfulCount", 0) if isinstance(bullet, dict) else bullet.harmful_count
+        content = bullet.get("content", "") if isinstance(bullet, dict) else bullet.content
+        lines.append(f"{idx}. [+{helpful}/-{harmful}] {content}")
     lines.append("===")
     return "\n".join(lines)
+
+
+def _session_id(session):
+    if isinstance(session, dict):
+        return str(session.get("id", ""))
+    return str(session.pk)
 
 
 def _build_recent_conversation_context(session):
     max_messages = _safe_env_int("ACE_CONTEXT_MAX_MESSAGES", 12)
     max_messages = min(max(max_messages, 2), 40)
 
-    rows = list(
-        session.messages.exclude(role=Role.SYSTEM)
-        .order_by("-created_at")
-        .values_list("role", "content")[:max_messages]
-    )
+    sid = _session_id(session)
+    rows = neo4j.get_messages_for_session_values(sid, exclude_role=1, limit=max_messages)
     if not rows:
         return ""
 
     rows.reverse()
-    role_name_map = {
-        int(Role.USER): "User",
-        int(Role.ASSISTANT): "Assistant",
-    }
+    role_name_map = {2: "User", 3: "Assistant", "user": "User", "assistant": "Assistant"}
     lines = ["=== Recent Conversation ==="]
-    for role, content in rows:
-        speaker = role_name_map.get(int(role), "Other")
-        normalized = (content or "").strip()
+    for row in rows:
+        role = row.get("role", "")
+        speaker = role_name_map.get(role, role_name_map.get(int(role) if str(role).isdigit() else 0, "Other"))
+        normalized = (row.get("content") or "").strip()
         if not normalized:
             continue
         lines.append(f"{speaker}: {normalized}")
@@ -165,10 +170,18 @@ def _build_recent_conversation_context(session):
     return "\n".join(lines)
 
 
+def _text_similarity(a, b):
+    wa = set(_tokenize(a))
+    wb = set(_tokenize(b))
+    if not wa or not wb:
+        return 0.0
+    return len(wa.intersection(wb)) / len(wa.union(wb))
+
+
 def _candidate_score(question, content):
     if not (content or "").strip():
         return 0.0, 0.0
-    overlap = MemoryBullet.text_similarity(question, content)
+    overlap = _text_similarity(question, content)
     token_score = min(len(_tokenize(content)) / 40.0, 1.0)
     score = max(0.0, min(1.0, 0.55 * overlap + 0.25 + 0.20 * token_score))
     confidence = max(0.0, min(1.0, 0.65 * score + 0.35 * token_score))
@@ -475,29 +488,25 @@ def _extract_lessons(question, answer, trace):
     return _extract_heuristic_lessons(question, answer), "heuristic"
 
 
-def _build_semantic_context(query, memory_obj, learner_id, top_k=3):
+def _build_semantic_context(query, memory_id, learner_id, top_k=3):
     try:
         from app.services import embedding as embeddingService
         if not embeddingService.is_loaded():
             return ""
         import numpy as np
-        bullets = list(
-            MemoryBullet.objects.filter(memory=memory_obj, learner_id=learner_id)
-            .exclude(embedding_json="")
-            .values_list("content", "embedding_json")
-        )
-        if not bullets:
+        bulletRows = neo4j.get_bullets_with_embeddings(str(memory_id), learner_id)
+        if not bulletRows:
             return ""
         queryEmb = embeddingService.encode_query(query)
         if queryEmb is None:
             return ""
         corpusEmbs = []
         validContents = []
-        for content, embJson in bullets:
-            vec = embeddingService.json_to_embedding(embJson)
+        for row in bulletRows:
+            vec = embeddingService.json_to_embedding(row.get("embeddingJson", ""))
             if vec is not None:
                 corpusEmbs.append(vec)
-                validContents.append(content)
+                validContents.append(row.get("content", ""))
         if not corpusEmbs:
             return ""
         corpusMatrix = np.array(corpusEmbs)
@@ -513,78 +522,475 @@ def _build_semantic_context(query, memory_obj, learner_id, top_k=3):
         return ""
 
 
-def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None, doc_chunks=None):
-    profile = session.user
-    learner_id = str(profile.user_id)
-    context_scope_id = str(session.pk)
-    log_event("ace_turn_start", session_id=session.pk, user_id=profile.user_id)
-    memory_obj, _ = Memory.get_or_create_for_profile(profile)
-    memory_obj.ensure_seed_bullets(learner_id=learner_id, seed_texts=META_STRATEGY_SEEDS)
+def _compute_content_hash(text):
+    normalized = re.sub(r"\s+", " ", (text or "").strip().lower())
+    return hashlib.sha256(normalized.encode()).hexdigest()
 
-    max_level = _safe_env_int("ACE_MAX_ACTION_LEVEL", 1)
-    allowed_actions = ACTION_LEVELS[:max_level + 1]
-    action_id = memory_obj.choose_planner_action(
+
+def _infer_memory_type(content):
+    lower = (content or "").lower()
+    if any(word in lower for word in ["step", "procedure", "workflow", "then", "finally"]):
+        return 3
+    if any(word in lower for word in ["user", "prefers", "asked", "history", "experience"]):
+        return 2
+    return 1
+
+
+def _memory_type_to_channel(memory_type):
+    if memory_type == 2:
+        return "episodic"
+    if memory_type == 3:
+        return "procedural"
+    return "semantic"
+
+
+def _memory_type_priority(memory_type):
+    if memory_type == 3:
+        return 1.0
+    if memory_type == 2:
+        return 0.7
+    return 0.4
+
+
+def _component_score(strength, last_index, decay_rate, access_clock):
+    return decay.component_score(strength, last_index, decay_rate, access_clock)
+
+
+def _compute_strength_score(bullet, access_clock):
+    return decay.total_strength(
+        bullet.get("semanticStrength", 0), bullet.get("semanticAccessIndex"),
+        bullet.get("episodicStrength", 0), bullet.get("episodicAccessIndex"),
+        bullet.get("proceduralStrength", 0), bullet.get("proceduralAccessIndex"),
+        access_clock,
+    )
+
+
+def _retrieve_ranked_bullets_neo4j(
+    memory_id, learner_id, context_scope_id, query,
+    top_k=10, min_learned=2, relevance_w=0.60,
+    strength_w=0.20, type_w=0.20, seed_penalty=0.25,
+    learned_bonus=0.08, access_clock=0,
+):
+    allBullets = neo4j.get_bullets_for_memory(
+        str(memory_id),
+        learner_id=learner_id,
+        context_scope_ids=["", context_scope_id],
+    )
+    if not allBullets:
+        return []
+
+    useSemanticScoring = False
+    queryEmbedding = None
+    bulletEmbeddings = {}
+    try:
+        from app.services import embedding as embeddingService
+        if embeddingService.is_available() and embeddingService.is_loaded():
+            queryEmbedding = embeddingService.encode_query(query)
+            if queryEmbedding is not None:
+                for bullet in allBullets:
+                    vec = embeddingService.json_to_embedding(bullet.get("embeddingJson", ""))
+                    if vec is not None:
+                        bulletEmbeddings[bullet["id"]] = vec
+                useSemanticScoring = bool(bulletEmbeddings)
+    except Exception:
+        pass
+
+    DECAY_WRITEBACK_THRESHOLD = 5.0
+    DECAY_DELETE_THRESHOLD = 1.0
+    bulletsToDelete = []
+
+    scored = []
+    for bullet in allBullets:
+        semDecayed = _component_score(float(bullet.get("semanticStrength", 0)), bullet.get("semanticAccessIndex"), 0.01, access_clock)
+        epiDecayed = _component_score(float(bullet.get("episodicStrength", 0)), bullet.get("episodicAccessIndex"), 0.05, access_clock)
+        proDecayed = _component_score(float(bullet.get("proceduralStrength", 0)), bullet.get("proceduralAccessIndex"), 0.002, access_clock)
+        strengthScore = semDecayed + epiDecayed + proDecayed
+
+        isSeed = "meta_strategy" in {tag.lower() for tag in (bullet.get("tags") or [])}
+        if not isSeed:
+            createdAt = bullet.get("createdAt", "")
+            ttlDays = int(bullet.get("ttlDays", 365) or 365)
+            ttlExpired = False
+            if createdAt:
+                try:
+                    from django.utils import timezone as tz
+                    from datetime import timedelta
+                    created = tz.datetime.fromisoformat(str(createdAt).replace("Z", "+00:00"))
+                    ttlExpired = (tz.now() - created).days > ttlDays
+                except Exception:
+                    pass
+
+            if strengthScore < DECAY_DELETE_THRESHOLD or ttlExpired:
+                bulletsToDelete.append(bullet["id"])
+                continue
+
+            origSem = float(bullet.get("semanticStrength", 0))
+            origEpi = float(bullet.get("episodicStrength", 0))
+            origPro = float(bullet.get("proceduralStrength", 0))
+            if abs(origSem - semDecayed) > DECAY_WRITEBACK_THRESHOLD or abs(origEpi - epiDecayed) > DECAY_WRITEBACK_THRESHOLD or abs(origPro - proDecayed) > DECAY_WRITEBACK_THRESHOLD:
+                neo4j.update_bullet(str(bullet["id"]),
+                    semantic_strength=round(semDecayed, 2),
+                    episodic_strength=round(epiDecayed, 2),
+                    procedural_strength=round(proDecayed, 2),
+                    strength=max(0, int(strengthScore)),
+                )
+
+        strengthScore = _compute_strength_score(bullet, access_clock)
+        if useSemanticScoring and queryEmbedding is not None and bullet["id"] in bulletEmbeddings:
+            from sklearn.metrics.pairwise import cosine_similarity
+            relevance = float(cosine_similarity(
+                queryEmbedding, bulletEmbeddings[bullet["id"]].reshape(1, -1)
+            )[0][0])
+        else:
+            relevance = _text_similarity(query, bullet.get("content", ""))
+
+        typePriority = _memory_type_priority(int(bullet.get("memoryType", 1)))
+        tags = {tag.lower() for tag in (bullet.get("tags") or [])}
+        bonus = float(learned_bonus) if "meta_strategy" not in tags else -float(seed_penalty)
+        normalizedStrength = min(strengthScore / 100.0, 1.0) if strengthScore > 0 else 0.0
+        combined = (
+            float(relevance_w) * relevance
+            + float(strength_w) * normalizedStrength
+            + float(type_w) * typePriority
+            + bonus
+        )
+        scored.append((combined, bullet))
+    scored.sort(key=lambda row: row[0], reverse=True)
+
+    if bulletsToDelete:
+        try:
+            neo4j.delete_bullets_by_ids(bulletsToDelete)
+            log_event("memory_decay_cleanup", deleted_count=len(bulletsToDelete))
+        except Exception:
+            pass
+
+    selected = []
+    selectedIds = set()
+    for _, bullet in scored:
+        if "meta_strategy" in {tag.lower() for tag in (bullet.get("tags") or [])}:
+            continue
+        selected.append(bullet)
+        selectedIds.add(bullet["id"])
+        if len(selected) >= min(min_learned, top_k):
+            break
+    for _, bullet in scored:
+        if bullet["id"] in selectedIds:
+            continue
+        selected.append(bullet)
+        if len(selected) >= top_k:
+            break
+
+    if selected:
+        newClock = access_clock + 1
+        from django.utils import timezone
+        nowStr = timezone.now().isoformat()
+        for bullet in selected:
+            channel = _memory_type_to_channel(int(bullet.get("memoryType", 1)))
+            updateFields = {"last_accessed": nowStr}
+            if channel == "episodic":
+                updateFields["episodic_access_index"] = newClock
+                updateFields["episodic_last_access"] = nowStr
+            elif channel == "procedural":
+                updateFields["procedural_access_index"] = newClock
+                updateFields["procedural_last_access"] = nowStr
+            else:
+                updateFields["semantic_access_index"] = newClock
+                updateFields["semantic_last_access"] = nowStr
+            neo4j.update_bullet(str(bullet["id"]), **updateFields)
+        neo4j.update_memory_fields(str(memory_id), access_clock=newClock)
+
+    return selected
+
+
+def _apply_lessons_neo4j(memory_id, learner_id, context_scope_id, lessons, access_clock):
+    createdCount = 0
+    updatedCount = 0
+
+    for lesson in lessons:
+        content = (lesson.get("content") or "").strip()
+        if not content:
+            continue
+        contentHash = _compute_content_hash(content)
+        match = neo4j.get_bullet_by_content_hash(str(memory_id), contentHash)
+
+        if not match:
+            try:
+                from app.services import embedding as embeddingService
+                if embeddingService.is_available():
+                    import numpy as np
+                    from sklearn.metrics.pairwise import cosine_similarity as cos_sim
+                    newEmb = embeddingService.encode_query(content)
+                    existing = neo4j.get_bullets_with_embeddings(str(memory_id), learner_id)
+                    if existing and newEmb is not None:
+                        vecs = []
+                        valid = []
+                        for b in existing:
+                            vec = embeddingService.json_to_embedding(b.get("embeddingJson", ""))
+                            if vec is not None:
+                                vecs.append(vec)
+                                valid.append(b)
+                        if vecs:
+                            corpus = np.array(vecs)
+                            sims = cos_sim(newEmb, corpus)[0]
+                            bestIdx = int(np.argmax(sims))
+                            if sims[bestIdx] >= 0.85:
+                                match = valid[bestIdx]
+            except Exception:
+                pass
+
+        if not match:
+            allBullets = neo4j.get_bullets_for_memory(str(memory_id), learner_id=learner_id)
+            for bullet in allBullets[:60]:
+                if _text_similarity(content, bullet.get("content", "")) >= 0.75:
+                    match = bullet
+                    break
+
+        if match:
+            newHelpful = int(match.get("helpfulCount", 0)) + 1
+            access_clock += 1
+            channel = _memory_type_to_channel(int(match.get("memoryType", 1)))
+            from django.utils import timezone
+            nowStr = timezone.now().isoformat()
+            updateFields = {
+                "helpful_count": newHelpful,
+                "last_accessed": nowStr,
+            }
+            if channel == "episodic":
+                updateFields["episodic_strength"] = max(float(match.get("episodicStrength", 0)), 100.0)
+                updateFields["episodic_access_index"] = access_clock
+                updateFields["episodic_last_access"] = nowStr
+            elif channel == "procedural":
+                updateFields["procedural_strength"] = max(float(match.get("proceduralStrength", 0)), 100.0)
+                updateFields["procedural_access_index"] = access_clock
+                updateFields["procedural_last_access"] = nowStr
+            else:
+                updateFields["semantic_strength"] = max(float(match.get("semanticStrength", 0)), 100.0)
+                updateFields["semantic_access_index"] = access_clock
+                updateFields["semantic_last_access"] = nowStr
+            neo4j.update_bullet(str(match["id"]), **updateFields)
+            updatedCount += 1
+            continue
+
+        memoryType = _infer_memory_type(content)
+        channel = _memory_type_to_channel(memoryType)
+        access_clock += 1
+        bulletKey = hashlib.md5(content.lower().encode()).hexdigest()[:12]
+
+        bulletParams = {
+            "memory_id": str(memory_id),
+            "learner_id": learner_id,
+            "content": content,
+            "tags": lesson.get("tags") or ["lesson"],
+            "memory_type": memoryType,
+            "topic": (lesson.get("tags") or ["general"])[0],
+            "strength": 100,
+            "ttl_days": 365,
+            "bullet_key": bulletKey,
+            "context_scope_id": context_scope_id,
+            "content_hash": contentHash,
+        }
+        if channel == "episodic":
+            bulletParams["episodic_strength"] = 100.0
+            bulletParams["episodic_access_index"] = access_clock
+        elif channel == "procedural":
+            bulletParams["procedural_strength"] = 100.0
+            bulletParams["procedural_access_index"] = access_clock
+        else:
+            bulletParams["semantic_strength"] = 100.0
+            bulletParams["semantic_access_index"] = access_clock
+
+        newBullet = neo4j.create_bullet(**bulletParams)
+
+        try:
+            from app.services import embedding as embeddingService
+            if embeddingService.is_available() and newBullet.get("id"):
+                embs = embeddingService.encode_texts([content])
+                if embs is not None:
+                    neo4j.update_bullet(
+                        str(newBullet["id"]),
+                        embedding_json=embeddingService.embedding_to_json(embs[0]),
+                    )
+        except Exception:
+            pass
+
+        from app.chat.signals import auto_mark_skill_neo4j
+        auto_mark_skill_neo4j(newBullet)
+        createdCount += 1
+
+    neo4j.update_memory_fields(str(memory_id), access_clock=access_clock)
+    return {"num_new_bullets": createdCount, "num_updates": updatedCount, "num_removals": 0}
+
+
+def _choose_planner_action_neo4j(memory_id, plannerState, access_clock, feature_text, actions, epsilon, ucb_c, seed):
+    import random as rng_module
+    plannerState = dict(plannerState or {})
+    actionStats = plannerState.get("actions", {})
+    totalPulls = int(plannerState.get("total_pulls", 0))
+    rng = rng_module.Random(int(seed) + access_clock + len(feature_text or ""))
+
+    for action in actions:
+        actionStats.setdefault(action, {"pulls": 0, "updates": 0, "reward_sum": 0.0})
+
+    explore = rng.random() < float(epsilon)
+    scores = {}
+    for action, stats in actionStats.items():
+        pulls = int(stats.get("pulls", 0))
+        updates = int(stats.get("updates", 0))
+        rewardSum = float(stats.get("reward_sum", 0.0))
+        mean = rewardSum / updates if updates > 0 else 0.5
+        bonus = float(ucb_c) * math.sqrt(math.log(totalPulls + len(actionStats) + 1) / (pulls + 1))
+        scores[action] = mean + bonus
+
+    if explore:
+        actionId = rng.choice(list(actions))
+    else:
+        actionId = sorted(scores.keys(), key=lambda key: (scores[key], key), reverse=True)[0]
+
+    actionStats[actionId]["pulls"] = int(actionStats[actionId].get("pulls", 0)) + 1
+    plannerState["actions"] = actionStats
+    plannerState["total_pulls"] = totalPulls + 1
+    neo4j.update_memory_fields(str(memory_id), planner_state=plannerState)
+    return actionId
+
+
+def _update_planner_reward_neo4j(memory_id, plannerState, action_id, reward, confidence):
+    plannerState = dict(plannerState or {})
+    actionStats = plannerState.get("actions", {})
+    stats = dict(actionStats.get(action_id, {"pulls": 0, "updates": 0, "reward_sum": 0.0}))
+    clippedReward = max(0.0, min(1.0, float(reward)))
+    clippedConf = max(0.0, min(1.0, float(confidence)))
+    weightedReward = clippedReward * clippedConf
+    stats["updates"] = int(stats.get("updates", 0)) + 1
+    stats["reward_sum"] = float(stats.get("reward_sum", 0.0)) + weightedReward
+    actionStats[action_id] = stats
+    plannerState["actions"] = actionStats
+    plannerState["total_updates"] = int(plannerState.get("total_updates", 0)) + 1
+    neo4j.update_memory_fields(str(memory_id), planner_state=plannerState)
+
+
+def _ensure_seed_bullets_neo4j(memory_id, learner_id, seed_texts):
+    existing = neo4j.get_bullets_for_memory(str(memory_id), learner_id=learner_id)
+    if existing:
+        return
+    for text in seed_texts:
+        contentHash = _compute_content_hash(text)
+        bulletKey = hashlib.md5(text.lower().encode()).hexdigest()[:12]
+        neo4j.create_bullet(
+            memory_id=str(memory_id),
+            learner_id=learner_id,
+            content=text,
+            tags=["meta_strategy", "procedural"],
+            memory_type=3,
+            topic="meta_strategy",
+            strength=100,
+            ttl_days=3650,
+            concept="meta_strategy",
+            bullet_key=bulletKey,
+            content_hash=contentHash,
+            procedural_strength=100.0,
+            procedural_access_index=0,
+        )
+
+
+def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None, doc_chunks=None):
+    sid = _session_id(session)
+    if isinstance(session, dict):
+        userId = session.get("userId", session.get("createdBy", ""))
+    else:
+        userId = str(session.user.pk)
+    learnerId = userId
+    contextScopeId = sid
+    log_event("ace_turn_start", session_id=sid, user_id=userId)
+
+    memoryData = neo4j.get_or_create_memory(userId)
+    memoryId = memoryData.get("id", "")
+    accessClock = int(memoryData.get("accessClock", 0))
+    plannerState = memoryData.get("plannerState", {})
+    if isinstance(plannerState, str):
+        try:
+            plannerState = json.loads(plannerState)
+        except (json.JSONDecodeError, TypeError):
+            plannerState = {}
+
+    _ensure_seed_bullets_neo4j(memoryId, learnerId, META_STRATEGY_SEEDS)
+
+    maxLevel = _safe_env_int("ACE_MAX_ACTION_LEVEL", 1)
+    allowedActions = ACTION_LEVELS[:maxLevel + 1]
+    actionId = _choose_planner_action_neo4j(
+        memory_id=memoryId,
+        plannerState=plannerState,
+        access_clock=accessClock,
         feature_text=user_text,
-        actions=allowed_actions,
+        actions=allowedActions,
         epsilon=_safe_env_float("ACE_PLANNER_EPSILON", 0.03),
         ucb_c=_safe_env_float("ACE_PLANNER_UCB_C", 1.10),
         seed=_safe_env_int("ACE_PLANNER_SEED", 42),
     )
-    log_event("ace_planner_selected", session_id=session.pk, action_id=action_id)
-    bullets = memory_obj.retrieve_ranked_bullets(
+    log_event("ace_planner_selected", session_id=sid, action_id=actionId)
+
+    bullets = _retrieve_ranked_bullets_neo4j(
+        memory_id=memoryId,
+        learner_id=learnerId,
+        context_scope_id=contextScopeId,
         query=user_text,
-        learner_id=learner_id,
-        context_scope_id=context_scope_id,
         top_k=10,
         min_learned=_safe_env_int("ACE_MIN_LEARNED_BULLETS", 2),
-        base_strength=_safe_env_float("ACE_MEMORY_BASE_STRENGTH", 100.0),
         relevance_w=_safe_env_float("ACE_WEIGHT_RELEVANCE", 0.60),
         strength_w=_safe_env_float("ACE_WEIGHT_STRENGTH", 0.20),
         type_w=_safe_env_float("ACE_WEIGHT_TYPE", 0.20),
         seed_penalty=_safe_env_float("ACE_SEED_BULLET_PENALTY", 0.25),
         learned_bonus=_safe_env_float("ACE_LEARNED_BULLET_BONUS", 0.08),
+        access_clock=accessClock,
     )
-    log_event("ace_memory_retrieved", session_id=session.pk, bullet_count=len(bullets))
+    log_event("ace_memory_retrieved", session_id=sid, bullet_count=len(bullets))
     guidance = guidance_from_bullets(bullets)
+
     from app.chat.skill_service import get_enabled_skills_for_user, format_skills_for_prompt
-    enabledSkills = get_enabled_skills_for_user(session.user.user)
+    if isinstance(session, dict):
+        from django.contrib.auth.models import User
+        try:
+            userObj = User.objects.get(pk=int(userId))
+        except (User.DoesNotExist, ValueError):
+            userObj = None
+    else:
+        userObj = session.user.user
+    enabledSkills = get_enabled_skills_for_user(userObj) if userObj else []
     skillContext = format_skills_for_prompt(enabledSkills)
-    conversation_context = _build_recent_conversation_context(session)
-    semanticContext = _build_semantic_context(user_text, memory_obj, learner_id, top_k=3)
-    prompt_parts = []
+
+    conversationContext = _build_recent_conversation_context(session)
+    semanticContext = _build_semantic_context(user_text, memoryId, learnerId, top_k=3)
+
+    promptParts = []
     if skillContext:
-        prompt_parts.append(skillContext)
+        promptParts.append(skillContext)
     if guidance:
-        prompt_parts.append(guidance)
+        promptParts.append(guidance)
     if semanticContext:
-        prompt_parts.append(semanticContext)
+        promptParts.append(semanticContext)
     if doc_chunks:
-        doc_context_parts = []
-        for chunk in doc_chunks:
-            doc_context_parts.append(f"From \"{chunk['filename']}\":\n  {chunk['chunk']}")
-        doc_context = "\n\n".join(doc_context_parts)
-        prompt_parts.append(f"=== Relevant Documents ===\n{doc_context}\n===")
-    if conversation_context:
-        prompt_parts.append(conversation_context)
-    normalized_preprocessed_context = (preprocessed_context or "").strip()
-    if normalized_preprocessed_context:
-        prompt_parts.append(f"=== Preprocessed Analysis ===\n{normalized_preprocessed_context}\n===")
+        docParts = [f"From \"{chunk['filename']}\":\n  {chunk['chunk']}" for chunk in doc_chunks]
+        promptParts.append(f"=== Relevant Documents ===\n{chr(10).join(docParts)}\n===")
+    if conversationContext:
+        promptParts.append(conversationContext)
+    normalizedPreprocessed = (preprocessed_context or "").strip()
+    if normalizedPreprocessed:
+        promptParts.append(f"=== Preprocessed Analysis ===\n{normalizedPreprocessed}\n===")
     if agent:
         agentPrompt = agent.get("systemPrompt", "") if isinstance(agent, dict) else getattr(agent, "system_prompt", "")
         if agentPrompt:
-            prompt_parts.append(f"=== Agent Instructions ===\n{agentPrompt}\n===")
-    prompt_parts.append(f"Latest user question:\n{user_text}")
-    prompt_parts.append("Answer the latest user question while remaining consistent with the recent conversation.")
-    base_prompt = "\n\n".join(prompt_parts)
+            promptParts.append(f"=== Agent Instructions ===\n{agentPrompt}\n===")
+    promptParts.append(f"Latest user question:\n{user_text}")
+    promptParts.append("Answer the latest user question while remaining consistent with the recent conversation.")
+    basePrompt = "\n\n".join(promptParts)
 
-    answer, step_confidence, recursion = _run_recursive_reasoning(
+    answer, stepConfidence, recursion = _run_recursive_reasoning(
         question=user_text,
-        base_prompt=base_prompt,
-        action_id=action_id,
+        base_prompt=basePrompt,
+        action_id=actionId,
     )
     log_event(
         "ace_reasoning_completed",
-        session_id=session.pk,
+        session_id=sid,
         improved=bool(recursion.get("improved")),
         rounds=recursion.get("rounds_planned"),
     )
@@ -594,61 +1000,78 @@ def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = Non
         answer = "Sorry, I couldn't reach the AI service just now."
 
     trace = _format_execution_trace(
-        action_id=action_id,
+        action_id=actionId,
         guidance=guidance,
-        conversation_context=conversation_context,
-        preprocessed_context=normalized_preprocessed_context,
+        conversation_context=conversationContext,
+        preprocessed_context=normalizedPreprocessed,
         answer=answer,
     )
-    lessons, lesson_source = _extract_lessons(user_text, answer, trace)
-    accepted_lessons, quality_gate = _apply_quality_gate(
+    lessons, lessonSource = _extract_lessons(user_text, answer, trace)
+    acceptedLessons, qualityGate = _apply_quality_gate(
         question=user_text,
         model_answer=answer,
         lessons=lessons,
-        step_confidence=step_confidence,
+        step_confidence=stepConfidence,
     )
-    quality_gate["lesson_source"] = lesson_source
+    qualityGate["lesson_source"] = lessonSource
     log_event(
         "ace_quality_gate",
-        session_id=session.pk,
-        should_apply=bool(quality_gate.get("should_apply_update")),
-        accepted_lessons=quality_gate.get("num_lessons_accepted", 0),
-        lesson_source=lesson_source,
+        session_id=sid,
+        should_apply=bool(qualityGate.get("should_apply_update")),
+        accepted_lessons=qualityGate.get("num_lessons_accepted", 0),
+        lesson_source=lessonSource,
     )
-    ace_delta = {"num_new_bullets": 0, "num_updates": 0, "num_removals": 0}
-    if quality_gate.get("should_apply_update"):
-        ace_delta = memory_obj.apply_lessons(
-            lessons=accepted_lessons,
-            learner_id=learner_id,
-            context_scope_id=context_scope_id,
+
+    refreshedMemory = neo4j.get_memory(memoryId)
+    currentClock = int(refreshedMemory.get("accessClock", accessClock)) if refreshedMemory else accessClock
+
+    aceDelta = {"num_new_bullets": 0, "num_updates": 0, "num_removals": 0}
+    if qualityGate.get("should_apply_update"):
+        aceDelta = _apply_lessons_neo4j(
+            memory_id=memoryId,
+            learner_id=learnerId,
+            context_scope_id=contextScopeId,
+            lessons=acceptedLessons,
+            access_clock=currentClock,
         )
         log_event(
             "ace_memory_applied",
-            session_id=session.pk,
-            num_new_bullets=ace_delta.get("num_new_bullets", 0),
-            num_updates=ace_delta.get("num_updates", 0),
-            num_removals=ace_delta.get("num_removals", 0),
+            session_id=sid,
+            num_new_bullets=aceDelta.get("num_new_bullets", 0),
+            num_updates=aceDelta.get("num_updates", 0),
+            num_removals=aceDelta.get("num_removals", 0),
         )
 
     shaped = _compute_shaped_reward(
-        step_score=step_confidence,
+        step_score=stepConfidence,
         output_valid=bool((answer or "").strip()),
-        quality_gate_applied=bool(quality_gate.get("should_apply_update")),
+        quality_gate_applied=bool(qualityGate.get("should_apply_update")),
         recursion_improved=bool(recursion.get("improved")),
-        step_confidence=step_confidence or 0.7,
+        step_confidence=stepConfidence or 0.7,
     )
-    memory_obj.update_planner_reward(
-        action_id=action_id,
+
+    refreshedMemory2 = neo4j.get_memory(memoryId)
+    currentPlannerState = (refreshedMemory2 or {}).get("plannerState", plannerState)
+    if isinstance(currentPlannerState, str):
+        try:
+            currentPlannerState = json.loads(currentPlannerState)
+        except (json.JSONDecodeError, TypeError):
+            currentPlannerState = {}
+
+    _update_planner_reward_neo4j(
+        memory_id=memoryId,
+        plannerState=currentPlannerState,
+        action_id=actionId,
         reward=shaped["final_reward"],
         confidence=shaped["confidence"],
     )
-    log_event("ace_turn_done", session_id=session.pk, answer_len=len(answer or ""), action_id=action_id)
+    log_event("ace_turn_done", session_id=sid, answer_len=len(answer or ""), action_id=actionId)
 
     return {
         "answer": answer,
-        "planner": {"action_id": action_id},
-        "quality_gate": quality_gate,
-        "ace_delta": ace_delta,
+        "planner": {"action_id": actionId},
+        "quality_gate": qualityGate,
+        "ace_delta": aceDelta,
         "recursion": recursion,
         "num_bullets_retrieved": len(bullets),
     }

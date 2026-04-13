@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Memoria Agent{% endblock %}</title>
+    <title>{% block title %}Memoria{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,19 +16,20 @@
             theme: {
                 extend: {
                     colors: {
-                        "mm-primary": "#5B5FEF",
-                        "mm-primary-hover": "#4D4FD9",
-                        "mm-primary-end": "#7B61FF",
+                        "mm-primary": "#6C86C0",
+                        "mm-primary-hover": "#5A74AD",
+                        "mm-primary-active": "#4A6399",
+                        "mm-primary-end": "#6C86C0",
                         "mm-header": "#f6fafe",
                         "mm-sidebar": "#f0f4f8",
-                        "mm-border": "#e2e8f0",
-                        "mm-text": "#0f172a",
-                        "mm-muted": "#64748b",
-                        "mm-light": "#94a3b8",
-                        "mm-icon": "#434653",
-                        "mm-nav": "#475569",
-                        "mm-hover": "#f0f4f8",
-                        "mm-card": "#f8fafc",
+                        "mm-border": "#E5E7EB",
+                        "mm-text": "#1C1E2E",
+                        "mm-muted": "#6B7280",
+                        "mm-light": "#9CA3AF",
+                        "mm-icon": "#6B7280",
+                        "mm-nav": "#6B7280",
+                        "mm-hover": "#F5F6FA",
+                        "mm-card": "#F5F6FA",
                     },
                     fontFamily: {
                         "manrope": ["Manrope", "sans-serif"],
@@ -42,11 +43,280 @@
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={% now 'U' %}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
+    <style>
+    /* ============================================================
+       Liquid Glass Tour (driver.js) — modern translucent aesthetic
+       ============================================================ */
+    .driver-overlay {
+        background: radial-gradient(ellipse at center,
+            rgba(108, 134, 192, 0.12) 0%,
+            rgba(15, 23, 42, 0.50) 55%,
+            rgba(15, 23, 42, 0.70) 100%) !important;
+        -webkit-backdrop-filter: saturate(120%);
+        backdrop-filter: saturate(120%);
+    }
 
+    .driver-popover {
+        font-family: "Inter", sans-serif;
+        color: #1C1E2E;
+        border-radius: 22px !important;
+        padding: 22px 24px !important;
+        max-width: 360px;
+        background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.82) 0%,
+            rgba(248, 250, 255, 0.72) 100%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        backdrop-filter: blur(30px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.55) !important;
+        box-shadow:
+            0 18px 50px rgba(108, 134, 192, 0.22),
+            0 4px 16px rgba(28, 30, 46, 0.08) !important;
+        overflow: hidden;
+        isolation: isolate;
+        animation: lg-pop-in 360ms cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    /* When driver.js renders a no-element (overlay) step, explicitly center it. */
+    .driver-popover[data-driver-popover-side="over"],
+    .driver-active-element:not([id]) ~ .driver-popover {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: translate(-50%, -50%) !important;
+    }
+    /* Fallback: when there is no active element target, center the popover */
+    body:has(.driver-overlay):not(:has(.driver-active-element)) .driver-popover {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+    }
+
+    /* Sheen and aurora layers removed — they produced visible diagonal bands. */
+    .driver-popover::before,
+    .driver-popover::after {
+        display: none !important;
+    }
+
+    @keyframes lg-pop-in {
+        0%   { opacity: 0; transform: scale(.94) translateY(8px); }
+        100% { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+
+    @keyframes lg-sheen {
+        0%   { transform: translate(0, 0) rotate(0deg); }
+        100% { transform: translate(25%, 18%) rotate(22deg); }
+    }
+
+    .driver-popover > * { position: relative; z-index: 1; }
+
+    .driver-popover-title {
+        font-family: "Manrope", sans-serif;
+        font-weight: 800;
+        font-size: 17px;
+        letter-spacing: -0.3px;
+        color: #0f172a;
+        margin: 0 0 8px 0 !important;
+        padding: 0 !important;
+        line-height: 1.3;
+    }
+
+    .driver-popover-description {
+        font-size: 13.5px;
+        line-height: 1.65;
+        color: #475569;
+        margin-bottom: 16px !important;
+    }
+
+    .driver-popover-footer {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .driver-popover-progress-text {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .driver-popover-navigation-btns {
+        display: flex;
+        gap: 8px;
+    }
+
+    .driver-popover-next-btn {
+        background: linear-gradient(135deg, #6C86C0 0%, #6C86C0 55%, #6C86C0 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 11px !important;
+        padding: 9px 18px !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        text-shadow: none !important;
+        box-shadow:
+            0 6px 18px rgba(108, 134, 192, 0.40),
+            inset 0 1px 0 rgba(255, 255, 255, 0.35),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.06) !important;
+        cursor: pointer;
+        transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    }
+    .driver-popover-next-btn:hover {
+        transform: translateY(-1px);
+        filter: saturate(1.1) brightness(1.05);
+        box-shadow:
+            0 10px 24px rgba(108, 134, 192, 0.50),
+            inset 0 1px 0 rgba(255, 255, 255, 0.45),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.06) !important;
+    }
+    .driver-popover-next-btn:active {
+        transform: translateY(0) scale(.98);
+    }
+
+    .driver-popover-prev-btn {
+        background: rgba(255, 255, 255, 0.55) !important;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.65) !important;
+        border-radius: 11px !important;
+        padding: 9px 16px !important;
+        font-weight: 500 !important;
+        font-size: 13px !important;
+        color: #475569 !important;
+        text-shadow: none !important;
+        cursor: pointer;
+        transition: background 180ms ease, color 180ms ease, border 180ms ease;
+    }
+    .driver-popover-prev-btn:hover {
+        background: rgba(255, 255, 255, 0.8) !important;
+        color: #1e293b !important;
+        border-color: rgba(108, 134, 192, 0.35) !important;
+    }
+
+    .driver-popover-close-btn {
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+        width: 28px !important;
+        height: 28px !important;
+        line-height: 26px !important;
+        font-size: 20px !important;
+        color: #94a3b8 !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.55) !important;
+        border-radius: 50% !important;
+        text-align: center !important;
+        padding: 0 !important;
+        z-index: 2;
+        transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+    .driver-popover-close-btn:hover {
+        background: rgba(255, 255, 255, 0.85) !important;
+        color: #334155 !important;
+        transform: rotate(90deg);
+    }
+
+    /* Hide the popover pointer arrow entirely. */
+    .driver-popover-arrow,
+    .driver-popover-arrow-side-left,
+    .driver-popover-arrow-side-right,
+    .driver-popover-arrow-side-top,
+    .driver-popover-arrow-side-bottom {
+        display: none !important;
+    }
+
+    /* Highlighted stage — soft glass glow; preserve the element's own border-radius. */
+    .driver-highlighted-element {
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.65),
+                    0 0 0 6px rgba(108, 134, 192, 0.22),
+                    0 0 40px rgba(108, 134, 192, 0.30),
+                    0 0 90px rgba(108, 134, 192, 0.22) !important;
+        transition: box-shadow 280ms ease;
+    }
+
+    /* ============================================================
+       Tour completion celebration (confetti + modal)
+       ============================================================ */
+    .tour-celebration-overlay {
+        position: fixed; inset: 0; z-index: 10000;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(15, 23, 42, 0.55);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        animation: tour-celeb-fade 220ms ease;
+    }
+    .tour-celebration-overlay.tour-celebration-leaving { animation: tour-celeb-fade 220ms ease reverse; }
+    .tour-celebration-confetti {
+        position: absolute; inset: 0; width: 100%; height: 100%;
+        pointer-events: none;
+    }
+    .tour-celebration-card {
+        position: relative; z-index: 1;
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,255,0.82));
+        border: 1px solid rgba(255,255,255,0.55);
+        border-radius: 22px;
+        padding: 32px 40px;
+        max-width: 420px;
+        text-align: center;
+        box-shadow: 0 18px 50px rgba(108, 134, 192, 0.25);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
+        backdrop-filter: blur(30px) saturate(180%);
+        animation: tour-celeb-pop 480ms cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .tour-celebration-icon {
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        margin: 0 auto 16px;
+        background: #6C86C0;
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 24px rgba(108, 134, 192, 0.4);
+    }
+    .tour-celebration-card h2 {
+        font-family: "Manrope", sans-serif;
+        font-weight: 800; font-size: 22px;
+        color: #1C1E2E;
+        margin: 0 0 8px;
+    }
+    .tour-celebration-card p {
+        font-family: "Inter", sans-serif;
+        font-size: 14px; color: #6B7280;
+        margin: 0 0 24px;
+        line-height: 1.6;
+    }
+    .tour-celebration-close {
+        background: #6C86C0; color: #fff;
+        border: none; border-radius: 12px;
+        padding: 10px 28px;
+        font-family: "Inter", sans-serif;
+        font-weight: 600; font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(108, 134, 192, 0.25);
+        transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+    .tour-celebration-close:hover {
+        background: #5A74AD;
+        box-shadow: 0 10px 26px rgba(108, 134, 192, 0.35);
+    }
+    .tour-celebration-close:active { background: #4A6399; transform: scale(.97); }
+
+    @keyframes tour-celeb-fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes tour-celeb-pop {
+        from { opacity: 0; transform: scale(.88) translateY(10px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    </style>
     {% block extra_css %}{% endblock %}
     <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js" onload="if(typeof renderMathInElement==='function'){renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js" onload="if(typeof renderMathInElement==='function'){document.querySelectorAll('.math-inline, .math-block').forEach(function(el){renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});});}"></script>
 </head>
 <body class="h-screen overflow-hidden">
     {% block body %}
@@ -57,14 +327,14 @@
             <div class="flex items-center justify-between h-full px-8">
                 <!-- Logo -->
                 <a href="{% if user.is_authenticated %}{% url 'memoria:home' %}{% else %}{% url 'memoria:landing' %}{% endif %}" class="font-manrope font-extrabold text-mm-primary text-[20px] tracking-[-1px] leading-[28px] flex-shrink-0">
-                    Memoria&nbsp;&nbsp;Agent
+                    Memoria
                 </a>
 
                 <!-- Right Side -->
                 <div class="flex items-center gap-3">
                     <!-- Mobile Hamburger -->
                     <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="flex lg:hidden w-9 h-9 items-center justify-center rounded-full hover:bg-white/50 transition-colors">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="6" x2="21" y2="6"></line>
                             <line x1="3" y1="12" x2="21" y2="12"></line>
                             <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -75,7 +345,7 @@
                     <!-- Notifications -->
                     <div class="relative" id="notification-wrapper">
                         <button id="notification-bell" type="button" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300 relative" onclick="toggleNotificationDropdown()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 01-3.46 0"></path>
                             </svg>
@@ -90,9 +360,17 @@
                             </div>
                             <div id="notification-list" class="max-h-64 overflow-y-auto">
                                 {% for notif in recentNotifications %}
-                                <div class="px-4 py-3 border-b border-white/20 hover:bg-mm-card transition-colors {% if not notif.isRead %}bg-mm-primary/5{% endif %}">
+                                <div class="notif-item px-4 py-3 border-b border-white/20 hover:bg-mm-card transition-colors {% if not notif.isRead %}bg-mm-primary/5{% endif %}" data-notif-id="{{ notif.id }}">
                                     <div class="font-inter text-sm font-medium text-mm-text">{{ notif.title }}</div>
                                     <div class="font-inter text-xs text-mm-muted mt-0.5">{{ notif.message|truncatechars:80 }}</div>
+                                    <div class="flex items-center gap-3 mt-2">
+                                        {% if notif.relatedUrl %}
+                                        <a href="{{ notif.relatedUrl }}" data-notif-link="{{ notif.id }}" onclick="handleViewNotification(event, '{{ notif.id }}')" class="font-inter text-xs font-medium text-mm-primary hover:text-mm-primary-hover no-underline transition-colors">View conversation</a>
+                                        {% endif %}
+                                        {% if not notif.isRead %}
+                                        <button type="button" onclick="markNotificationRead('{{ notif.id }}', this)" class="font-inter text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors">Mark as read</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 {% empty %}
                                 <div class="px-4 py-6 text-center text-sm text-mm-muted">No notifications</div>
@@ -103,7 +381,7 @@
 
                     <!-- Settings -->
                     <a href="{% url 'users:profile' %}" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#434653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
                         </svg>
@@ -156,8 +434,8 @@
             {% if user.is_authenticated %}
             <aside id="left-sidebar" class="hidden md:flex flex-col h-full px-3 py-6 gap-4">
                 <!-- Integration Status Card -->
-                <div class="bg-gradient-to-br from-purple-400/20 to-blue-400/20 backdrop-blur-sm rounded-[16px] p-3 flex gap-3 items-start border border-white/30 shadow-[0_4px_16px_rgba(139,92,246,0.1)]">
-                    <div class="bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center rounded-[12px] w-10 h-10 flex-shrink-0 shadow-lg">
+                <div class="bg-gradient-to-br from-purple-400/20 to-blue-400/20 backdrop-blur-sm rounded-[16px] p-3 flex gap-3 items-start border border-white/30 shadow-[0_4px_16px_rgba(108, 134, 192,0.1)]">
+                    <div class="bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center rounded-[12px] w-10 h-10 flex-shrink-0 shadow-lg">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
                             <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
@@ -240,36 +518,44 @@
 
         {% if user.is_authenticated %}
         <!-- Mobile Bottom Nav -->
-        <nav class="mobile-bottom-nav">
-            <a href="{% url 'memoria:home' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="chat">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <nav class="mobile-bottom-nav" role="navigation" aria-label="Primary">
+            <a href="{% url 'memoria:home' %}" data-mobile-nav="chat" aria-label="Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
                 </svg>
-                <span class="text-[10px] font-inter font-medium">Chat</span>
+                <span>Chat</span>
             </a>
-            <a href="{% url 'chat:my_agent' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="agent">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <a href="{% url 'chat:my_agent' %}" data-mobile-nav="agent" aria-label="My Agent">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
                 </svg>
-                <span class="text-[10px] font-inter font-medium">My Agent</span>
+                <span>Agent</span>
             </a>
-            <a href="{% url 'chat:agent_marketplace' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="teams">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <a href="{% url 'chat:agent_marketplace' %}" data-mobile-nav="teams" aria-label="Team directory">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
                     <circle cx="9" cy="7" r="4"></circle>
                     <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
                     <path d="M16 3.13a4 4 0 010 7.75"></path>
                 </svg>
-                <span class="text-[10px] font-inter font-medium">Team</span>
+                <span>Team</span>
             </a>
-            <a href="{% url 'dashboard' %}" class="flex flex-col items-center gap-0.5 px-3 py-1" data-mobile-nav="dashboard">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <a href="{% url 'dashboard' %}" data-mobile-nav="dashboard" aria-label="Dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M18 20V10"></path>
                     <path d="M12 20V4"></path>
                     <path d="M6 20v-6"></path>
                 </svg>
-                <span class="text-[10px] font-inter font-medium">Dashboard</span>
+                <span>Dashboard</span>
             </a>
+            <button type="button" id="mobile-conv-tab" data-mobile-nav="conversations" aria-label="Conversations">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 4h18v12H5.17L3 18.17V4z"></path>
+                    <path d="M7 9h10"></path>
+                    <path d="M7 13h6"></path>
+                </svg>
+                <span>Chats</span>
+            </button>
         </nav>
         {% endif %}
     </div>
@@ -332,20 +618,83 @@
             if (dropdown) dropdown.classList.toggle("hidden");
         }
 
+        document.addEventListener("click", function(e) {
+            var wrapper = document.getElementById("notification-wrapper");
+            var dropdown = document.getElementById("notification-dropdown");
+            if (wrapper && dropdown && !wrapper.contains(e.target) && !dropdown.classList.contains("hidden")) {
+                dropdown.classList.add("hidden");
+            }
+        });
+
         function markAllNotificationsRead() {
             fetch("{% url 'chat:notification_mark_all_read' %}", {
                 method: "POST",
                 headers: {
-                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+                    "X-CSRFToken": (document.cookie.split("; ").find(function(c){return c.startsWith("csrftoken=")})||"=").split("=")[1]||"",
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
             }).then(function() {
                 var badge = document.getElementById("notification-badge");
                 if (badge) badge.remove();
-                document.querySelectorAll("#notification-list > div").forEach(function(el) {
+                document.querySelectorAll(".notif-item").forEach(function(el) {
                     el.classList.remove("bg-mm-primary/5");
+                    var markBtn = el.querySelector("button[onclick^='markNotification']");
+                    if (markBtn) markBtn.remove();
                 });
             });
+        }
+
+        function _decrementNotificationBadgeOnce(notifId) {
+            var item = document.querySelector('.notif-item[data-notif-id="' + notifId + '"]');
+            if (item && item.dataset.markedRead === "1") return;
+            if (item) {
+                item.dataset.markedRead = "1";
+                item.classList.remove("bg-mm-primary/5");
+                var markBtn = item.querySelector("button[onclick^='markNotification']");
+                if (markBtn) markBtn.remove();
+            }
+            var badge = document.getElementById("notification-badge");
+            if (badge) {
+                var count = parseInt(badge.textContent, 10) - 1;
+                if (count <= 0) { badge.remove(); }
+                else { badge.textContent = count; }
+            }
+        }
+
+        function _postMarkRead(notifId) {
+            return fetch("/chat/notifications/mark-read/" + notifId + "/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": (document.cookie.split("; ").find(function(c){return c.startsWith("csrftoken=")})||"=").split("=")[1]||"",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                keepalive: true,
+            });
+        }
+
+        function markNotificationRead(notifId, btn) {
+            _postMarkRead(notifId).then(function() {
+                var item = btn ? btn.closest(".notif-item") : document.querySelector('.notif-item[data-notif-id="' + notifId + '"]');
+                if (item && item.dataset.markedRead !== "1") {
+                    item.dataset.markedRead = "1";
+                    item.classList.remove("bg-mm-primary/5");
+                }
+                if (btn) btn.remove();
+                var markBtn = item ? item.querySelector("button[onclick^='markNotification']") : null;
+                if (markBtn) markBtn.remove();
+                var badge = document.getElementById("notification-badge");
+                if (badge && (!item || item.dataset.badgeDecremented !== "1")) {
+                    if (item) item.dataset.badgeDecremented = "1";
+                    var count = parseInt(badge.textContent, 10) - 1;
+                    if (count <= 0) { badge.remove(); }
+                    else { badge.textContent = count; }
+                }
+            });
+        }
+
+        function handleViewNotification(evt, notifId) {
+            _decrementNotificationBadgeOnce(notifId);
+            _postMarkRead(notifId);
         }
 
         function toggleMobileSidebar() {
@@ -371,6 +720,51 @@
                 cluster: window.PUSHER_CONFIG.cluster,
                 authEndpoint: window.APP_ROUTES.chatPusherAuth,
             });
+
+            // Real-time notification delivery — subscribe to the per-user private
+            // channel so the bell badge and list update without a page reload.
+            {% if request.user.is_authenticated %}
+            try {
+                var userChan = window.pusherClient.subscribe("private-user-{{ request.user.pk }}");
+                userChan.bind("notification:new", function(payload) {
+                    try {
+                        var badge = document.getElementById("notification-badge");
+                        if (badge) {
+                            var n = parseInt(badge.textContent, 10) || 0;
+                            badge.textContent = String(n + 1);
+                            badge.classList.remove("hidden");
+                        } else {
+                            var bell = document.getElementById("notification-bell");
+                            if (bell) {
+                                var newBadge = document.createElement("span");
+                                newBadge.id = "notification-badge";
+                                newBadge.className = "absolute -top-0.5 -right-0.5 w-5 h-5 bg-mm-primary text-white text-xs rounded-full flex items-center justify-center font-semibold";
+                                newBadge.textContent = "1";
+                                bell.appendChild(newBadge);
+                            }
+                        }
+                        var list = document.getElementById("notification-list");
+                        if (list && payload && payload.id) {
+                            var empty = list.querySelector("[data-empty-state]");
+                            if (empty) empty.remove();
+                            var item = document.createElement("a");
+                            item.href = payload.relatedUrl || "#";
+                            item.className = "block px-4 py-3 border-b border-mm-border/60 hover:bg-mm-hover no-underline";
+                            item.dataset.notifId = payload.id;
+                            item.innerHTML = '<div class="font-inter font-semibold text-[13px] text-mm-text">' +
+                                (payload.title || "Notification") + '</div>' +
+                                '<div class="font-inter text-[12px] text-mm-muted mt-0.5">' +
+                                (payload.message || "") + '</div>';
+                            list.prepend(item);
+                        }
+                    } catch (err) {
+                        console.warn("[notifications] realtime handler failed", err);
+                    }
+                });
+            } catch (err) {
+                console.warn("[notifications] pusher subscribe failed", err);
+            }
+            {% endif %}
         }
     </script>
     <script type="module" src="{% static 'js/main.js' %}?v={% now 'U' %}"></script>
@@ -408,6 +802,336 @@
                 }
             });
         });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <script>
+    (function() {
+        var tourPage = null;
+        try { tourPage = sessionStorage.getItem("memoria_tour_page"); } catch (e) { console.warn("[tour] sessionStorage blocked", e); return; }
+        if (!tourPage) return;
+
+        var path = window.location.pathname;
+        if (!window.driver || !window.driver.js || !window.driver.js.driver) {
+            console.error("[tour] driver.js global missing; CDN likely blocked. Aborting tour.");
+            try { sessionStorage.removeItem("memoria_tour_page"); sessionStorage.removeItem("memoria_tour_step"); } catch (_) {}
+            return;
+        }
+        var driver = window.driver.js.driver;
+        console.info("[tour] starting on path=" + path);
+
+        // Cycle guard: bail if we've bounced through too many auto-advances in one tour run.
+        var advanceCountKey = "memoria_tour_advance_count";
+        var advanceCount = 0;
+        try { advanceCount = parseInt(sessionStorage.getItem(advanceCountKey) || "0", 10) || 0; } catch (_) {}
+        if (advanceCount > 20) {
+            console.error("[tour] advance counter exceeded 20; aborting to prevent loop.");
+            try {
+                sessionStorage.removeItem("memoria_tour_page");
+                sessionStorage.removeItem("memoria_tour_step");
+                sessionStorage.removeItem(advanceCountKey);
+            } catch (_) {}
+            return;
+        }
+
+        var TOUR_PAGES = {
+            home: {
+                match: function(p) { return p === "/home/"; },
+                steps: [
+                    { popover: { title: "Welcome to Memoria", description: "This guided tour walks you through every feature. Use Next to continue, Previous to go back, or press Escape to exit anytime. We will navigate between pages automatically.", side: "over", align: "center" } },
+                    { element: "#conv-sidebar-search", popover: { title: "Conversation sidebar", description: "All your chats live here. Search by title, or scroll to browse recent threads. Group chats are marked with a shared icon.", side: "right" } },
+                    { element: "#conv-sidebar-list", popover: { title: "Your conversations", description: "Click any conversation to reopen it. Right-click (or long-press) to rename, share, or delete.", side: "right" } },
+                    { element: "a[data-sidebar-nav='chat']", popover: { title: "Chat", description: "Always comes back to this home workspace where you can start a fresh chat or join a group.", side: "right" } },
+                    { element: "a[data-sidebar-nav='agents']", popover: { title: "My Agent", description: "Configure your personal AI agent's behavior, skills, and uploaded documents.", side: "right" } },
+                    { element: "a[data-sidebar-nav='teams']", popover: { title: "Agent Directory", description: "Browse pre-configured AI agents across different specialties. Message any agent directly.", side: "right" } },
+                    { element: "a[data-sidebar-nav='dashboard']", popover: { title: "Dashboard", description: "Monitor conversations, messages, memories, and system performance analytics.", side: "right" } },
+                    { element: "#notification-bell", popover: { title: "Notifications", description: "When agents finish a multi-agent collaboration you will get a notification here. Clicking \"View conversation\" automatically marks it as read.", side: "bottom" } },
+                    { element: "#avatar-menu-trigger", popover: { title: "Profile menu", description: "Open your account menu to access settings, billing, or log out.", side: "bottom" } },
+                ],
+                next: "/chat/agents/my/"
+            },
+            conversation: {
+                match: function(p) { return /^\/chat\/c\/[^\/]+\/?$/.test(p); },
+                steps: [
+                    { popover: { title: "Conversation workspace", description: "This is where the real work happens. Messages flow between you and your agents, with full context retained.", side: "over", align: "center" } },
+                    { element: "#conv-header-title", popover: { title: "Rename this thread", description: "Click the title to rename this conversation. Titles help you find it later.", side: "bottom" } },
+                    { element: "#conversation-message-input", popover: { title: "Compose a message", description: "Type any question or task. Use @AgentName to mention a specific agent and trigger multi-agent collaboration.", side: "top" } },
+                    { element: "#conversation-add-button", popover: { title: "Upload files", description: "Attach images or PDFs. We will run OCR on them so your agent can reference the content.", side: "top" } },
+                    { element: "#conversation-submit-button", popover: { title: "Send", description: "Your agent responds in real-time. Long tasks stream token-by-token so you see progress immediately.", side: "top" } },
+                ],
+                next: "/chat/agents/my/"
+            },
+            myagent: {
+                match: function(p) { return p.indexOf("/chat/agents/") === 0 && p.indexOf("/marketplace") === -1; },
+                steps: [
+                    { popover: { title: "My Agent", description: "Your personal AI agent lives here. Customize its name, description, and personality across four tabs.", side: "over", align: "center" } },
+                    { element: "a[href*='/chat/agents/'][href*='/skills/']", popover: { title: "Skills tab", description: "Specialized capabilities like \"Meeting Summarizer\" or \"Research Analyst\". Install them from the marketplace.", side: "bottom" } },
+                    { element: "a[href*='/chat/agents/'][href*='/files/']", popover: { title: "Files tab", description: "Upload PDFs, spreadsheets, or images. Your agent references them as grounded knowledge.", side: "bottom" } },
+                    { element: "a[href*='/chat/agents/'][href*='/memory/']", popover: { title: "Agent memory tab", description: "Inspect what your agent has learned. Vote memories up or down to shape its long-term behavior.", side: "bottom" } },
+                    { element: "form textarea, form input[name='name'], form input[name='description']", popover: { title: "Edit details", description: "Rename, rewrite the description, and customize the system prompt here. Changes save on submit.", side: "top" } },
+                ],
+                next: "/chat/agents/marketplace/"
+            },
+            team: {
+                match: function(p) { return p === "/chat/agents/marketplace/"; },
+                steps: [
+                    { popover: { title: "Agent Directory", description: "Browse all available AI agents. Each has a unique specialty from productivity to legal compliance.", side: "over", align: "center" } },
+                    { element: "input[placeholder*='Search agents']", popover: { title: "Search agents", description: "Search by name or filter by category to find the right agent for your task.", side: "bottom" } },
+                    { element: "[data-agent-card], .agent-card, a[href*='marketplace/']:not([href$='marketplace/'])", popover: { title: "Agent cards", description: "Click any card to view the agent's profile, skills, and sample prompts. \"Message\" starts a new chat directly with them.", side: "top" } },
+                ],
+                next: "/chat/memory/"
+            },
+            memory: {
+                match: function(p) { return p === "/chat/memory/"; },
+                steps: [
+                    { popover: { title: "Memory management", description: "Your agent learns from every conversation. Memories are organized into semantic (facts), episodic (events), and procedural (skills).", side: "over", align: "center" } },
+                    { element: "input[placeholder*='Search your AI LTM']", popover: { title: "Search memories", description: "Search across your agent's long-term memory to audit what it has learned.", side: "bottom" } },
+                    { element: ".vote-btn.vote-like, [data-vote]", popover: { title: "Vote on memories", description: "Thumbs up amplifies a memory's strength. Thumbs down weakens it. Memories that decay below threshold are removed automatically.", side: "left" } },
+                ],
+                next: "/chat/skills/marketplace/"
+            },
+            skills: {
+                match: function(p) { return p === "/chat/skills/marketplace/"; },
+                steps: [
+                    { popover: { title: "Skill Marketplace", description: "Pre-built skills enhance your agent's capabilities across communication, writing, project management, and more.", side: "over", align: "center" } },
+                    { element: "input[placeholder*='Search skills']", popover: { title: "Find skills", description: "Search by name or filter by category.", side: "bottom" } },
+                    { element: "[data-skill-card], .skill-card, a[href*='skills/marketplace/']:not([href$='marketplace/'])", popover: { title: "Install skills", description: "Click any skill card to read its description and install it to your agent with one click.", side: "top" } },
+                ],
+                next: "/dashboard/"
+            },
+            dashboard: {
+                match: function(p) { return p === "/dashboard/"; },
+                steps: [
+                    { popover: { title: "Analytics dashboard", description: "Monitor your AI system's performance, user behavior, and cost metrics across all models used.", side: "over", align: "center" } },
+                    { element: "button:has(> .analytics-badge), [data-dashboard-tab]", popover: { title: "Dashboard tabs", description: "Switch between System Performance (latency, errors), User Behavior (memories, conversations), and Cost (tokens, spend) views.", side: "bottom" } },
+                ],
+                next: "/chat/groups/"
+            },
+            groups: {
+                match: function(p) { return p === "/chat/groups/"; },
+                steps: [
+                    { popover: { title: "Groups", description: "Create or join group conversations. Share an access key to invite team members so everyone can interact with agents together.", side: "over", align: "center" } },
+                ],
+                next: "/users/profile/"
+            },
+            profile: {
+                match: function(p) { return p === "/users/profile/"; },
+                steps: [
+                    { popover: { title: "Profile & settings", description: "Customize your Memoria account, avatar, and password.", side: "over", align: "center" } },
+                    { element: "#profile-avatar-preview", popover: { title: "Avatar", description: "Upload a profile picture. It appears across the app and in every conversation.", side: "right" } },
+                    { element: "#open-password-modal", popover: { title: "Password", description: "Change or set a password for email login. Federated (Google/SSO) sign-ins skip this.", side: "top" } },
+                ],
+                next: "/help/"
+            },
+            help: {
+                match: function(p) { return p === "/help/"; },
+                steps: [
+                    { popover: { title: "Help center", description: "Reference docs and feature guides live here. You can restart the interactive tour any time from this page.", side: "over", align: "center" } },
+                    { element: "#start-tour-btn", popover: { title: "Relaunch tour", description: "Tap this button to replay the full walkthrough whenever you need a refresher.", side: "left" } },
+                ],
+                next: "done"
+            },
+        };
+
+        var pageKey = null;
+        for (var key in TOUR_PAGES) {
+            if (TOUR_PAGES[key].match(path)) {
+                pageKey = key;
+                break;
+            }
+        }
+
+        if (!pageKey) {
+            console.warn("[tour] no TOUR_PAGES entry matches path=" + path + "; ending tour.");
+            try { sessionStorage.removeItem("memoria_tour_page"); sessionStorage.removeItem("memoria_tour_step"); } catch (_) {}
+            return;
+        }
+
+        var config = TOUR_PAGES[pageKey];
+        console.info("[tour] matched pageKey=" + pageKey + " steps=" + config.steps.length);
+
+        function isVisible(el) {
+            if (!el) return false;
+            var rect = el.getBoundingClientRect();
+            if (rect.width === 0 && rect.height === 0) return false;
+            var style = window.getComputedStyle(el);
+            if (style.visibility === "hidden" || style.display === "none" || parseFloat(style.opacity) === 0) return false;
+            return true;
+        }
+
+        function filterLiveSteps(steps) {
+            return steps.filter(function(step) {
+                if (!step.element) return true;
+                try {
+                    var el = document.querySelector(step.element);
+                    return el !== null && isVisible(el);
+                }
+                catch (_) { return false; }
+            });
+        }
+
+        function finishTour(showAlert) {
+            try {
+                sessionStorage.removeItem("memoria_tour_page");
+                sessionStorage.removeItem("memoria_tour_step");
+                sessionStorage.removeItem(advanceCountKey);
+            } catch (_) {}
+            if (showAlert) {
+                showTourCompleteCelebration();
+            }
+        }
+
+        function showTourCompleteCelebration() {
+            var palette = ["#6C86C0", "#5A74AD", "#4A6399", "#A5B8D9", "#E5E7EB", "#FFFFFF"];
+            var overlay = document.createElement("div");
+            overlay.className = "tour-celebration-overlay";
+            overlay.innerHTML =
+                '<canvas class="tour-celebration-confetti"></canvas>' +
+                '<div class="tour-celebration-card">' +
+                '  <div class="tour-celebration-icon">' +
+                '    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+                '  </div>' +
+                '  <h2>Tour complete</h2>' +
+                '  <p>You have explored all of Memoria\'s features. Replay the tour anytime from the Help page.</p>' +
+                '  <button type="button" class="tour-celebration-close">Got it</button>' +
+                '</div>';
+            document.body.appendChild(overlay);
+
+            var canvas = overlay.querySelector(".tour-celebration-confetti");
+            var ctx = canvas.getContext("2d");
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener("resize", resize);
+
+            var particles = [];
+            var origins = [
+                { x: canvas.width * 0.2, y: canvas.height * 0.85 },
+                { x: canvas.width * 0.5, y: canvas.height * 0.85 },
+                { x: canvas.width * 0.8, y: canvas.height * 0.85 },
+            ];
+            origins.forEach(function(origin) {
+                for (var i = 0; i < 60; i++) {
+                    var angle = (-Math.PI / 2) + (Math.random() - 0.5) * 1.1;
+                    var speed = 12 + Math.random() * 10;
+                    particles.push({
+                        x: origin.x,
+                        y: origin.y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: 5 + Math.random() * 6,
+                        color: palette[(Math.random() * palette.length) | 0],
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.3,
+                        life: 1,
+                    });
+                }
+            });
+
+            var rafId = null;
+            function tick() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                var alive = 0;
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.vy += 0.5;
+                    p.vx *= 0.99;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.rotation += p.rotationSpeed;
+                    p.life -= 0.006;
+                    if (p.life <= 0 || p.y > canvas.height + 60) { continue; }
+                    alive++;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.life);
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size * 0.25, p.size, p.size * 0.5);
+                    ctx.restore();
+                }
+                if (alive > 0) {
+                    rafId = window.requestAnimationFrame(tick);
+                } else {
+                    rafId = null;
+                }
+            }
+            rafId = window.requestAnimationFrame(tick);
+
+            function dismiss() {
+                if (rafId) { window.cancelAnimationFrame(rafId); rafId = null; }
+                window.removeEventListener("resize", resize);
+                overlay.classList.add("tour-celebration-leaving");
+                setTimeout(function() { overlay.remove(); }, 240);
+            }
+            overlay.addEventListener("click", function(e) { if (e.target === overlay) dismiss(); });
+            overlay.querySelector(".tour-celebration-close").addEventListener("click", dismiss);
+            document.addEventListener("keydown", function onEsc(ev) {
+                if (ev.key === "Escape") {
+                    document.removeEventListener("keydown", onEsc);
+                    dismiss();
+                }
+            });
+        }
+
+        function advanceToNextPage(nextUrl) {
+            try {
+                sessionStorage.setItem("memoria_tour_page", "active");
+                sessionStorage.setItem(advanceCountKey, String(advanceCount + 1));
+            } catch (_) {}
+            console.info("[tour] advancing to " + nextUrl + " (advance #" + (advanceCount + 1) + ")");
+            window.location.href = nextUrl;
+        }
+
+        setTimeout(function() {
+            var liveSteps = filterLiveSteps(config.steps);
+            console.info("[tour] liveSteps=" + liveSteps.length + "/" + config.steps.length + " for pageKey=" + pageKey);
+            if (liveSteps.length === 0) {
+                console.warn("[tour] no live step elements present for pageKey=" + pageKey + "; auto-advancing.");
+                if (config.next && config.next !== "done") { advanceToNextPage(config.next); }
+                else { finishTour(false); }
+                return;
+            }
+
+            var driverObj = driver({
+                showProgress: true,
+                animate: true,
+                smoothScroll: true,
+                allowClose: true,
+                overlayColor: "rgba(15, 23, 42, 0.55)",
+                stagePadding: 10,
+                stageRadius: 14,
+                popoverOffset: 14,
+                steps: liveSteps,
+                nextBtnText: "Next →",
+                prevBtnText: "← Back",
+                doneBtnText: config.next === "done" ? "Finish tour" : "Next page →",
+                onDestroyStarted: function() {
+                    var onLast = driverObj.isLastStep();
+                    driverObj.destroy();
+                    if (onLast && config.next && config.next !== "done") {
+                        advanceToNextPage(config.next);
+                        return;
+                    }
+                    finishTour(onLast && config.next === "done");
+                },
+                onNextClick: function() {
+                    if (driverObj.isLastStep()) {
+                        driverObj.destroy();
+                        if (config.next && config.next !== "done") {
+                            advanceToNextPage(config.next);
+                        } else {
+                            finishTour(true);
+                        }
+                        return;
+                    }
+                    driverObj.moveNext();
+                },
+            });
+            driverObj.drive();
+        }, 500);
+    })();
     </script>
 </body>
 </html>

@@ -1,43 +1,155 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Help{% endblock %}
 
 {% block content %}
-<div class="max-w-[800px] mx-auto px-12 py-8">
+<div class="page-container page-container--narrow">
     <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-2">Help</h1>
     <p class="font-inter text-[#64748b] text-[16px] mb-8">Getting started with Memoria</p>
 
+    <div class="help-glass-card help-glass-card--hero rounded-2xl p-8 mb-8">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white flex-shrink-0 shadow-lg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h2 class="font-manrope font-extrabold text-[20px] text-mm-text mb-1">Interactive Product Tour</h2>
+                <p class="font-inter text-[14px] text-mm-muted">Take a guided walkthrough of all Memoria features. The tour will highlight key elements on each page and navigate you through the entire application.</p>
+            </div>
+            <button id="start-tour-btn" type="button" class="btn-gradient rounded-xl px-6 py-3 font-inter font-semibold text-[14px] text-white shadow-lg hover:shadow-xl transition-all flex-shrink-0 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Start Tour
+            </button>
+        </div>
+    </div>
+
     <div class="flex flex-col gap-6">
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+        <div class="help-glass-card rounded-2xl p-6">
             <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Conversations</h2>
             <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
                 Start a conversation by typing a message on the home page or clicking the "+ Chat" button in the sidebar.
                 Your AI agent remembers context within each conversation and learns from your interactions over time.
+                Use <strong>@AgentName</strong> to mention specific agents and trigger multi-agent collaboration.
             </p>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Groups</h2>
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Agent Directory</h2>
             <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
-                Create group conversations to collaborate with others in real time. Share an access key to invite members.
-                Use the "Group" button in the sidebar or visit the Groups page.
+                Browse 16 pre-configured AI agents across productivity, marketing, HR, analytics, finance, and legal categories.
+                Click "Message" on any agent card to start a conversation with that agent.
             </p>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
-            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Documents</h2>
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">My Agent</h2>
             <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
-                Upload images of documents to extract text using OCR. Scanned documents are saved to your document hub
-                for future reference. You can also upload files directly in a conversation using the paperclip button.
+                Configure your personal AI agent's name, description, and system prompt. Manage auto-generated skills,
+                upload reference documents, and review what your agent has learned in its memory.
             </p>
         </div>
 
-        <div class="border border-[#e2e8f0] rounded-2xl p-6 bg-white">
+        <div class="help-glass-card rounded-2xl p-6">
             <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Memory</h2>
             <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
-                Your agent builds a memory of important facts, preferences, and domain knowledge from your conversations.
-                Visit the Memory page to review what your agent has learned.
+                Your agent builds long-term memory from conversations, organized into semantic (facts), episodic (events),
+                and procedural (skills) types. Vote on memories to amplify or suppress them. Memories decay naturally if unused.
+            </p>
+        </div>
+
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Skills Marketplace</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Browse and install pre-built skills to enhance your agent's capabilities. Skills like Professional Email Writer,
+                Meeting Summarizer, and Research Analyst give your agent specialized knowledge.
+            </p>
+        </div>
+
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Groups</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Create group conversations to collaborate with others. Share an access key to invite members.
+                All group members can interact with agents together.
+            </p>
+        </div>
+
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Dashboard and Analytics</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Monitor system performance, user behavior, and cost efficiency across your AI system.
+                Track which models are used (local Qwen vs Gemini API), response latency, and token consumption.
+            </p>
+        </div>
+
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Documents</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                Upload images or PDFs to extract text using OCR. Scanned documents become reference material
+                that your agent can use for context-aware answers.
+            </p>
+        </div>
+
+        <div class="help-glass-card rounded-2xl p-6">
+            <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-3">Notifications</h2>
+            <p class="font-inter text-[#64748b] text-[14px] leading-relaxed">
+                When agents complete a multi-agent collaboration, you receive a notification.
+                Click the bell icon to see recent notifications with links to the relevant conversations.
             </p>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.help-glass-card {
+    background: linear-gradient(135deg, rgba(108, 134, 192, 0.10), rgba(108, 134, 192, 0.08));
+    border: 1px solid rgba(108, 134, 192, 0.22);
+    backdrop-filter: saturate(140%) blur(18px);
+    -webkit-backdrop-filter: saturate(140%) blur(18px);
+    box-shadow: 0 8px 32px rgba(108, 134, 192, 0.08);
+    transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.help-glass-card:hover {
+    background: linear-gradient(135deg, rgba(108, 134, 192, 0.14), rgba(108, 134, 192, 0.12));
+    box-shadow: 0 12px 40px rgba(108, 134, 192, 0.12);
+    transform: translateY(-1px);
+}
+.help-glass-card--hero {
+    background: linear-gradient(135deg, rgba(108, 134, 192, 0.14), rgba(108, 134, 192, 0.10));
+    border-color: rgba(108, 134, 192, 0.28);
+}
+.help-glass-card--hero:hover {
+    background: linear-gradient(135deg, rgba(108, 134, 192, 0.18), rgba(108, 134, 192, 0.14));
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var btn = document.getElementById("start-tour-btn");
+    if (!btn) { return; }
+    btn.addEventListener("click", function () {
+        try {
+            sessionStorage.setItem("memoria_tour_step", "0");
+            sessionStorage.setItem("memoria_tour_page", "active");
+        } catch (err) {
+            console.error("[tour] sessionStorage unavailable", err);
+            alert("Your browser blocks sessionStorage; the guided tour cannot start.");
+            return;
+        }
+        if (!window.driver || !window.driver.js || !window.driver.js.driver) {
+            console.warn("[tour] driver.js not yet loaded, continuing to /home/ and letting base.html start it there.");
+        }
+        window.location.href = "/home/";
+    });
+})();
+</script>
 {% endblock %}

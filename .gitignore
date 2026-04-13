@@ -28,6 +28,9 @@ staticfiles/
 # Media files (user uploads)
 media/
 
+# Ad-hoc verification screenshots at repo root
+/verify-*.png
+
 # macOS
 .DS_Store
 

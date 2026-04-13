@@ -1,10 +1,53 @@
 from django.contrib import admin
+from django.http import JsonResponse
+from django.urls import path
 
 from .models import Memory, MemoryBullet, Message, Session, Agent, SessionParticipant, AuditLog, Notification, RequestLog
 
 
+class Neo4jDataBrowserAdmin(admin.ModelAdmin):
+    class Meta:
+        app_label = "chat"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path("neo4j/agents/", self.admin_site.admin_view(self._neo4j_agents), name="neo4j_agents"),
+            path("neo4j/sessions/", self.admin_site.admin_view(self._neo4j_sessions), name="neo4j_sessions"),
+            path("neo4j/stats/", self.admin_site.admin_view(self._neo4j_stats), name="neo4j_stats"),
+        ]
+        return custom + urls
+
+    @staticmethod
+    def _neo4j_agents(request):
+        from app.services import neo4j_memory as neo4j
+        userId = request.GET.get("user_id", "")
+        if not userId:
+            return JsonResponse({"error": "user_id required"}, status=400)
+        agents = neo4j.get_agents_for_user(userId)
+        return JsonResponse({"count": len(agents), "agents": agents})
+
+    @staticmethod
+    def _neo4j_sessions(request):
+        from app.services import neo4j_memory as neo4j
+        userId = request.GET.get("user_id", "")
+        if not userId:
+            return JsonResponse({"error": "user_id required"}, status=400)
+        sessions = neo4j.get_sessions_for_user(userId)
+        return JsonResponse({"count": len(sessions), "sessions": sessions})
+
+    @staticmethod
+    def _neo4j_stats(request):
+        from app.services import neo4j_memory as neo4j
+        userId = request.GET.get("user_id", "")
+        if not userId:
+            return JsonResponse({"error": "user_id required"}, status=400)
+        stats = neo4j.aggregate_request_stats(userId, days=30)
+        return JsonResponse(stats)
+
+
 @admin.register(Session)
-class SessionAdmin(admin.ModelAdmin):
+class SessionAdmin(Neo4jDataBrowserAdmin):
     list_display = ("id", "user", "title", "created_at", "updated_at")
     search_fields = ("user__user__username", "user__user__email", "title")
     list_select_related = ("user",)

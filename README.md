@@ -82,16 +82,18 @@ Then edit `.env` and replace `YOUR_KEY` with a freshly generated Django secret k
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-5. Install system dependencies for AI features:
-```bash
-brew install tesseract          # macOS (OCR engine)
-# apt-get install tesseract-ocr # Linux alternative
-```
+5. AI-model system dependencies (no external binaries required):
+
+The OCR pipeline uses [EasyOCR](https://github.com/JaidedAI/EasyOCR), a pure-PyTorch OCR engine that downloads its English detector and recognizer weights automatically on first use. No `apt-get` or `brew` install is needed. The only OS-level package you may want is a recent CPU build of PyTorch (installed automatically via `requirements.txt`).
 
 6. Configure AI environment variables in `.env`:
 ```bash
-GEMINI_API_KEY="your_gemini_key"   # Required: get from https://aistudio.google.com/apikey
+GEMINI_API_KEY="your_gemini_key"   # Optional: enhanced chat-response quality via Gemini 3 Flash
+                                   # Leave empty to run fully on the local Qwen3.5-0.8B path.
+CHAT_PREFER_LOCAL_LLM="false"      # Set to "true" to force local Qwen even when a Gemini key is set.
 ```
+
+Memoria runs fully without a Gemini API key. The primary AI stack (semantic search via BGE embeddings, RAG retrieval, EasyOCR, and local chat generation via Qwen3.5-0.8B) is 100% open/local.
 
 7. Run migrations:
 ```bash
@@ -105,14 +107,15 @@ python manage.py runserver
 
 ### Model Downloads (Automatic)
 
-The following models download automatically on first use:
+The following models download automatically on first use. All are public/open weights from Hugging Face or open-source PyTorch checkpoints; nothing is proprietary or paywalled.
 
-| Model | Size | Purpose | Cache Location |
-|---|---|---|---|
-| all-MiniLM-L6-v2 | ~80 MB | Semantic search embeddings | `llm_test/cache/embedding-models/` |
-| Qwen3.5-0.8B | ~1.6 GB | Local query preprocessing | `llm_test/cache/huggingface-models/` |
+| Model | Size | Dim / Params | Purpose | Cache Location |
+|---|---|---|---|---|
+| `BAAI/bge-base-en-v1.5` | ~436 MB | 768-dim / 110M | Semantic search and RAG embeddings | `llm_test/cache/embedding-models/` |
+| `Qwen/Qwen3.5-0.8B` | ~1.6 GB | 0.8B params | Primary local LLM for chat, preprocessing, query rewriting | `llm_test/cache/huggingface-models/` |
+| EasyOCR English (detector + recognizer) | ~64 MB | PyTorch CRAFT + CRNN | Receipt and document OCR | `~/.EasyOCR/model/` (EasyOCR default) |
 
-Model weights are excluded from version control via `.gitignore` (`*.bin`, `*.safetensors`, `*.pt`, `*.onnx`, `*.h5`). The application downloads weights locally when run.
+Model weights are excluded from version control via `.gitignore` (`*.bin`, `*.safetensors`, `*.pt`, `*.onnx`, `*.h5`). The application downloads weights locally on first run.
 
 ### Optional Services
 
@@ -130,10 +133,10 @@ After starting the server, the following AI-powered features are accessible thro
 
 | Feature | URL | AI Models Used |
 |---|---|---|
-| Chat (New Conversation) | `/home/` | Gemini 3 Flash (streaming), Qwen3.5-0.8B (preprocessing), MiniLM-L6-v2 (context retrieval) |
-| Memory Management | `/chat/memory/` | MiniLM-L6-v2 (semantic search), ACE tri-channel decay |
-| Semantic Search API | `/chat/api/semantic-search/?q=` | MiniLM-L6-v2 (384-dim cosine similarity) |
-| Document Scanning (OCR) | `/chat/document/upload/` | pytesseract (Tesseract OCR engine) |
+| Chat (New Conversation) | `/home/` | Qwen3.5-0.8B primary (local), Gemini 3 Flash optional enhancement, BGE-base-en-v1.5 (context retrieval) |
+| Memory Management | `/chat/memory/` | BGE-base-en-v1.5 (semantic search, 768-dim), ACE tri-channel decay |
+| Semantic Search API | `/chat/api/semantic-search/?q=` | BGE-base-en-v1.5 (768-dim cosine similarity) |
+| Document Scanning (OCR) | `/chat/document/upload/` | EasyOCR (open-source PyTorch OCR, English) |
 | Dashboard | `/chat/dashboard/` | Aggregated AI system metrics |
 | Agent Management | `/chat/agents/` | Agent configuration with custom system prompts |
 | Agent Marketplace | `/chat/agents/marketplace/` | 10 pre-built agent templates |
@@ -186,10 +189,10 @@ For detailed AI architecture documentation, see [README_AI.md](README_AI.md).
 |   |
 |   |-- services/                 # AI and integration services
 |   |   |-- classifier.py         # Prompt complexity classifier (8 dimensions + synergy)
-|   |   |-- embedding.py          # all-MiniLM-L6-v2 embedding service (384-dim)
-|   |   |-- gemini.py             # Gemini 3 Flash streaming API client
-|   |   |-- local_llm.py          # Qwen3.5-0.8B local preprocessing
-|   |   |-- ocr.py                # pytesseract OCR pipeline with field parsing
+|   |   |-- embedding.py          # BAAI/bge-base-en-v1.5 embedding service (768-dim)
+|   |   |-- gemini.py             # Gemini 3 Flash streaming API client (optional enhancement)
+|   |   |-- local_llm.py          # Qwen3.5-0.8B local LLM (primary chat + preprocessing)
+|   |   |-- ocr.py                # EasyOCR pipeline + regex field parsing (receipts, PDFs)
 |   |   |-- neo4j_memory.py       # Neo4j graph memory synchronization
 |   |   `-- pusher_service.py     # Real-time broadcast service
 |   |
@@ -289,16 +292,23 @@ Screenshots:
 
 ### AI Feature Screenshots
 
-![Dashboard](docs/imgs/ai_dashboard.png)
-![Agent List](docs/imgs/ai_agent_list.png)
-![Agent Settings](docs/imgs/ai_agent_settings.png)
-![Agent Marketplace](docs/imgs/ai_agent_marketplace.png)
-![Skill Marketplace](docs/imgs/ai_skill_marketplace.png)
-![Document Upload (OCR)](docs/imgs/ai_document_upload.png)
-![Activity Log](docs/imgs/ai_activity_log.png)
-![Analytics Dashboard](docs/imgs/ai_analytics.png)
-![Chat AI Response](docs/imgs/ai_chat_response.png)
-![Semantic Search API](docs/imgs/ai_semantic_search.png)
+The following screenshots are captured from the running Django application. All paths resolve to files currently in the repository.
+
+| Feature | Screenshot |
+|---|---|
+| Home (with AI-powered chat input) | ![Home](docs/screenshots/02-home.png) |
+| Dashboard (aggregated AI metrics) | ![Dashboard](docs/screenshots/03-dashboard.png) |
+| Memory Management (BGE-powered semantic search) | ![Memory](docs/screenshots/04-memory.png) |
+| Analytics (AI usage over time) | ![Analytics](docs/screenshots/05-analytics.png) |
+| Agent Detail (custom system prompt) | ![Agent Detail](docs/screenshots/06-agent-detail.png) |
+| Groups (multi-user agent workspaces) | ![Groups](docs/screenshots/07-groups.png) |
+| Activity Log (audit trail of AI operations) | ![Activity Log](docs/screenshots/08-activity-log.png) |
+| Skill Marketplace (pre-built AI skills) | ![Skill Marketplace](docs/screenshots/09-skill-marketplace.png) |
+| Conversation (streaming AI response) | ![Conversation](docs/screenshots/10-conversation.png) |
+| Documents (OCR ingestion + RAG indexing) | ![Documents](docs/screenshots/11-documents.png) |
+| Agent Skills (skill binding to agents) | ![Agent Skills](docs/screenshots/12-agent-skills.png) |
+
+Sample OCR input used in evaluation: `docs/screenshots/test_receipt.png`.
 
 ---
 

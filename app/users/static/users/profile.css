@@ -88,7 +88,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 32px;
-    box-shadow: 0 4px 12px rgba(91, 95, 239, 0.04);
+    box-shadow: 0 4px 12px rgba(108, 134, 192, 0.04);
     margin-bottom: 20px;
 }
 
@@ -226,7 +226,7 @@
     padding: 0;
     max-width: 520px;
     width: min(92vw, 520px);
-    box-shadow: 0 30px 70px rgba(91, 95, 239, 0.18);
+    box-shadow: 0 30px 70px rgba(108, 134, 192, 0.18);
     position: fixed;
     inset: 0;
     margin: auto;

@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-[1400px] mx-auto px-12 py-8">
+<div class="page-container">
     <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-1">All Memories</h1>
     <p class="font-inter text-mm-muted text-[14px] mb-6">Complete record of everything your agent has learned</p>
 
@@ -53,36 +53,36 @@
         </div>
     </form>
 
-    <div class="flex gap-3 flex-wrap mb-6">
-        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
-            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ total_count }}</div>
-            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Total</div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <div class="glass-surface rounded-xl p-4 sm:p-5 text-center">
+            <div class="font-inter font-semibold text-[22px] sm:text-[28px] text-mm-text">{{ total_count }}</div>
+            <div class="font-inter text-[11px] sm:text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Total</div>
         </div>
-        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
-            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ avg_strength|floatformat:1|default:"0" }}</div>
-            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Avg Strength</div>
+        <div class="glass-surface rounded-xl p-4 sm:p-5 text-center">
+            <div class="font-inter font-semibold text-[22px] sm:text-[28px] text-mm-text">{{ avg_strength|floatformat:1|default:"0" }}</div>
+            <div class="font-inter text-[11px] sm:text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">Avg Strength</div>
         </div>
         {% for item in type_summary %}
-        <div class="flex-1 min-w-[120px] border border-[#e2e8f0] rounded-xl p-5 bg-white text-center">
-            <div class="font-inter font-semibold text-[28px] text-mm-text">{{ item.count }}</div>
-            <div class="font-inter text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">{{ item.label }}</div>
+        <div class="glass-surface rounded-xl p-4 sm:p-5 text-center">
+            <div class="font-inter font-semibold text-[22px] sm:text-[28px] text-mm-text">{{ item.count }}</div>
+            <div class="font-inter text-[11px] sm:text-[12px] text-mm-muted uppercase tracking-[0.5px] mt-1">{{ item.label }}</div>
         </div>
         {% endfor %}
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {% for bullet in bullets %}
-        <div class="memory-card border border-[#e2e8f0] rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3" data-bullet-id="{{ bullet.pk }}">
+        <div class="memory-card border border-[#e2e8f0] rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3" data-bullet-id="{{ bullet.id }}">
             <div class="flex items-start justify-between gap-3">
-                <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.get_memory_type_display }}</span>
+                <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.memoryTypeLabel }}</span>
                 <div class="inline-flex items-center gap-1.5">
                     <button type="button"
                         aria-label="Thumbs up"
-                        aria-pressed="{% if user_votes|get_vote:bullet.pk == 1 %}true{% else %}false{% endif %}"
-                        class="vote-btn vote-like border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == 1 %}text-emerald-600 bg-emerald-50{% else %}text-slate-400 hover:text-emerald-500 hover:bg-emerald-50/60{% endif %}"
+                        aria-pressed="{% if user_votes|get_vote:bullet.id == 1 %}true{% else %}false{% endif %}"
+                        class="vote-btn vote-like border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.id == 1 %}text-emerald-600 bg-emerald-50{% else %}text-slate-400 hover:text-emerald-500 hover:bg-emerald-50/60{% endif %}"
                         data-direction="up"
-                        onclick="castVote({{ bullet.pk }}, 'up', this)">
-                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == 1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
+                        onclick="castVote({{ bullet.id }}, 'up', this)">
+                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.id == 1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
                             <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3m7-2V5a3 3 0 00-3-3l-4 9v11h10.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14"></path>
                         </svg>
                     </button>
@@ -90,17 +90,17 @@
                     <span class="hidden" data-type="harmful">{{ bullet.harmful_count }}</span>
                     <button type="button"
                         aria-label="Thumbs down"
-                        aria-pressed="{% if user_votes|get_vote:bullet.pk == -1 %}true{% else %}false{% endif %}"
-                        class="vote-btn vote-dislike border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.pk == -1 %}text-red-500 bg-red-50{% else %}text-slate-400 hover:text-red-400 hover:bg-red-50/60{% endif %}"
+                        aria-pressed="{% if user_votes|get_vote:bullet.id == -1 %}true{% else %}false{% endif %}"
+                        class="vote-btn vote-dislike border-none bg-transparent p-1.5 rounded-lg cursor-pointer transition-all duration-200 {% if user_votes|get_vote:bullet.id == -1 %}text-red-500 bg-red-50{% else %}text-slate-400 hover:text-red-400 hover:bg-red-50/60{% endif %}"
                         data-direction="down"
-                        onclick="castVote({{ bullet.pk }}, 'down', this)">
-                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.pk == -1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
+                        onclick="castVote({{ bullet.id }}, 'down', this)">
+                        <svg viewBox="0 0 24 24" fill="{% if user_votes|get_vote:bullet.id == -1 %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-[16px] h-[16px]">
                             <path d="M17 2H20a2 2 0 012 2v7a2 2 0 01-2 2h-3m-7 2v4a3 3 0 003 3l4-9V2H6.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <a href="{{ bullet.memory.get_absolute_url }}" class="no-underline text-inherit">
+            <a href="/chat/m/{{ bullet.id }}/" class="no-underline text-inherit">
                 <p class="m-0 font-inter text-[13px] leading-[1.6] text-mm-text break-words">{{ bullet.content }}</p>
             </a>
             <div class="font-inter text-[12px] text-mm-muted mt-auto">{{ bullet.last_accessed }}</div>

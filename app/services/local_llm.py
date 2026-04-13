@@ -1,3 +1,4 @@
+import re
 import threading
 from pathlib import Path
 from typing import Any
@@ -217,6 +218,7 @@ def preprocess_prompt(user_text: str, guidance: str = "", conversation_context: 
 
         generated = outputs[0][inputs["input_ids"].shape[1]:]
         preprocessed = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        preprocessed = re.sub(r"<think>.*?</think>", "", preprocessed, flags=re.DOTALL).strip()
         return preprocessed or None
     except Exception as exc:
         from memoria.event_log import log_event
@@ -224,9 +226,9 @@ def preprocess_prompt(user_text: str, guidance: str = "", conversation_context: 
         return None
 
 
-RESPONSE_TEMPLATE = """You are a helpful dietary AI assistant called Memoria. Answer the user's question clearly and concisely.
+RESPONSE_TEMPLATE = """You are a helpful AI assistant called Memoria. Answer the user's question clearly and concisely.
 
-## Relevant Memory Context
+## Relevant Context
 {guidance}
 
 ## Conversation History
@@ -236,7 +238,7 @@ RESPONSE_TEMPLATE = """You are a helpful dietary AI assistant called Memoria. An
 {question}
 
 ## Instructions
-Provide a direct, helpful answer. Use the memory context and conversation history when relevant. Be concise but thorough."""
+Provide a direct, helpful answer. Be concise but thorough."""
 
 
 def generate_response(user_text: str, guidance: str = "", conversation_context: str = "") -> str | None:
@@ -249,12 +251,21 @@ def generate_response(user_text: str, guidance: str = "", conversation_context: 
 
         model, tokenizer = _get_model_and_tokenizer()
 
-        guidance_block = guidance.strip() if guidance else "No prior context available."
-        context_block = conversation_context.strip() if conversation_context else "No prior conversation."
-        full_input = RESPONSE_TEMPLATE.format(
-            guidance=guidance_block,
-            conversation_context=context_block,
-            question=trimmed,
+        guidanceBlock = guidance.strip() if guidance else ""
+        contextBlock = conversation_context.strip() if conversation_context else ""
+        systemParts = ["You are Memoria, a helpful AI assistant. Answer concisely."]
+        if guidanceBlock:
+            systemParts.append(f"Context: {guidanceBlock[:500]}")
+        if contextBlock:
+            systemParts.append(f"History: {contextBlock[:500]}")
+        systemMsg = "\n".join(systemParts)
+
+        messages = [
+            {"role": "system", "content": systemMsg},
+            {"role": "user", "content": trimmed},
+        ]
+        full_input = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
         )
 
         inputs = tokenizer(full_input, return_tensors="pt", truncation=True, max_length=2048)
@@ -264,9 +275,9 @@ def generate_response(user_text: str, guidance: str = "", conversation_context: 
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=512,
+                max_new_tokens=256,
                 do_sample=True,
-                temperature=0.7,
+                temperature=0.6,
                 top_p=0.9,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
@@ -274,6 +285,7 @@ def generate_response(user_text: str, guidance: str = "", conversation_context: 
 
         generated = outputs[0][inputs["input_ids"].shape[1]:]
         response = tokenizer.decode(generated, skip_special_tokens=True).strip()
+        response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
         return response or None
     except Exception as exc:
         from memoria.event_log import log_event

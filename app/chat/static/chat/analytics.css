@@ -3,51 +3,97 @@
     gap: 8px;
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.analytics-tab-bar::-webkit-scrollbar { display: none; }
+.analytics-tab-bar > .analytics-tab { flex-shrink: 0; }
+@media (max-width: 640px) {
+    .analytics-tab-bar { gap: 4px; margin-inline: -16px; padding-inline: 16px; }
+    .analytics-tab { padding: 8px 10px 10px; font-size: 13px; }
+}
+
+/* Responsive chart images — they ship as server-rendered PNGs with fixed
+   pixel widths. Force fluid width with a preserved aspect ratio so they
+   shrink proportionally on mobile instead of overflowing horizontally. */
+.analytics-section img,
+.analytics-chart-panel img,
+.analytics-card img {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100vw !important;
+    display: block;
+    object-fit: contain;
+}
+
+/* Grids and table wrappers flow naturally on mobile */
+.analytics-section .analytics-grid {
+    display: grid;
+    gap: 16px;
+}
+@media (min-width: 768px) {
+    .analytics-section .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Horizontal scroll for table overflow on mobile */
+.analytics-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-inline: -8px;
+    padding-inline: 8px;
+}
+@media (max-width: 640px) {
+    .analytics-table { min-width: 560px; }
+    .analytics-table th,
+    .analytics-table td { padding: 10px 12px; font-size: 13px; white-space: nowrap; }
 }
 
 .analytics-tab {
     border: none;
     background: transparent;
-    padding: 10px 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
     cursor: pointer;
     position: relative;
-    transition: all 0.15s ease;
-}
-
-.analytics-tab::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: transparent;
-    border-radius: 2px 2px 0 0;
-    transition: background 0.15s ease;
-}
-
-.analytics-tab.is-active::after {
-    background: #5B5FEF;
+    transition: color 0.15s ease;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
 }
 
 .analytics-tab:hover {
-    opacity: 0.85;
+    color: #6C86C0;
 }
 
+.analytics-tab.is-active {
+    color: #6C86C0;
+    border-bottom-color: #6C86C0;
+}
+
+.analytics-tab svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+/* Badge class retained for any legacy usage but visually neutralised. */
 .analytics-badge {
     display: inline-flex;
     align-items: center;
-    padding: 6px 14px;
-    border-radius: 9999px;
-    font-family: "Inter", sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    transition: opacity 0.15s ease;
-}
-
-.analytics-tab:not(.is-active) .analytics-badge {
-    opacity: 0.55;
+    font: inherit;
+    background: transparent !important;
+    color: inherit !important;
+    padding: 0;
+    border-radius: 0;
 }
 
 .analytics-section {

@@ -1,5 +1,5 @@
 {% load chat_extras %}
-<div class="backdrop-blur-[20px] bg-white/40 border-r border-white/20 w-[280px] lg:w-[360px] h-full flex flex-col flex-shrink-0 max-md:hidden relative" data-conv-sidebar>
+<div class="backdrop-blur-[20px] border-r border-white/20 conv-sidebar-width h-full flex flex-col flex-shrink-0 max-md:hidden relative" data-conv-sidebar>
     <!-- Header -->
     <div class="px-5 py-4 border-b border-white/10">
         <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase leading-5">
@@ -11,7 +11,7 @@
     <div class="px-5 py-2">
         <form method="post" action="{% url 'chat:new_chat' %}">
             {% csrf_token %}
-            <button type="submit" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[12px] bg-gradient-to-r from-[#5B5FEF] to-[#7B61FF] text-white font-inter font-semibold text-[13px] hover:shadow-md transition-all cursor-pointer border-none">
+            <button type="submit" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[12px] bg-gradient-to-r from-[#6C86C0] to-[#6C86C0] text-white font-inter font-semibold text-[13px] hover:shadow-md transition-all cursor-pointer border-none">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -65,8 +65,8 @@
             </div>
             <div class="flex flex-col gap-1">
                 {% for s in sessions %}
-                {% if s.is_shared %}
-                <a href="{{ s.get_absolute_url }}" class="flex gap-3 items-center px-3 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
+                {% if s.accessKey %}
+                <a href="/chat/c/{{ s.id }}/" class="flex gap-3 items-center px-3 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
                     <svg class="w-[15px] h-[12px] text-slate-600/60 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
@@ -91,12 +91,12 @@
             </div>
             <div class="flex flex-col gap-2" id="conv-sidebar-list">
                 {% for s in sessions %}
-                {% if not s.is_shared %}
+                {% if not s.accessKey %}
                 <div class="conv-sidebar-item" data-id="{{ s.id }}">
-                    <a href="{{ s.get_absolute_url }}" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex gap-3 items-center px-2 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
-                        <div class="relative rounded-[12px] shrink-0 w-8 h-8 shadow-md bg-gradient-to-br from-[#5B5FEF] to-[#7B61FF] flex items-center justify-center">
+                    <a href="/chat/c/{{ s.id }}/" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex gap-3 items-center px-2 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
+                        <div class="relative rounded-[12px] shrink-0 w-8 h-8 shadow-md bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center">
                             <span class="conv-sidebar-avatar font-inter font-semibold text-white text-[14px]">
-                                {{ s.title|default:"U"|truncatechars:1 }}
+                                {{ s.title|default:"U"|slice:":1"|upper }}
                             </span>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -126,12 +126,21 @@
             </svg>
             Rename
         </button>
-        <button type="button" data-action="delete" class="w-full px-[16px] py-[10px] hover:bg-white/60 transition-colors flex items-center gap-[10px] font-inter font-medium text-slate-700 text-[13px]">
-            <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-            Delete Conversation
-        </button>
+        <div data-action="delete-wrapper">
+            <button type="button" data-action="delete-start" class="w-full px-[16px] py-[10px] hover:bg-white/60 transition-colors flex items-center gap-[10px] font-inter font-medium text-slate-700 text-[13px]">
+                <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Delete
+            </button>
+            <div data-action="delete-confirm" class="hidden px-[16px] py-[8px]">
+                <div class="font-inter text-[12px] text-slate-500 mb-[6px]">Delete this conversation?</div>
+                <div class="flex gap-[8px]">
+                    <button type="button" data-action="delete-cancel" class="flex-1 px-[10px] py-[6px] rounded-lg border border-slate-200 text-slate-600 font-inter font-medium text-[12px] hover:bg-slate-50 transition-colors">Cancel</button>
+                    <button type="button" data-action="delete" class="flex-1 px-[10px] py-[6px] rounded-lg bg-red-500 text-white font-inter font-medium text-[12px] hover:bg-red-600 transition-colors">Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -13,9 +13,12 @@ body {
 body {
     font-family: "Inter", sans-serif;
     background:
-        radial-gradient(ellipse at top right, rgba(196, 181, 253, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse at bottom left, rgba(191, 219, 254, 0.4) 0%, transparent 50%),
-        linear-gradient(to bottom right, #f0f4ff, #fdf2f8, #f5f3ff);
+        radial-gradient(ellipse 55% 50% at 85% 12%, rgba(235, 170, 195, 0.65) 0%, transparent 70%),
+        radial-gradient(ellipse 70% 60% at 15% 40%, rgba(150, 190, 245, 0.6) 0%, transparent 70%),
+        radial-gradient(ellipse 55% 55% at 82% 85%, rgba(165, 150, 215, 0.55) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 50% 8%, rgba(255, 255, 255, 0.3) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 10% 90%, rgba(140, 185, 230, 0.35) 0%, transparent 60%),
+        linear-gradient(135deg, #c4d8f5 0%, #cddcf8 20%, #d6e2fb 40%, #d8d4f2 65%, #c8bfe8 85%, #bfb8e4 100%);
     background-attachment: fixed;
     min-height: 100vh;
 }
@@ -44,30 +47,35 @@ form button {
 }
 
 :root {
-    --primary-blue: #5B5FEF;
-    --primary-hover: #4D4FD9;
-    --primary-gradient-end: #7B61FF;
+    /* Unified brand color system — single accent, calm and minimal. */
+    --primary-blue: #6C86C0;
+    --primary-hover: #5A74AD;
+    --primary-active: #4A6399;
+    --primary-gradient-end: #6C86C0;
+    --primary-tint: rgba(108, 134, 192, 0.12);
+    --primary-tint-ultra: rgba(108, 134, 192, 0.06);
+
     --header-bg: #f6fafe;
     --sidebar-bg: #f0f4f8;
     --content-bg: #ffffff;
-    --border-color: #e2e8f0;
-    --text-dark: #0f172a;
-    --text-muted: #64748b;
-    --text-light: #94a3b8;
-    --icon-color: #434653;
-    --nav-inactive: #475569;
-    --success-green: #10b981;
-    --success-green-light: #d1fae5;
-    --success-green-dark: #065f46;
-    --warning-yellow-bg: #fef3c7;
-    --warning-yellow-text: #92400e;
+    --border-color: #E5E7EB;
+
+    /* Text system */
+    --text-dark: #1C1E2E;
+    --text-muted: #6B7280;
+    --text-light: #9CA3AF;
+    --icon-color: #6B7280;
+    --nav-inactive: #6B7280;
+
+    /* Reserved for destructive actions only */
     --error-red-bg: #fee2e2;
     --error-red-text: #991b1b;
-    --hover-bg: #f0f4f8;
-    --card-hover-bg: #f8fafc;
+
+    --hover-bg: #F5F6FA;
+    --card-hover-bg: #F5F6FA;
     --header-height: 64px;
     --left-sidebar-width: 229px;
-    --conv-sidebar-width: 360px;
+    --conv-sidebar-width: 229px;
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
@@ -85,17 +93,23 @@ form button {
 }
 
 .btn-gradient {
-    background: linear-gradient(135deg, #5B5FEF 0%, #7B61FF 100%);
+    background: #6C86C0;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(91, 95, 239, 0.25);
+    border: none;
+    border-radius: 10px;
+    transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    box-shadow: 0 4px 12px rgba(108, 134, 192, 0.18);
 }
 
 .btn-gradient:hover {
-    background: linear-gradient(135deg, #4D4FD9 0%, #6B51EF 100%);
-    box-shadow: 0 4px 20px rgba(91, 95, 239, 0.4);
-    transform: translateY(-1px);
+    background: #5A74AD;
+    box-shadow: 0 8px 20px rgba(108, 134, 192, 0.25);
+}
+
+.btn-gradient:active {
+    background: #4A6399;
+    transform: scale(0.97);
+    box-shadow: 0 4px 12px rgba(108, 134, 192, 0.2);
 }
 
 .btn-gradient:disabled {
@@ -104,6 +118,24 @@ form button {
     transform: none;
     box-shadow: none;
 }
+
+/* Secondary + ghost button primitives */
+.btn-secondary {
+    background: #FFFFFF;
+    color: #1C1E2E;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    transition: background 180ms ease, border-color 180ms ease;
+}
+.btn-secondary:hover { background: #F5F6FA; }
+.btn-ghost {
+    background: transparent;
+    color: #6C86C0;
+    border: none;
+    border-radius: 10px;
+    transition: background 180ms ease;
+}
+.btn-ghost:hover { background: rgba(108, 134, 192, 0.08); }
 
 .scroll-container::-webkit-scrollbar {
     width: 4px;
@@ -142,7 +174,7 @@ form button {
 
 #app-header {
     height: var(--header-height);
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(253, 253, 253, 0.6);
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -153,13 +185,23 @@ form button {
 
 #left-sidebar {
     width: var(--left-sidebar-width);
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(253, 253, 253, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.2);
     flex-shrink: 0;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+[data-conv-sidebar] {
+    background: rgba(253, 253, 253, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.conv-sidebar-width {
+    width: var(--left-sidebar-width);
 }
 
 #left-sidebar::-webkit-scrollbar {
@@ -193,7 +235,7 @@ form button {
 
 .sidebar-nav-link.is-active {
     background: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 16px rgba(91, 95, 239, 0.15);
+    box-shadow: 0 4px 16px rgba(108, 134, 192, 0.15);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.4);
 }
@@ -417,4 +459,317 @@ body.search-modal-open {
 
 .mobile-bottom-nav a:hover {
     color: var(--primary-blue);
+}
+
+/* ================================================================
+   RESPONSIVE DESIGN SYSTEM (added for mobile-first overhaul)
+   Breakpoints: xs 360  sm 480  md 768  lg 1024  xl 1280  2xl 1440
+   ================================================================ */
+:root {
+    --bp-xs: 360px;
+    --bp-sm: 480px;
+    --bp-md: 768px;
+    --bp-lg: 1024px;
+    --bp-xl: 1280px;
+    --bp-2xl: 1440px;
+    --bottom-nav-height: 64px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --touch-min: 44px;
+}
+
+/* Fluid type scale — clamps between mobile and desktop without abrupt jumps */
+.fluid-h1 { font-size: clamp(1.75rem, 5.2vw + 0.5rem, 3rem); line-height: 1.1; }
+.fluid-h2 { font-size: clamp(1.375rem, 3.4vw + 0.5rem, 2rem); line-height: 1.2; }
+.fluid-h3 { font-size: clamp(1.125rem, 2vw + 0.5rem, 1.5rem); line-height: 1.3; }
+.fluid-body { font-size: clamp(0.9375rem, 0.6vw + 0.75rem, 1rem); line-height: 1.55; }
+
+/* Page containers — replace hardcoded px-12 across templates */
+.page-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 20px;
+}
+.page-container--narrow { max-width: 960px; }
+.page-container--tight { max-width: 700px; }
+.page-container--wide { max-width: 1600px; }
+.page-container--flush { padding-inline: 0; }
+
+@media (min-width: 480px) {
+    .page-container { padding-inline: 20px; padding-block: 24px; }
+}
+@media (min-width: 768px) {
+    .page-container { padding-inline: 32px; padding-block: 32px; }
+}
+@media (min-width: 1024px) {
+    .page-container { padding-inline: 48px; }
+}
+
+/* Touch-target primitive — ensure ≥44px hit area for all interactive elements */
+.touch-target {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+@media (max-width: 767px) {
+    button,
+    a.btn-gradient,
+    .btn-gradient,
+    input[type="submit"],
+    input[type="button"] {
+        min-height: var(--touch-min);
+    }
+    .sidebar-nav-link { min-height: var(--touch-min); }
+}
+
+/* Glass surface — shared by cards, modals, drawers so everything feels unified */
+.glass-surface {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(150%) blur(18px);
+    -webkit-backdrop-filter: saturate(150%) blur(18px);
+    box-shadow: 0 10px 30px rgba(108, 134, 192, 0.08);
+}
+.glass-surface--tinted {
+    background: linear-gradient(135deg, rgba(108, 134, 192, 0.12), rgba(108, 134, 192, 0.09));
+    border-color: rgba(108, 134, 192, 0.22);
+}
+
+/* ================================================================
+   SHELL: expand bottom nav to 5 tabs, respect safe area
+   ================================================================ */
+@media (max-width: 767px) {
+    .mobile-bottom-nav {
+        height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+        padding-inline: 8px;
+        padding-bottom: var(--safe-bottom);
+        gap: 4px;
+    }
+    #main-content,
+    .flex-1.flex.flex-col.h-full {
+        padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+    }
+}
+.mobile-bottom-nav a,
+.mobile-bottom-nav button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: var(--touch-min);
+    border: 0;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--nav-inactive);
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+.mobile-bottom-nav a svg,
+.mobile-bottom-nav button svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+}
+.mobile-bottom-nav a.is-active,
+.mobile-bottom-nav button.is-active {
+    color: var(--primary-blue);
+    transform: translateY(-1px);
+}
+.mobile-bottom-nav a.is-active svg,
+.mobile-bottom-nav button.is-active svg {
+    stroke: var(--primary-blue);
+}
+
+/* Conversation sidebar — mobile drawer behavior */
+[data-conv-sidebar] {
+    transition: transform 0.22s ease;
+}
+@media (max-width: 767px) {
+    [data-conv-sidebar] {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+        width: min(86vw, 340px);
+        z-index: 45;
+        transform: translateX(-110%);
+        box-shadow: none;
+    }
+    [data-conv-sidebar].is-open {
+        transform: translateX(0);
+        box-shadow: 6px 0 20px rgba(15, 23, 42, 0.12);
+    }
+    [data-conv-sidebar].is-open ~ [data-conv-sidebar-backdrop] {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+[data-conv-sidebar-backdrop] {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 44;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+/* ================================================================
+   CONVERSATION PAGE — mobile-first redesign hooks
+   ================================================================ */
+@media (max-width: 767px) {
+    /* Collapse header to title + single trailing action */
+    .conv-header {
+        padding: 10px 12px;
+    }
+    .conv-header-title {
+        font-size: 15px;
+        line-height: 20px;
+        max-width: 70vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .conv-header-meta { display: none; }
+    .conv-header-secondary { display: none; }
+
+    /* Full-width bubbles with inline avatar */
+    .chat-msg-row {
+        gap: 8px !important;
+    }
+    .chat-msg-row[data-message-role="user"] {
+        flex-direction: row-reverse !important;
+    }
+    .chat-msg-row > .flex-1 {
+        max-width: calc(100% - 44px) !important;
+    }
+    .chat-msg-row .message-content,
+    .chat-msg-row .message-content-markdown {
+        font-size: 15px;
+        line-height: 1.55;
+    }
+    /* Sticky composer flush to bottom with safe-area respect */
+    .conv-composer {
+        position: sticky;
+        bottom: 0;
+        background: rgba(253, 253, 253, 0.75);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-top: 1px solid rgba(255, 255, 255, 0.4);
+        padding: 10px 12px calc(10px + var(--safe-bottom));
+    }
+}
+
+/* ================================================================
+   RESPONSIVE VISIBILITY HELPERS
+   ================================================================ */
+.show-mobile { display: none; }
+.hide-mobile { display: initial; }
+@media (max-width: 767px) {
+    .show-mobile { display: initial; }
+    .hide-mobile { display: none !important; }
+    .show-mobile-flex { display: flex !important; }
+}
+
+/* Scroll-snap horizontal tabs — used by analytics / marketplace filter rows */
+.h-scroll-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.h-scroll-tabs::-webkit-scrollbar { display: none; }
+.h-scroll-tabs > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+}
+
+/* Agent tab bar: preserve the bottom-border look while enabling h-scroll */
+.h-scroll-tabs.agent-tabs {
+    align-items: center;
+    gap: 4px;
+}
+@media (max-width: 640px) {
+    .h-scroll-tabs.agent-tabs > a { padding: 10px 12px !important; font-size: 13px; }
+}
+
+/* Mobile-friendly file upload CTA chip visible only on the upload dropzone */
+.upload-dropzone .cta-mobile-chip {
+    display: none;
+}
+@media (max-width: 767px) {
+    .upload-dropzone .cta-mobile-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 14px;
+        padding: 10px 18px;
+        min-height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #6C86C0, #6C86C0);
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        box-shadow: 0 8px 20px rgba(108, 134, 192, 0.25);
+    }
+}
+
+/* Responsive table → cards primitive for activity log / admin settings */
+.table-to-cards {
+    width: 100%;
+}
+.table-to-cards thead { display: table-header-group; }
+@media (max-width: 640px) {
+    .table-to-cards thead { display: none; }
+    .table-to-cards,
+    .table-to-cards tbody,
+    .table-to-cards tr,
+    .table-to-cards td {
+        display: block;
+        width: 100%;
+    }
+    .table-to-cards tr {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 14px;
+        margin-bottom: 12px;
+        padding: 12px 14px;
+        box-shadow: 0 4px 14px rgba(108, 134, 192, 0.05);
+    }
+    .table-to-cards td {
+        padding: 6px 0;
+        border: 0;
+        display: grid;
+        grid-template-columns: 40% 60%;
+        gap: 8px;
+    }
+    .table-to-cards td::before {
+        content: attr(data-label);
+        font-family: "Inter", sans-serif;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+        font-weight: 600;
+        align-self: center;
+    }
 }

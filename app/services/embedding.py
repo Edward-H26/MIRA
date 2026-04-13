@@ -1,10 +1,13 @@
 import json
+import logging
 import threading
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 _model: Any | None = None
 _load_lock = threading.Lock()
@@ -101,7 +104,8 @@ def encode_texts(texts: list[str], batch_size: int = 32) -> np.ndarray | None:
             show_progress_bar=False,
         )
         return np.array(embeddings, dtype=np.float32)
-    except Exception:
+    except Exception as exc:
+        logger.warning("embedding_encode_failed: %s", exc.__class__.__name__, exc_info=True)
         return None
 
 

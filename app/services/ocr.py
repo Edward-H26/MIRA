@@ -48,8 +48,11 @@ class OcrResult:
     error: str = ""
 
 
+_PDF_MAGIC = b"%PDF-"
+
+
 def validate_uploaded_image(uploadedFile) -> tuple[bool, str]:
-    """Validate image file type and size."""
+    """Validate image file type, size, and actual content magic bytes."""
     if not uploadedFile:
         return False, "No file uploaded."
 
@@ -65,6 +68,20 @@ def validate_uploaded_image(uploadedFile) -> tuple[bool, str]:
     if fileSize == 0:
         return False, "File is empty."
 
+    import io
+
+    try:
+        uploadedFile.seek(0)
+        head = uploadedFile.read()
+        uploadedFile.seek(0)
+        if contentType == "application/pdf":
+            if not head.startswith(_PDF_MAGIC):
+                return False, "File does not appear to be a valid PDF."
+        else:
+            Image.open(io.BytesIO(head)).verify()
+    except Exception:
+        return False, "File content does not match declared type."
+
     return True, ""
 
 
@@ -74,6 +91,36 @@ def validate_image_dimensions(image: Image.Image) -> tuple[bool, str]:
     if width < MIN_IMAGE_DIMENSION or height < MIN_IMAGE_DIMENSION:
         return False, f"Image too small ({width}x{height}). Minimum: {MIN_IMAGE_DIMENSION}x{MIN_IMAGE_DIMENSION}."
     return True, ""
+
+
+def _extract_with_gemini(imageFile) -> str:
+    try:
+        from app.services.gemini import extract_text_multimodal
+    except Exception:
+        return ""
+    try:
+        imageFile.seek(0)
+        data = imageFile.read()
+        imageFile.seek(0)
+        mime = getattr(imageFile, "content_type", "") or "image/png"
+        if mime not in IMAGE_CONTENT_TYPES:
+            mime = "image/png"
+        text = extract_text_multimodal(data, mime_type=mime) or ""
+        return text.strip()
+    except Exception:
+        return ""
+
+
+def _extract_with_easyocr(image: Image.Image) -> str:
+    reader = _get_reader()
+    if reader is None:
+        return ""
+    try:
+        imageArray = np.array(image)
+        detections = reader.readtext(imageArray)
+        return "\n".join(text for _, text, _ in detections).strip()
+    except Exception:
+        return ""
 
 
 def extract_text_from_image(imageFile) -> OcrResult:
@@ -95,19 +142,9 @@ def extract_text_from_image(imageFile) -> OcrResult:
         result.error = dimError
         return result
 
-    try:
-        reader = _get_reader()
-        if reader is None:
-            result.status = "failed"
-            result.error = "OCR engine is not available on this server."
-            return result
-        imageArray = np.array(image)
-        detections = reader.readtext(imageArray)
-        rawText = "\n".join(text for _, text, _ in detections).strip()
-    except Exception as exc:
-        result.status = "failed"
-        result.error = f"OCR extraction failed: {exc}"
-        return result
+    rawText = _extract_with_gemini(imageFile)
+    if not rawText:
+        rawText = _extract_with_easyocr(image)
 
     if not rawText:
         result.status = "failed"

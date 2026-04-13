@@ -76,7 +76,7 @@
 }
 
 .message-content-markdown code {
-    background: rgba(91, 95, 239, 0.08);
+    background: rgba(108, 134, 192, 0.08);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: "SF Mono", "Fira Code", monospace;
@@ -105,7 +105,7 @@
     border-left: 3px solid var(--primary-blue);
     padding: 8px 16px;
     margin: 12px 0;
-    background: rgba(91, 95, 239, 0.04);
+    background: rgba(108, 134, 192, 0.04);
     border-radius: 0 8px 8px 0;
     color: #475569;
 }
@@ -178,7 +178,7 @@
 }
 
 .mention-highlight {
-    background: rgba(91, 95, 239, 0.1);
+    background: rgba(108, 134, 192, 0.1);
     padding: 1px 4px;
     border-radius: 4px;
     font-weight: 600;

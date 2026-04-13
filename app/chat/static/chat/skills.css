@@ -54,7 +54,7 @@
 }
 
 .skill-toggle input:focus-visible + .skill-toggle-track {
-    box-shadow: 0 0 0 3px rgba(91, 95, 239, 0.2);
+    box-shadow: 0 0 0 3px rgba(108, 134, 192, 0.2);
 }
 
 input[type="range"] {
