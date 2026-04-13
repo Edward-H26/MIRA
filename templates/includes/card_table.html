@@ -1,0 +1,38 @@
+{% comment %}
+  Parametric table that converts to a stacked card list below sm (640px).
+  Pairs with the .table-to-cards CSS primitive in static/css/base.css:735+.
+
+  Context contract:
+    - columns: list of dicts { "key": "created_at", "label": "Date" }
+    - rows: iterable of dicts; each row[column.key] may be a string, number,
+      or a pre-rendered HTML blob (wrap with |safe upstream).
+    - empty_message: optional string shown when rows is empty.
+    - extra_class: optional space-separated class string applied to the table.
+
+  Example:
+    {% include "includes/card_table.html" with columns=my_cols rows=my_rows %}
+{% endcomment %}
+{% if rows %}
+<div class="scroll-x-fade" role="region" aria-label="{{ aria_label|default:'Data table' }}">
+  <table class="table-to-cards w-full{% if extra_class %} {{ extra_class }}{% endif %}">
+    <thead>
+      <tr>
+        {% for col in columns %}
+        <th scope="col" class="text-left font-inter font-semibold text-[12px] uppercase tracking-[0.04em] text-slate-500 py-2 px-3">{{ col.label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr class="border-b border-white/40">
+        {% for col in columns %}
+        <td data-label="{{ col.label }}" class="py-2 px-3 align-top font-inter text-[14px] text-slate-700">{{ row|get_item:col.key|default:"" }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="py-8 text-center font-inter text-[14px] text-mm-muted">{{ empty_message|default:"No data to display." }}</div>
+{% endif %}

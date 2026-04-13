@@ -13,23 +13,27 @@
         <p class="font-inter text-[#64748b] text-[16px] mt-1">Pre-built template skills to supercharge your agents</p>
     </div>
 
-    <form method="get" class="flex gap-3 items-center mb-8 flex-wrap">
-        <input
-            type="text"
-            name="q"
-            class="flex-1 min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white outline-none focus:border-mm-primary focus:ring-2 focus:ring-mm-primary/10 transition"
-            placeholder="Search skills..."
-            value="{{ searchQuery }}"
-            autocomplete="off"
-        >
-        <select name="category" class="px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white cursor-pointer" onchange="this.form.submit()">
-            <option value="">All categories</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if activeCategory == cat.id %}selected{% endif %}>{{ cat.label }}</option>
-            {% endfor %}
-        </select>
+    <form method="get" class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+            <input
+                type="text"
+                name="q"
+                class="w-full sm:flex-1 sm:min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white outline-none focus:border-mm-primary focus:ring-2 focus:ring-mm-primary/10 transition"
+                placeholder="Search skills..."
+                value="{{ searchQuery }}"
+                autocomplete="off"
+            >
+            <div class="flex gap-3 items-center">
+                <select name="category" class="flex-1 min-w-0 px-4 py-2.5 border border-mm-border rounded-xl font-inter text-[14px] bg-white cursor-pointer" onchange="this.form.submit()">
+                    <option value="">All categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if activeCategory == cat.id %}selected{% endif %}>{{ cat.label }}</option>
+                    {% endfor %}
+                </select>
+                <span class="font-inter text-[13px] text-[#64748b] whitespace-nowrap flex-shrink-0">{{ skills|length }} of {{ totalCount }} skills</span>
+            </div>
+        </div>
         <button type="submit" class="hidden"></button>
-        <span class="font-inter text-[13px] text-[#64748b] whitespace-nowrap">{{ skills|length }} of {{ totalCount }} skills</span>
     </form>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

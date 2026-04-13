@@ -10,37 +10,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        "mm-primary": "#6C86C0",
-                        "mm-primary-hover": "#5A74AD",
-                        "mm-primary-active": "#4A6399",
-                        "mm-primary-end": "#6C86C0",
-                        "mm-header": "#f6fafe",
-                        "mm-sidebar": "#f0f4f8",
-                        "mm-border": "#E5E7EB",
-                        "mm-text": "#1C1E2E",
-                        "mm-muted": "#6B7280",
-                        "mm-light": "#9CA3AF",
-                        "mm-icon": "#6B7280",
-                        "mm-nav": "#6B7280",
-                        "mm-hover": "#F5F6FA",
-                        "mm-card": "#F5F6FA",
-                    },
-                    fontFamily: {
-                        "manrope": ["Manrope", "sans-serif"],
-                        "inter": ["Inter", "sans-serif"],
-                    },
-                },
-            },
-        }
-    </script>
+    <link rel="stylesheet" href="{% static 'css/tailwind.built.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/main.css' %}?v={% now 'U' %}">
+    <link rel="stylesheet" href="{% static 'css/mobile-patterns.css' %}?v={% now 'U' %}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
@@ -318,7 +291,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js" onload="if(typeof renderMathInElement==='function'){document.querySelectorAll('.math-inline, .math-block').forEach(function(el){renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});});}"></script>
 </head>
-<body class="h-screen overflow-hidden">
+<body class="h-screen overflow-hidden{% if user.is_authenticated %} has-bottom-nav{% endif %}">
     {% block body %}
     <div class="flex flex-col h-screen w-screen overflow-hidden">
 
@@ -333,7 +306,7 @@
                 <!-- Right Side -->
                 <div class="flex items-center gap-3">
                     <!-- Mobile Hamburger -->
-                    <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="flex lg:hidden w-9 h-9 items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                    <button id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="header-icon-btn flex lg:hidden" aria-label="Open menu">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="6" x2="21" y2="6"></line>
                             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -344,7 +317,7 @@
                     {% if user.is_authenticated %}
                     <!-- Notifications -->
                     <div class="relative" id="notification-wrapper">
-                        <button id="notification-bell" type="button" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300 relative" onclick="toggleNotificationDropdown()">
+                        <button id="notification-bell" type="button" class="header-icon-btn relative" onclick="toggleNotificationDropdown()" aria-label="Notifications">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                                 <path d="M13.73 21a2 2 0 01-3.46 0"></path>
@@ -380,7 +353,7 @@
                     </div>
 
                     <!-- Settings -->
-                    <a href="{% url 'users:profile' %}" class="p-2 rounded-[12px] hover:bg-white/40 backdrop-blur-sm transition-all duration-300">
+                    <a href="{% url 'users:profile' %}" class="header-icon-btn" aria-label="Settings">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
@@ -389,7 +362,7 @@
 
                     <!-- Avatar -->
                     <div class="relative">
-                        <button id="avatar-menu-trigger" type="button" class="w-8 h-8 rounded-full overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 relative" aria-haspopup="true" aria-expanded="false">
+                        <button id="avatar-menu-trigger" type="button" class="header-icon-btn header-avatar-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
                             {% if user.is_authenticated and user.profile.profile_img %}
                                 <img src="{% url 'users:avatar' user.profile.uuid %}?v={{ user.profile.profile_img.name }}" alt="Avatar" class="w-full h-full object-cover" />
                             {% else %}
@@ -455,20 +428,27 @@
                     <div class="font-inter font-semibold text-mm-icon text-[10px] tracking-[1.2px] uppercase opacity-60 leading-4">
                         Navigation
                     </div>
+                    {% with nav=request.resolver_match.url_name|default:"" path=request.path|default:"" %}
                     <div class="flex flex-col gap-1" id="sidebar-nav">
-                        <a href="{% url 'memoria:home' %}" class="sidebar-nav-link" data-sidebar-nav="chat">
+                        <a href="{% url 'memoria:home' %}"
+                           class="sidebar-nav-link{% if nav == 'home' or nav == 'conversation_detail' or nav == 'new_chat' or path == '/home/' %} is-active{% endif %}"
+                           data-sidebar-nav="chat">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
                             </svg>
                             <span class="sidebar-nav-label">Chat</span>
                         </a>
-                        <a href="{% url 'chat:my_agent' %}" class="sidebar-nav-link" data-sidebar-nav="agents">
+                        <a href="{% url 'chat:my_agent' %}"
+                           class="sidebar-nav-link{% if nav == 'my_agent' or nav == 'agent_detail' or nav == 'agent_settings' or nav == 'agent_skills' or nav == 'agent_files' or nav == 'agent_memory' or nav == 'agent_list' or nav == 'agent_file_delete' or nav == 'agent_file_update_description' %} is-active{% endif %}"
+                           data-sidebar-nav="agents">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"></path>
                             </svg>
                             <span class="sidebar-nav-label">My Agent</span>
                         </a>
-                        <a href="{% url 'chat:agent_marketplace' %}" class="sidebar-nav-link" data-sidebar-nav="teams">
+                        <a href="{% url 'chat:agent_marketplace' %}"
+                           class="sidebar-nav-link{% if nav == 'agent_marketplace' or nav == 'agent_marketplace_detail' or nav == 'agent_start_chat' %} is-active{% endif %}"
+                           data-sidebar-nav="teams">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
                                 <circle cx="9" cy="7" r="4"></circle>
@@ -477,7 +457,9 @@
                             </svg>
                             <span class="sidebar-nav-label">Team</span>
                         </a>
-                        <a href="{% url 'dashboard' %}" class="sidebar-nav-link" data-sidebar-nav="dashboard">
+                        <a href="{% url 'dashboard' %}"
+                           class="sidebar-nav-link{% if nav == 'dashboard' or path == '/dashboard/' or path == '/chat/dashboard/' %} is-active{% endif %}"
+                           data-sidebar-nav="dashboard">
                             <svg class="sidebar-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 20V10"></path>
                                 <path d="M12 20V4"></path>
@@ -486,6 +468,7 @@
                             <span class="sidebar-nav-label">Dashboard</span>
                         </a>
                     </div>
+                    {% endwith %}
                 </div>
 
                 <!-- Footer -->
@@ -548,14 +531,6 @@
                 </svg>
                 <span>Dashboard</span>
             </a>
-            <button type="button" id="mobile-conv-tab" data-mobile-nav="conversations" aria-label="Conversations">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 4h18v12H5.17L3 18.17V4z"></path>
-                    <path d="M7 9h10"></path>
-                    <path d="M7 13h6"></path>
-                </svg>
-                <span>Chats</span>
-            </button>
         </nav>
         {% endif %}
     </div>

@@ -353,8 +353,17 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         userDisplayName = getattr(userProfile, "display_name", "") or getattr(sessionUser, "username", "") or "User"
     except Exception:
         userDisplayName = "User"
-    userHandle = re.sub(r"[\s'\-]+", "", userDisplayName) or "User"
+    userDisplayNameCleaned = re.sub(r"\s*\([^)]*\)", "", userDisplayName).strip() or userDisplayName
+    userHandle = re.sub(r"[\s'\-]+", "", userDisplayNameCleaned) or "User"
     userUsername = (getattr(sessionUser, "username", "") or "").strip()
+
+    userMentionCandidates = set()
+    for candidate in (userHandle, userUsername, userDisplayNameCleaned, userDisplayName):
+        if candidate:
+            userMentionCandidates.add(candidate.replace("'", "").replace(" ", "").lower())
+    for part in re.split(r"[\s'\-()]+", userDisplayName):
+        if part and len(part) >= 2:
+            userMentionCandidates.add(part.lower())
 
     def _substitute_user_placeholder(text):
         if not text:
@@ -367,11 +376,9 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
         from .agent_service import parse_agent_mentions
         if not text:
             return False
-        handleLower = userHandle.lower()
-        usernameLower = userUsername.lower()
         for tok in parse_agent_mentions(text):
             tokCompact = tok.replace("'", "").replace(" ", "").lower()
-            if tokCompact and (tokCompact == handleLower or (usernameLower and tokCompact == usernameLower)):
+            if tokCompact and tokCompact in userMentionCandidates:
                 return True
         return False
 

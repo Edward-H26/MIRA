@@ -49,9 +49,9 @@
                 </div>
             </div>
             <p class="font-inter text-[14px] text-mm-text leading-[1.6] m-0 mb-4">{{ bullet.content }}</p>
-            <div class="flex items-center gap-4 mb-3">
+            <div class="flex items-center gap-3 sm:gap-4 mb-3 flex-wrap">
                 <span class="font-inter text-[12px] text-mm-muted font-semibold uppercase tracking-wide">Strength</span>
-                <div class="flex-1 max-w-[240px]">
+                <div class="flex-1 min-w-[140px] sm:max-w-[240px]">
                     <div class="memory-strength-track">
                         <div class="memory-strength-fill" data-strength-fill style="width: {{ bullet.strength }}%"></div>
                     </div>

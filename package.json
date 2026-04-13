@@ -1,0 +1,14 @@
+{
+  "name": "miramemoria-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tailwind CSS build pipeline for the global app shell. Replaces the runtime cdn.tailwindcss.com script.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/tailwind.input.css -o ./static/css/tailwind.built.css --minify",
+    "watch:css": "tailwindcss -i ./static/css/tailwind.input.css -o ./static/css/tailwind.built.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.3",
+    "@tailwindcss/cli": "^4.1.3"
+  }
+}

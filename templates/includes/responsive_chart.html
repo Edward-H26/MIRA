@@ -1,0 +1,16 @@
+{% comment %}
+  Wraps an image, svg, or inline canvas in a responsive container.
+  Usage:
+    {% include "includes/responsive_chart.html" with src=chart_url alt="Daily messages" %}
+  or:
+    {% include "includes/responsive_chart.html" with body=rendered_vega %}
+{% endcomment %}
+<div class="chart-responsive{% if extra_class %} {{ extra_class }}{% endif %}" role="img"{% if alt %} aria-label="{{ alt }}"{% endif %}>
+  {% if src %}
+    <img src="{{ src }}" alt="{{ alt|default:'' }}" loading="lazy" />
+  {% elif body %}
+    {{ body|safe }}
+  {% else %}
+    {% block chart_body %}{% endblock %}
+  {% endif %}
+</div>

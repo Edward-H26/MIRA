@@ -1,0 +1,197 @@
+/*
+ * mobile-patterns.css
+ * Reusable responsive primitives that complement base.css.
+ * Relies on --touch-min, --safe-bottom, --bp-sm, --bp-md, --bp-lg declared in base.css.
+ * All rules are mobile-first and intentionally low-specificity so templates can override.
+ */
+
+/* =========================================================================
+   chart-responsive: wrap matplotlib PNGs and Vega charts so they never
+   overflow narrow viewports. Pair with templates/includes/responsive_chart.html.
+   ========================================================================= */
+.chart-responsive {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
+}
+.chart-responsive > img,
+.chart-responsive > svg,
+.chart-responsive canvas,
+.chart-responsive > .vega-embed {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+}
+.chart-responsive--tall {
+    max-height: min(60vh, 480px);
+}
+
+/* =========================================================================
+   scroll-x-fade: horizontal scroll container with soft fade on the right edge
+   so mobile users know more content lives off-screen. Used for agent tabs,
+   marketplace filters, and chart grids that are too wide to stack.
+   ========================================================================= */
+.scroll-x-fade {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.scroll-x-fade::-webkit-scrollbar { display: none; }
+.scroll-x-fade::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 100%;
+    background: linear-gradient(to left, rgba(247, 248, 255, 0.9), transparent);
+    pointer-events: none;
+    display: block;
+    margin-left: -28px;
+}
+@media (min-width: 1024px) {
+    .scroll-x-fade::after { display: none; }
+}
+
+/* =========================================================================
+   prose-mobile: caps long-form markdown content (code, tables) so chat
+   messages stay readable on 360-400px viewports.
+   ========================================================================= */
+@media (max-width: 640px) {
+    .prose-mobile pre,
+    .prose-mobile code,
+    .message-content-markdown pre,
+    .message-content-markdown code {
+        font-size: 12.5px;
+        line-height: 1.55;
+    }
+    .prose-mobile pre,
+    .message-content-markdown pre {
+        padding: 12px;
+        border-radius: 10px;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    .prose-mobile table,
+    .message-content-markdown table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-size: 12.5px;
+    }
+    .prose-mobile img,
+    .message-content-markdown img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* =========================================================================
+   stack-md-down: stacks flex children vertically below md. Meant for
+   header chips, filter rows, and action bars that collide at narrow widths.
+   ========================================================================= */
+@media (max-width: 767px) {
+    .stack-md-down {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .stack-md-down > * {
+        width: 100%;
+    }
+}
+
+/* =========================================================================
+   touch-44: enforces 44px minimum hit area on any element it's applied to.
+   Use in addition to or instead of the existing .touch-target primitive.
+   ========================================================================= */
+.touch-44 {
+    min-height: var(--touch-min, 44px);
+    min-width: var(--touch-min, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================================================
+   modal-responsive: makes any dialog or modal shell adapt to small viewports
+   without the fixed 400px / 520px widths that overflow on 360px phones.
+   ========================================================================= */
+.modal-responsive {
+    width: 100%;
+    max-width: min(92vw, 520px);
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+.modal-responsive--narrow { max-width: min(92vw, 420px); }
+.modal-responsive--wide { max-width: min(94vw, 720px); }
+
+/* =========================================================================
+   full-bleed-mobile: lets a page use the viewport's full width below sm
+   while still respecting the centered layout above sm.
+   ========================================================================= */
+@media (max-width: 640px) {
+    .full-bleed-mobile {
+        margin-inline: calc(-1 * var(--page-gutter, 16px));
+        border-radius: 0 !important;
+    }
+}
+
+/* =========================================================================
+   mobile-card-grid: 1 / 2 / 3 responsive column helper shared by memory,
+   agent, and marketplace grids. Equivalent to Tailwind's
+   "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" but centralised so per-page
+   markup stays consistent.
+   ========================================================================= */
+.mobile-card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+@media (min-width: 640px) {
+    .mobile-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+}
+@media (min-width: 1024px) {
+    .mobile-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* =========================================================================
+   inline-tight-mobile: collapses padding on inline action buttons so three
+   of them can coexist in a row at 360px without wrapping.
+   ========================================================================= */
+@media (max-width: 640px) {
+    .inline-tight-mobile {
+        padding-inline: 10px !important;
+        font-size: 12.5px !important;
+        gap: 6px !important;
+    }
+    .inline-tight-mobile svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+}
+
+/* =========================================================================
+   body-nav-pad: on pages that render the mobile bottom nav, add bottom
+   padding so content doesn't hide behind the nav. Applied via base.html.
+   ========================================================================= */
+@media (max-width: 767px) {
+    body.has-bottom-nav {
+        padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+    }
+    body.has-bottom-nav #main-content {
+        padding-bottom: 0;
+    }
+}
+
+/* =========================================================================
+   safe-area-bottom: attach to composer-like bars that need to clear the
+   mobile home indicator without relying on per-page calc() values.
+   ========================================================================= */
+.safe-area-bottom {
+    padding-bottom: calc(10px + var(--safe-bottom));
+}

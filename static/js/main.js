@@ -79,7 +79,7 @@ function initSidebarNav() {
         } else if (key === "analytics") {
             isActive = path.startsWith(routes.chatAnalytics)
         } else if (key === "dashboard") {
-            isActive = path.startsWith(routes.chatDashboard)
+            isActive = path === "/dashboard/" || path === "/dashboard" || path.startsWith(routes.chatDashboard)
         } else if (key === "agents") {
             isActive = path.startsWith("/chat/agents/") && !path.startsWith("/chat/agents/marketplace")
         } else if (key === "activity") {

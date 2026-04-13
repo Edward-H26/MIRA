@@ -14,14 +14,14 @@
 
     <form class="flex items-center justify-between gap-4 flex-wrap mb-6" method="post">
         {% csrf_token %}
-        <div class="flex-1 min-w-[240px] max-w-[420px] flex items-center gap-3 border border-[#e2e8f0] rounded-lg bg-white px-4 py-2.5">
+        <div class="flex-1 w-full min-w-0 sm:min-w-[240px] sm:max-w-[420px] flex items-center gap-3 border border-[#e2e8f0] rounded-lg bg-white px-4 py-2.5">
             <span class="w-[18px] h-[18px] text-mm-light flex-shrink-0" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[18px] h-[18px]">
                     <circle cx="11" cy="11" r="7" stroke-width="2"></circle>
                     <path d="M20 20l-3.5-3.5" stroke-width="2" stroke-linecap="round"></path>
                 </svg>
             </span>
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search your AI LTM..." aria-label="Search memory" class="flex-1 border-none bg-transparent text-[13px] font-inter text-mm-text outline-none placeholder:text-mm-light">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search memories…" aria-label="Search memory" class="flex-1 min-w-0 border-none bg-transparent text-[13px] font-inter text-mm-text outline-none placeholder:text-mm-light">
             <div class="memory-filter-wrap relative inline-flex items-center">
                 <button class="memory-filter{% if active_memory_type %} is-active{% endif %} border-none bg-transparent text-mm-light hover:text-mm-primary cursor-pointer inline-flex items-center justify-center p-0" type="button" aria-label="Filter" id="memory-filter-btn" aria-expanded="false">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[18px] h-[18px]">

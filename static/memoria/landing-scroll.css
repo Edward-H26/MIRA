@@ -218,7 +218,7 @@ body.landing-scroll-ready {
   --accent-gradient: linear-gradient(90deg, #6C86C0, #3B82F6);
   --accent-halo: radial-gradient(circle, rgba(108, 134, 192, 0.2), transparent 70%);
   --accent-bg: #E0E7FF;
-  --accent-fg: #4F46E5;
+  --accent-fg: #6C86C0;
 }
 .problem-card[data-accent="amber"] {
   --accent-gradient: linear-gradient(90deg, #F59E0B, #F97316);

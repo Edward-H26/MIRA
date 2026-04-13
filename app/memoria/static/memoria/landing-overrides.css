@@ -52,3 +52,91 @@ body {
 .landing-clickable {
   cursor: pointer;
 }
+
+/* ── Affiliated-with logo strip ────────────────────────────────────────── */
+@keyframes institution-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+.institution-logo-strip {
+  padding-block: 20px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.institution-logo-strip__label {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.institution-logo-strip__logos {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 40px;
+}
+
+.institution-logo-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.institution-logo-card {
+  width: 76px;
+  height: 76px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: saturate(130%) blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  animation: institution-float 3.8s ease-in-out infinite;
+}
+
+.institution-logo-link:nth-child(2) .institution-logo-card {
+  animation-delay: 0.7s;
+}
+
+.institution-logo-link:hover .institution-logo-card {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
+  animation-play-state: paused;
+}
+
+.institution-logo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.institution-logo-name {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.institution-logo-link:hover .institution-logo-name {
+  opacity: 1;
+  transform: translateY(0);
+}

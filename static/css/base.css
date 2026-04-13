@@ -226,6 +226,60 @@ form button {
     transition: all 0.3s ease;
     text-decoration: none;
     cursor: pointer;
+    color: var(--nav-inactive);
+}
+
+/* ================================================================
+   HEADER ICON BUTTONS — unified size, shape, and hover treatment.
+   Applies to the hamburger, bell, settings, and avatar buttons
+   in the top nav so they read as a consistent icon cluster.
+   ================================================================ */
+.header-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 9999px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: #6B7280;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.header-icon-btn:hover,
+.header-icon-btn:focus-visible {
+    background-color: rgba(255, 255, 255, 0.5);
+    color: var(--primary-blue, #6C86C0);
+    outline: none;
+}
+.header-icon-btn > svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+.header-avatar-btn {
+    overflow: hidden;
+    position: relative;
+    padding: 0;
+}
+.header-avatar-btn:hover {
+    background-color: transparent;
+}
+.header-avatar-btn > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 9999px;
+}
+.header-avatar-btn > .avatar-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 9999px;
+    pointer-events: none;
 }
 
 .sidebar-nav-link:hover {
@@ -401,6 +455,9 @@ body.search-modal-open {
 }
 
 @media (max-width: 767px) {
+    :root {
+        --left-sidebar-width: min(85vw, 320px);
+    }
     #left-sidebar {
         position: fixed;
         left: 0;
@@ -411,11 +468,16 @@ body.search-modal-open {
         transform: translateX(-100%);
         transition: transform 0.2s ease;
         box-shadow: none;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
     }
-
     #left-sidebar.sidebar-open {
         transform: translateX(0);
-        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #left-sidebar { transition: none; }
     }
 }
 
@@ -505,6 +567,7 @@ body.search-modal-open {
 }
 @media (min-width: 1024px) {
     .page-container { padding-inline: 48px; }
+    #mobile-menu-btn { display: none; }
 }
 
 /* Touch-target primitive — ensure ≥44px hit area for all interactive elements */
@@ -661,15 +724,16 @@ body.search-modal-open {
         font-size: 15px;
         line-height: 1.55;
     }
-    /* Sticky composer flush to bottom with safe-area respect */
+    /* Sticky composer flush to bottom with safe-area respect.
+       No divider: the inner rounded card carries the visual separation
+       while the wrapper remains transparent so the conversation
+       background bleeds through as whitespace. */
     .conv-composer {
         position: sticky;
         bottom: 0;
-        background: rgba(253, 253, 253, 0.75);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-top: 1px solid rgba(255, 255, 255, 0.4);
-        padding: 10px 12px calc(10px + var(--safe-bottom));
+        background: transparent;
+        border-top: 0;
+        padding: 8px 12px calc(12px + var(--safe-bottom));
     }
 }
 
