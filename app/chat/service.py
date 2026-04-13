@@ -348,6 +348,33 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
     sessionUser = session.get("_user") if isinstance(session, dict) else session.user.user
     sessionProfileId = session.get("_profile_id") if isinstance(session, dict) else str(session.user.pk)
 
+    try:
+        userProfile = get_or_create_profile_for_user(sessionUser)
+        userDisplayName = getattr(userProfile, "display_name", "") or getattr(sessionUser, "username", "") or "User"
+    except Exception:
+        userDisplayName = "User"
+    userHandle = re.sub(r"[\s'\-]+", "", userDisplayName) or "User"
+    userUsername = (getattr(sessionUser, "username", "") or "").strip()
+
+    def _substitute_user_placeholder(text):
+        if not text:
+            return text
+        if userHandle and userHandle != "User":
+            text = re.sub(r"(?<!\w)@User(?!\w)", f"@{userHandle}", text)
+        return text
+
+    def _reply_mentions_user(text):
+        from .agent_service import parse_agent_mentions
+        if not text:
+            return False
+        handleLower = userHandle.lower()
+        usernameLower = userUsername.lower()
+        for tok in parse_agent_mentions(text):
+            tokCompact = tok.replace("'", "").replace(" ", "").lower()
+            if tokCompact and (tokCompact == handleLower or (usernameLower and tokCompact == usernameLower)):
+                return True
+        return False
+
     if not skip_user_message:
         neo4j.create_message(
             session_id=sessionId,
@@ -560,6 +587,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
     if not assistant_text:
         assistant_text = FALLBACK_TEXT
 
+    assistant_text = _substitute_user_placeholder(assistant_text)
     assistant_text = normalize_mentions(assistant_text)
 
     agentDisplayName = responding_agent.get("name", "") if responding_agent else ""
@@ -654,14 +682,10 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
     )
 
     maxAgentTurns = 8
+    userMentionedInChain = _reply_mentions_user(assistant_text)
+    lastAgentMessageId = assistantMsgId
     if responding_agent:
         from .agent_service import parse_agent_mentions, resolve_responding_agents
-        userDisplayName = ""
-        try:
-            profile = get_or_create_profile_for_user(sessionUser)
-            userDisplayName = getattr(profile, "display_name", "") or getattr(sessionUser, "username", "User")
-        except Exception:
-            userDisplayName = "User"
         respondingName = (responding_agent.get("name") or "").lower()
         visitedAgents = {respondingName} if respondingName else set()
 
@@ -686,27 +710,17 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
 
         def _maybe_notify_user_mention(responseText, source_agent_name):
             try:
-                tokens = parse_agent_mentions(responseText)
-                if not tokens:
+                if not _reply_mentions_user(responseText):
                     return
-                userHandle = (userDisplayName or "").replace(" ", "").lower()
-                usernameLower = (getattr(sessionUser, "username", "") or "").lower()
-                for tok in tokens:
-                    tokCompact = tok.replace("'", "").replace(" ", "").lower()
-                    if tokCompact and (tokCompact == userHandle or tokCompact == usernameLower):
-                        try:
-                            from .notification_service import create_notification
-                            from .models.notification import NotificationType
-                            create_notification(
-                                sessionUser,
-                                title=f"{source_agent_name} mentioned you",
-                                message=f"{source_agent_name}: {responseText[:180]}",
-                                notification_type=NotificationType.AGENT_RESPONSE,
-                                related_url=f"/chat/c/{sessionId}/",
-                            )
-                        except Exception:
-                            pass
-                        return
+                from .notification_service import create_notification
+                from .models.notification import NotificationType
+                create_notification(
+                    sessionUser,
+                    title=f"{source_agent_name} mentioned you",
+                    message=f"{source_agent_name}: {responseText[:180]}",
+                    notification_type=NotificationType.AGENT_RESPONSE,
+                    related_url=f"/chat/c/{sessionId}/",
+                )
             except Exception:
                 pass
 
@@ -727,13 +741,23 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             if len(summaryLines) > 8:
                 briefSummary += f"\n... ({len(summaryLines) - 8} more lines in conversation history)"
 
+            isLastKnownTurn = idx >= len(pendingAgents)
             isNearLimit = depth >= maxAgentTurns - 1
-            wrapUpNote = (
-                f"\n\nIMPORTANT: This is the final agent turn. You MUST summarize all work completed "
-                f"by all agents so far, list any remaining items, and ask @{userDisplayName} what they would like to do next."
-            ) if isNearLimit else ""
-
             visitedList = ", ".join(sorted(visitedAgents)) if visitedAgents else "none"
+
+            closingRequirement = (
+                f"\n\n## MANDATORY CLOSING LINE\n"
+                f"Your reply MUST end with a short line addressed to @{userHandle} (the human user). "
+                f"- If the task is complete: \"@{userHandle}, this round is done — here's what was accomplished: …\"\n"
+                f"- If you are handing to a new agent: \"@{userHandle}, I'm handing this to @NewAgent for the next step.\"\n"
+                f"- If you need input: \"@{userHandle}, please confirm …\"\n"
+                f"Never address only other agents; the user must always be addressed on the final line."
+            )
+            if isLastKnownTurn or isNearLimit:
+                closingRequirement += (
+                    f"\n\nIMPORTANT: No agents are queued after you. You MUST conclude the task, "
+                    f"summarize what was accomplished, and close with a line addressed to @{userHandle}."
+                )
 
             agentReply = (
                 f"[Agent Handoff Brief]\n"
@@ -751,19 +775,48 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                 f"Review it for complete details from previous agents.\n"
                 f"Continue the task based on your expertise. "
                 f"Do NOT @mention agents who already responded (listed above). "
-                f"If you need NEW agents who have not responded yet, @mention them. "
-                f"If the task is complete or no new agents are needed, summarize the results and ask @{userDisplayName} what they would like to do next."
-                f"{wrapUpNote}"
+                f"If you need NEW agents who have not responded yet, @mention them."
+                f"{closingRequirement}"
             )
             lastPayload = None
             for payload in _agent_to_agent_turn(session, agentReply, nextAgent, depth, maxAgentTurns, visitedAgents, userDisplayName=userDisplayName):
                 lastPayload = payload
                 yield payload
             responding_agent = nextAgent
-            assistant_text = lastPayload.get("content", "") if isinstance(lastPayload, dict) else ""
+            if isinstance(lastPayload, dict):
+                assistant_text = lastPayload.get("content", "")
+                lastAgentMessageId = lastPayload.get("message_id", lastAgentMessageId)
+            else:
+                assistant_text = ""
+            if _reply_mentions_user(assistant_text):
+                userMentionedInChain = True
             _collect_new_mentions(assistant_text)
             _maybe_notify_user_mention(assistant_text, nextAgent.get("name", "Agent"))
             depth += 1
+
+        if depth > 1 and not _reply_mentions_user(assistant_text):
+            lastAgentName = responding_agent.get("name", "Agent") if responding_agent else "Agent"
+            agentCount = max(depth - 1, 0)
+            closing = (
+                f"\n\n@{userHandle}, "
+                f"{lastAgentName}"
+                + (f" and {agentCount} other agent(s)" if agentCount > 0 else "")
+                + " finished this round of work. Please review the conversation above and let me know if you'd like any follow-up or adjustments."
+            )
+            updatedText = (assistant_text or "").rstrip() + closing
+            try:
+                neo4j.edit_message(lastAgentMessageId, updatedText)
+            except Exception:
+                pass
+            assistant_text = updatedText
+            userMentionedInChain = True
+            yield {
+                "type": "delta",
+                "agentName": lastAgentName,
+                "message_id": lastAgentMessageId,
+                "content": closing,
+                "html": str(render_assistant_markdown_html(updatedText)),
+            }
 
         if depth > 1:
             agentNames = [a.get("name", "") for a in pendingAgents[:depth - 1] if a.get("name")]
@@ -773,8 +826,8 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                 from .models.notification import NotificationType
                 create_notification(
                     sessionUser,
-                    title=f"Agent collaboration complete",
-                    message=f"Hi @{userDisplayName}, {lastAgentName} and {len(agentNames)} agent(s) finished working on your request. Review the conversation for results.",
+                    title=f"{lastAgentName} mentioned you",
+                    message=f"Hi @{userHandle}, {lastAgentName} and {len(agentNames)} agent(s) finished working on your request. Review the conversation for results.",
                     notification_type=NotificationType.AGENT_RESPONSE,
                     related_url=f"/chat/c/{sessionId}/",
                 )
