@@ -167,19 +167,23 @@
     // ----------------------------------------------------------------
     const featureGrid = document.querySelector("#feature-cards");
     if (featureGrid) {
-      gsap.from(featureGrid.querySelectorAll(".feature-card"), {
-        opacity: 0,
-        y: 40,
-        scale: 0.85,
-        duration: 0.75,
-        ease: "back.out(1.4)",
-        stagger: 0.14,
-        scrollTrigger: {
-          trigger: featureGrid,
-          start: "top 80%",
-          toggleActions: "play reverse play reverse",
+      gsap.fromTo(
+        featureGrid.querySelectorAll(".feature-card"),
+        { opacity: 0, y: 40, scale: 0.9 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.55,
+          ease: "power3.out",
+          stagger: 0.2,
+          scrollTrigger: {
+            trigger: featureGrid,
+            start: "top 85%",
+            toggleActions: "play reverse play reverse",
+          },
         },
-      });
+      );
     }
 
     // ----------------------------------------------------------------
@@ -234,7 +238,7 @@
           scrollTrigger: {
             trigger: row,
             start: "top 85%",
-            toggleActions: "restart none restart none",
+            toggleActions: "play reverse play reverse",
           },
           onUpdate: () => {
             target.textContent = Math.round(counter.val) + suffix;
@@ -252,19 +256,23 @@
       cardSections.get(section).push(card);
     });
     cardSections.forEach((cards, section) => {
-      gsap.from(cards, {
-        opacity: 0,
-        y: 40,
-        scale: 0.85,
-        duration: 0.75,
-        ease: "back.out(1.4)",
-        stagger: 0.14,
-        scrollTrigger: {
-          trigger: section,
-          start: "top 80%",
-          toggleActions: "play reverse play reverse",
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 40, scale: 0.9 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.55,
+          ease: "power3.out",
+          stagger: 0.2,
+          scrollTrigger: {
+            trigger: section,
+            start: "top 85%",
+            toggleActions: "play reverse play reverse",
+          },
         },
-      });
+      );
     });
 
     // Agent-demo chat bubble reveal tied to its containing section.
@@ -308,34 +316,12 @@
     }
 
     // ----------------------------------------------------------------
-    // E13 + E14  Integrations orbit  tiles circle slowly around the
-    // center. The orbit stage (which is scaled to an oval) rotates,
-    // and each tile counter-rotates so logos stay upright. The center
-    // logo pulses via CSS but never spins (we counter-rotate it here).
+    // E13 + E14  Integrations orbit. Ring and tile rotations are now
+    // driven by CSS @keyframes (compositor-thread, GPU-accelerated) to
+    // eliminate main-thread contention with Lenis/ScrollTrigger.
     // ----------------------------------------------------------------
     const orbitStage = document.querySelector("#orbit-stage");
     if (orbitStage) {
-      const stageRing = document.createElement("div");
-      stageRing.className = "orbit-ring-wrap";
-      Array.from(orbitStage.querySelectorAll(".orbit-ring")).forEach((r) => stageRing.appendChild(r));
-      orbitStage.appendChild(stageRing);
-
-      gsap.to(stageRing, {
-        rotate: 360,
-        duration: 32,
-        ease: "none",
-        repeat: -1,
-      });
-
-      orbitStage.querySelectorAll(".orbit-tile").forEach((tile) => {
-        gsap.to(tile, {
-          rotate: -360,
-          duration: 32,
-          ease: "none",
-          repeat: -1,
-        });
-      });
-
       const swapSequence = ["messaging", "productivity", "calendar", "code", "mail"];
       swapSequence.forEach((category, index) => {
         ScrollTrigger.create({

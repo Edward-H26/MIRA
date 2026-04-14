@@ -852,11 +852,10 @@ body.landing-scroll-ready {
 }
 
 /* ----------------------------------------------------------------
-   E10  Feature cards cascade reveal.
+   E10  Feature card reveal handled entirely by gsap.from in JS.
+   No CSS initial-state override here or it becomes the TO target.
 ------------------------------------------------------------------ */
 .landing-scroll-ready .feature-card {
-  opacity: 0;
-  transform: translate3d(0, 40px, 0) scale(0.94);
   will-change: opacity, transform;
 }
 
@@ -944,6 +943,27 @@ body.landing-scroll-ready {
   width: 0;
   height: 0;
   will-change: transform;
+  animation: orbit-ring-rotate 32s linear infinite;
+}
+
+@keyframes orbit-ring-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-tile-counter-rotate {
+  from {
+    transform:
+      rotate(var(--angle))
+      translate(var(--radius))
+      rotate(calc(-1 * var(--angle)));
+  }
+  to {
+    transform:
+      rotate(var(--angle))
+      translate(var(--radius))
+      rotate(calc(-1 * var(--angle) - 360deg));
+  }
 }
 
 .orbit-tile {
@@ -954,15 +974,13 @@ body.landing-scroll-ready {
   height: 72px;
   margin: -36px 0 0 -36px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.38);
-  backdrop-filter: blur(22px) saturate(1.6);
-  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow:
-    0 22px 45px rgba(108, 134, 192, 0.18),
-    0 6px 16px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    0 18px 38px rgba(108, 134, 192, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -972,6 +990,7 @@ body.landing-scroll-ready {
     rotate(calc(-1 * var(--angle)));
   transition: box-shadow 0.3s ease;
   will-change: transform, opacity;
+  animation: orbit-tile-counter-rotate 32s linear infinite;
 }
 
 .orbit-tile::before {
