@@ -163,20 +163,20 @@
     });
 
     // ----------------------------------------------------------------
-    // E10  Feature cards cascade up into view.
+    // E10  Feature cards pop into view, staggered. Plays both ways on scroll.
     // ----------------------------------------------------------------
     const featureGrid = document.querySelector("#feature-cards");
     if (featureGrid) {
-      gsap.to(featureGrid.querySelectorAll(".feature-card"), {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.9,
-        ease: "power2.out",
+      gsap.from(featureGrid.querySelectorAll(".feature-card"), {
+        opacity: 0,
+        y: 40,
+        scale: 0.85,
+        duration: 0.75,
+        ease: "back.out(1.4)",
         stagger: 0.14,
         scrollTrigger: {
           trigger: featureGrid,
-          start: "top 75%",
+          start: "top 80%",
           toggleActions: "play reverse play reverse",
         },
       });
@@ -243,9 +243,9 @@
       });
     }
 
-    // Problem cards, compare cards, and step cards cascade per-section.
+    // Problem, compare, step, and target cards pop into view per-section.
     const cardSections = new Map();
-    document.querySelectorAll(".problem-card, .compare-card, .step-card").forEach((card) => {
+    document.querySelectorAll(".problem-card, .compare-card, .step-card, .target-card").forEach((card) => {
       const section = card.closest("section");
       if (!section) return;
       if (!cardSections.has(section)) cardSections.set(section, []);
@@ -254,14 +254,14 @@
     cardSections.forEach((cards, section) => {
       gsap.from(cards, {
         opacity: 0,
-        y: 34,
-        scale: 0.96,
-        duration: 0.7,
-        ease: "power2.out",
-        stagger: 0.12,
+        y: 40,
+        scale: 0.85,
+        duration: 0.75,
+        ease: "back.out(1.4)",
+        stagger: 0.14,
         scrollTrigger: {
           trigger: section,
-          start: "top 78%",
+          start: "top 80%",
           toggleActions: "play reverse play reverse",
         },
       });

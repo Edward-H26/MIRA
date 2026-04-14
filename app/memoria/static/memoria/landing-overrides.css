@@ -5,6 +5,19 @@ body {
   color: #0f172a;
 }
 
+.gap-6 {
+  gap: 24px;
+}
+
+/* Missing spacing utilities — Tailwind build did not include these. */
+.mb-10 { margin-bottom: 40px; }
+.mb-12 { margin-bottom: 48px; }
+
+@media (min-width: 768px) {
+  .md\:mb-14 { margin-bottom: 56px; }
+  .md\:mb-16 { margin-bottom: 64px; }
+}
+
 .landing-cta-group {
   display: flex;
   gap: 12px;
@@ -53,18 +66,25 @@ body {
   cursor: pointer;
 }
 
-/* ── Affiliated-with logo strip ────────────────────────────────────────── */
-@keyframes institution-float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
+/* ── Affiliated-with logo marquee ──────────────────────────────────────── */
+@keyframes institution-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes institution-bob {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50%       { transform: translateY(-8px) rotate(2deg); }
 }
 
 .institution-logo-strip {
-  padding-block: 20px 48px;
+  padding-block: 28px 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .institution-logo-strip__label {
@@ -76,18 +96,27 @@ body {
   color: #94a3b8;
 }
 
-.institution-logo-strip__logos {
+.institution-marquee-wrapper {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.institution-marquee-wrapper:hover .institution-marquee-track {
+  animation-play-state: paused;
+}
+
+.institution-marquee-track {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 40px;
+  gap: 28px;
+  width: max-content;
+  animation: institution-scroll 28s linear infinite;
 }
 
 .institution-logo-link {
   display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  flex-shrink: 0;
   text-decoration: none;
 }
 
@@ -103,18 +132,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 200ms ease, box-shadow 200ms ease;
-  animation: institution-float 3.8s ease-in-out infinite;
+  animation: institution-bob 3.6s ease-in-out infinite;
 }
 
-.institution-logo-link:nth-child(2) .institution-logo-card {
-  animation-delay: 0.7s;
+.institution-logo-link:nth-child(2n) .institution-logo-card {
+  animation-delay: 0.9s;
 }
 
-.institution-logo-link:hover .institution-logo-card {
-  transform: translateY(-4px) scale(1.06);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
-  animation-play-state: paused;
+.institution-logo-link:nth-child(3n) .institution-logo-card {
+  animation-delay: 1.5s;
+}
+
+.institution-logo-link:nth-child(4n) .institution-logo-card {
+  animation-delay: 0.4s;
 }
 
 .institution-logo-card img {
@@ -122,21 +152,4 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.institution-logo-name {
-  font-family: "Inter", sans-serif;
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(3px);
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-
-.institution-logo-link:hover .institution-logo-name {
-  opacity: 1;
-  transform: translateY(0);
 }

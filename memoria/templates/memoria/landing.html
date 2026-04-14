@@ -175,7 +175,7 @@
         </section>
 
         <section id="feature-cards" class="px-5 py-12 md:py-20 max-w-7xl mx-auto">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3">
@@ -350,7 +350,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
             <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Learns how you work</h3>
             <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Shares context across teammates</h3>
             <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Keeps you in the loop</h3>
@@ -614,7 +614,7 @@
               Memoria connects through the public APIs your team already runs on, so your agent stays in the loop across chat, mail, calendars, and code.
             </p>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-10 items-center">
+          <div class="flex justify-center items-center">
             <div id="orbit-stage" class="orbit-stage">
               <div class="orbit-center">
                 <img src="{% static 'images/logo.svg' %}" alt="Memoria">
@@ -646,15 +646,17 @@
                 </div>
               </div>
             </div>
-            <ul class="category-rail space-y-2 text-sm">
-              <li data-category="messaging">Messaging</li>
-              <li data-category="productivity">Productivity</li>
-              <li data-category="calendar">Calendar</li>
-              <li data-category="code">Code</li>
-              <li data-category="mail">Mail</li>
-            </ul>
           </div>
         </section>
+
+        <div class="institution-logo-strip">
+          <span class="institution-logo-strip__label">Affiliated with</span>
+          <div class="institution-marquee-wrapper">
+            <div class="institution-marquee-track">
+              {% for _ in "123456" %}<a href="https://illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link"><div class="institution-logo-card"><img src="{% static 'images/illinois-logo.png' %}" alt="University of Illinois"></div></a><a href="https://tec.illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link"><div class="institution-logo-card"><img src="{% static 'images/illinois-tec-logo.png' %}" alt="Illinois TEC"></div></a>{% endfor %}{% for _ in "123456" %}<a href="https://illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link"><div class="institution-logo-card"><img src="{% static 'images/illinois-logo.png' %}" alt="University of Illinois"></div></a><a href="https://tec.illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link"><div class="institution-logo-card"><img src="{% static 'images/illinois-tec-logo.png' %}" alt="Illinois TEC"></div></a>{% endfor %}
+            </div>
+          </div>
+        </div>
 
         <section class="px-5 py-16 md:py-24 text-center">
           <div class="landing-cta-group">
@@ -670,23 +672,6 @@
           </div>
         </section>
 
-        <div class="institution-logo-strip">
-          <span class="institution-logo-strip__label">Affiliated with</span>
-          <div class="institution-logo-strip__logos">
-            <a href="https://illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link">
-              <div class="institution-logo-card">
-                <img src="{% static 'images/illinois-logo.png' %}" alt="University of Illinois">
-              </div>
-              <span class="institution-logo-name">University of Illinois</span>
-            </a>
-            <a href="https://tec.illinois.edu/" target="_blank" rel="noopener noreferrer" class="institution-logo-link">
-              <div class="institution-logo-card">
-                <img src="{% static 'images/illinois-tec-logo.png' %}" alt="Illinois TEC">
-              </div>
-              <span class="institution-logo-name">Illinois TEC</span>
-            </a>
-          </div>
-        </div>
       </div>
     </div>
 
