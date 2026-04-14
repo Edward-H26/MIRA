@@ -10,12 +10,12 @@ body {
 }
 
 /* Missing spacing utilities — Tailwind build did not include these. */
-.mb-10 { margin-bottom: 40px; }
-.mb-12 { margin-bottom: 48px; }
+.mb-10 { margin-bottom: 56px; }
+.mb-12 { margin-bottom: 72px; }
 
 @media (min-width: 768px) {
-  .md\:mb-14 { margin-bottom: 56px; }
-  .md\:mb-16 { margin-bottom: 64px; }
+  .md\:mb-14 { margin-bottom: 80px; }
+  .md\:mb-16 { margin-bottom: 96px; }
 }
 
 .landing-cta-group {
