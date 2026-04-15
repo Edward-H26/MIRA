@@ -1,0 +1,106 @@
+{
+  "baseUrl": "http://127.0.0.1:8765",
+  "startedAt": "2026-04-15T13:48:50.723Z",
+  "steps": [
+    {
+      "step": "login",
+      "url": "http://127.0.0.1:8765/home/"
+    },
+    {
+      "step": "new_chat",
+      "status": 200,
+      "url": "http://127.0.0.1:8765/chat/c/324d5b75-ed07-43cb-bfa0-0d705f9871b3/"
+    },
+    {
+      "step": "01-single-mention",
+      "prompt": "@Alice what is the one-sentence elevator pitch for Memoria?",
+      "beforeCount": 0,
+      "finalCount": 3,
+      "assistant_delta": 3,
+      "elapsed_ms": 16662,
+      "last_assistant_text_preview": "A\nAlice\n8:49 AM\n\nMemoria is a versatile AI powerhouse that seamlessly integrates text, code, and image generation into a single, high-efficiency workflow to solve complex creative and technical challenges.\n\n@BrowserTest, this round is done — here's what was accomplished: I refined and delivered the one-sentence elevator pitch for Memoria."
+    },
+    {
+      "step": "02-agent-chain",
+      "prompt": "@Alice please give a short summary, and also hand off to @Bob for the supporting details.",
+      "beforeCount": 3,
+      "finalCount": 5,
+      "assistant_delta": 2,
+      "elapsed_ms": 8650,
+      "last_assistant_text_preview": "B\nBob\n8:49 AM\n\n@Alice, what is the one-sentence elevator pitch for Memoria?"
+    },
+    {
+      "step": "03-self-continue",
+      "prompt": "@Alice think step by step and @Alice continue if you need more turns.",
+      "beforeCount": 5,
+      "finalCount": 7,
+      "assistant_delta": 2,
+      "elapsed_ms": 8140,
+      "last_assistant_text_preview": "B\nBob\n8:49 AM\n\n@BrowserTest, this round is done — here's the one-sentence elevator pitch:\n\nMemory is an intelligent AI assistant that seamlessly combines text, code, and image generation into a single, high-efficiency workflow to solve complex creative and technical challenges."
+    },
+    {
+      "step": "04-invalid-mention",
+      "prompt": "@Nobody_1234 tell me a joke.",
+      "beforeCount": 7,
+      "finalCount": 9,
+      "assistant_delta": 2,
+      "elapsed_ms": 7618,
+      "last_assistant_text_preview": "B\nBob\n8:49 AM\n\nI'm not currently connected to the @BrowserTest environment, so I cannot process or generate content from your specific context. However, I'm ready to help with any creative or technical tasks you need!"
+    },
+    {
+      "step": "05-no-mention",
+      "prompt": "Summarize in two bullet points: the benefits of persistent memory for AI agents.",
+      "beforeCount": 9,
+      "finalCount": 11,
+      "assistant_delta": 2,
+      "elapsed_ms": 5605,
+      "last_assistant_text_preview": "B\nBob\n8:49 AM\n\nBased on the context of building advanced AI systems like Memoria, here are two key benefits of persistent memory for AI agents:\n\nContextual Continuity: It allows agents to retain information across multiple sessions, eliminating the need for users to repeat instructions and enabling more personalized, long-term project management.\nEnhanced Problem-Solving: By storing past experienc"
+    },
+    {
+      "step": "06-mid-stream-nav",
+      "prompt": "@Alice write a long detailed paragraph about your memory architecture.",
+      "beforeCount": 11,
+      "finalCount": 13,
+      "assistant_delta": 2,
+      "elapsed_ms": 3081,
+      "last_assistant_text_preview": "B\nBob\n\nI'm ready to help! What would you like to explore today?",
+      "mid_stream_navigation": {
+        "ok": true,
+        "beforeNavUrl": "http://127.0.0.1:8765/chat/c/324d5b75-ed07-43cb-bfa0-0d705f9871b3/"
+      }
+    },
+    {
+      "step": "final_header",
+      "sidebarTitle": "@Alice what is the one-sentence elevator pitch for Memoria?"
+    }
+  ],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    }
+  ],
+  "pageErrors": [],
+  "failedRequests": [],
+  "finishedAt": "2026-04-15T13:49:54.097Z"
+}

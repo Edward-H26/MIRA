@@ -17,7 +17,7 @@
     <!-- Chat Header -->
     <div class="conv-header isolate min-h-[64px] md:min-h-[72px] border-b border-white/10 flex items-center justify-between px-4 md:px-8 flex-shrink-0 flex-wrap gap-2 backdrop-blur-sm bg-white/20" style="position: relative; z-index: 30;">
       <div class="flex items-center gap-3 min-w-0 flex-1" style="position: relative; z-index: 2;">
-        <button type="button" onclick="openConvSidebar()" class="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/40 transition-colors cursor-pointer" aria-label="Show conversations" style="position: relative; z-index: 5;">
+        <button type="button" onclick="openConvSidebar()" class="lg:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/40 transition-colors cursor-pointer" aria-label="Show conversations" style="position: relative; z-index: 5;">
           <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -121,7 +121,7 @@
             {% else %}
             <div class="px-4 py-3 border-b border-slate-100">
               <div class="text-[10px] font-semibold text-mm-muted uppercase tracking-[0.5px] mb-1">Last updated</div>
-              <div class="font-inter text-[13px] text-mm-text">{{ session.updated_at|date:"M j, Y · g:i A" }}</div>
+              <div class="font-inter text-[13px] text-mm-text">{{ session.updatedAt|date:"M j, Y · g:i A" }}</div>
             </div>
             <div class="py-1">
               <button type="button" class="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 font-inter text-[13px] text-mm-text transition-colors" onclick="document.getElementById('info-panel').classList.add('hidden'); if(typeof renameConversation==='function'){renameConversation('{{ session.id }}');}">
@@ -165,7 +165,7 @@
         <!-- Date Divider -->
         <div class="flex items-center justify-center">
           <div class="font-inter font-medium text-slate-500/60 text-[11px] tracking-[0.5px] uppercase">
-            {{ session.updated_at|date:"l, M j" }}
+            {{ session.updatedAt|date:"l, M j" }}
           </div>
         </div>
         {% for message in session.messages %}
@@ -193,7 +193,7 @@
                     {% if message.role == 2 or message.role == "user" %}{{ request.user.profile.display_name|default:request.user.username }}{% elif message.sender_agent %}{{ message.sender_agent.name }}{% elif message.sender_agent_name %}{{ message.sender_agent_name }}{% elif message.agentName %}{{ message.agentName }}{% elif userAgents %}{{ userAgents.0.name }}{% else %}Assistant{% endif %}
                   </div>
                   <div class="font-inter text-mm-light text-[11px] leading-4">
-                    {{ message.created_at|date:"g:i A" }}
+                    {{ message.createdAt|date:"g:i A" }}
                   </div>
                 </div>
                 <div class="{% if message.role == 2 or message.role == "user" %}bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] text-white shadow-[0_2px_12px_rgba(108, 134, 192,0.2)] rounded-[18px] rounded-br-[4px]{% else %}bg-white shadow-sm text-slate-700 rounded-[18px] rounded-bl-[4px]{% endif %} px-4 py-3 border border-white/20">

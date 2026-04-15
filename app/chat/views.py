@@ -153,11 +153,12 @@ async def _conversation_messages_post(request, session_id):
 
     autoTitle = None
     try:
+        from .write_service import update_session_with_outbox
         has_messages = await sync_to_async(neo4j.session_has_messages)(sessionId)
         if session.get("title", "") in ("New Chat", "") and not has_messages:
             autoTitle = content[:60].strip()
             if autoTitle:
-                await sync_to_async(neo4j.update_session)(sessionId, title=autoTitle)
+                await sync_to_async(update_session_with_outbox)(sessionId, title=autoTitle)
     except Exception as exc:
         log_event("chat_message_submit_title_failed", request=request, session_id=sessionId, error=str(exc))
 
@@ -346,7 +347,7 @@ def memory_bullets_view(request, memory_id):
     profile = get_or_create_profile_for_user(request.user)
     memory = neo4j.get_memory(str(memory_id))
     if memory is not None:
-        bullets = neo4j.get_bullets_for_memory(str(memory_id), learner_id=str(profile.user_id))
+        bullets = neo4j.get_bullets_for_memory(str(memory_id), learner_id=str(profile.pk))
         memory["bullets"] = bullets
         return render(request, "chat/memory_detail.html", {"memory": memory})
     bullet = neo4j.get_bullet(str(memory_id))
@@ -463,12 +464,13 @@ async def conversation_wait_for_unlock_view(request, session_id):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def session_rename_view(request, session_id):
+    from .write_service import update_session_with_outbox
     session = get_session_for_user_or_member(request.user, session_id, require_admin=True)
     title = (request.POST.get("title") or "").strip()
     if not title:
         return JsonResponse({"error": "Title is required"}, status=400)
     trimmedTitle = title[:200]
-    neo4j.update_session(session["id"], title=trimmedTitle)
+    update_session_with_outbox(session["id"], title=trimmedTitle)
     log_event("chat_session_updated", request=request, session_id=session["id"], action="rename")
     return JsonResponse({"ok": True, "title": trimmedTitle})
 
@@ -476,9 +478,10 @@ def session_rename_view(request, session_id):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def session_delete_view(request, session_id):
+    from .write_service import delete_session_with_outbox
     session = get_session_for_user(request.user, session_id)
     deletedId = session["id"]
-    neo4j.delete_session(deletedId)
+    delete_session_with_outbox(deletedId)
     log_event("chat_session_updated", request=request, session_id=deletedId, action="delete")
     return JsonResponse({"ok": True})
 
@@ -651,6 +654,11 @@ def agent_detail_view(request, agent_id):
 
     if request.method == "POST":
         fields = {}
+        name = request.POST.get("name")
+        if name is not None:
+            trimmedName = name.strip()[:100]
+            if trimmedName:
+                fields["name"] = trimmedName
         description = request.POST.get("description")
         if description is not None:
             fields["description"] = description.strip()
@@ -660,7 +668,7 @@ def agent_detail_view(request, agent_id):
 
     profile = get_or_create_profile_for_user(request.user)
     memory = neo4j.get_or_create_memory(str(profile.pk))
-    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.pk))
     skillCount = sum(1 for b in allBullets if b.get("isSkill"))
     memoryCount = len(allBullets)
     docs = neo4j.get_documents_for_user(str(profile.pk), agent_id=str(agent_id))
@@ -754,10 +762,10 @@ def skill_toggle_view(request, bullet_id):
 
 @login_required(login_url="/")
 def my_agent_redirect_view(request):
-    from .agent_service import get_agents_for_user
-    agents = get_agents_for_user(request.user)
-    if agents:
-        return redirect("chat:agent_detail", agent_id=agents[0]["id"])
+    from .agent_service import get_or_create_user_agent
+    agent = get_or_create_user_agent(request.user)
+    if agent and agent.get("id"):
+        return redirect("chat:agent_detail", agent_id=agent["id"])
     return redirect("chat:dashboard")
 
 
@@ -847,7 +855,7 @@ def agent_memory_view(request, agent_id):
     agent = get_agent_for_user(request.user, str(agent_id))
     profile = get_or_create_profile_for_user(request.user)
     memory = neo4j.get_or_create_memory(str(profile.pk))
-    bullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    bullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.pk))
     bullets.sort(key=lambda b: (-b.get("strength", 0), b.get("createdAt", "")), reverse=False)
 
     return render(request, "chat/agent_memory.html", {
@@ -961,7 +969,7 @@ def dashboard_view(request):
     totalSessions = len(allSessions)
 
     memory = neo4j.get_or_create_memory(userId)
-    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.pk))
     totalMemories = len(allBullets)
 
     allSkills = neo4j.get_skills_for_user(userId, enabled_only=True)
@@ -1238,8 +1246,9 @@ def agent_start_chat_view(request, template_id):
     if existing:
         return redirect("chat:conversation_detail", session_id=existing["id"])
 
-    session = neo4j.create_session(userId, agentTitle)
-    neo4j.create_message(
+    from .write_service import create_session_with_outbox, create_message_with_outbox
+    session = create_session_with_outbox(userId, agentTitle)
+    create_message_with_outbox(
         session["id"],
         f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
         userId,
@@ -1309,8 +1318,9 @@ def group_list_view(request):
 @login_required(login_url="/")
 @require_http_methods(["POST"])
 def new_chat_view(request):
+    from .write_service import create_session_with_outbox
     profile = get_or_create_profile_for_user(request.user)
-    session = neo4j.create_session(str(profile.pk), "New Chat")
+    session = create_session_with_outbox(str(profile.pk), "New Chat")
     return redirect(f"/chat/c/{session['id']}/")
 
 
@@ -1330,9 +1340,10 @@ def group_create_view(request):
     existingSession = neo4j.get_session_by_access_key(accessKey)
     if existingSession:
         accessKey = uuid.uuid4().hex[:12]
-    session = neo4j.create_session(userId, title)
+    from .write_service import create_session_with_outbox, update_session_with_outbox
+    session = create_session_with_outbox(userId, title)
     sessionId = session["id"]
-    neo4j.update_session(sessionId, description=description, access_key=accessKey)
+    update_session_with_outbox(sessionId, description=description, access_key=accessKey)
     neo4j.add_member_to_session(sessionId, userId, role="admin")
     try:
         from app.services import pusher_service
@@ -1430,7 +1441,8 @@ def group_leave_view(request, session_id):
         pass
     remainingCount = neo4j.count_session_members(sessionIdStr)
     if remainingCount == 0:
-        neo4j.delete_session(sessionIdStr)
+        from .write_service import delete_session_with_outbox
+        delete_session_with_outbox(sessionIdStr)
     return redirect("memoria:home")
 
 
@@ -1451,9 +1463,10 @@ def group_settings_view(request, session_id):
         raise Http404
 
     if request.method == "POST":
+        from .write_service import update_session_with_outbox, delete_session_with_outbox
         action = request.POST.get("action", "")
         if action == "disband":
-            neo4j.delete_session(sessionIdStr)
+            delete_session_with_outbox(sessionIdStr)
             return redirect("memoria:home")
         title = request.POST.get("title", "").strip()
         description = request.POST.get("description", "").strip()
@@ -1461,7 +1474,7 @@ def group_settings_view(request, session_id):
         if title:
             updateKwargs["title"] = title[:200]
         updateKwargs["description"] = description
-        neo4j.update_session(sessionIdStr, **updateKwargs)
+        update_session_with_outbox(sessionIdStr, **updateKwargs)
         return redirect("chat:group_settings", session_id=session_id)
 
     return render(request, "chat/group_settings.html", {

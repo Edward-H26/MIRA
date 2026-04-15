@@ -11,3 +11,4 @@ from .document import Document
 from .memory_vote import MemoryVote, VoteValue
 from .skill import Skill, SkillSource
 from .request_log import RequestLog
+from .outbox_event import OutboxEvent

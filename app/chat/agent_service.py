@@ -1,9 +1,11 @@
 import logging
 import re
 
+from django.db import transaction
 from django.http import Http404
 
 from app.services import neo4j_memory as neo4j
+from . import outbox
 from .utils import get_or_create_profile
 
 logger = logging.getLogger(__name__)
@@ -155,22 +157,36 @@ def create_agent_for_user(
 ) -> dict:
     profile = _get_profile(user)
     userId = str(profile.pk)
-    agent = neo4j.create_agent(
-        user_id=userId,
-        name=name,
-        description=description,
-        system_prompt=system_prompt,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        configuration=configuration or {},
-    )
+
+    with transaction.atomic():
+        agent = neo4j.create_agent(
+            user_id=userId,
+            name=name,
+            description=description,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            configuration=configuration or {},
+        )
+        agentId = str(agent.get("id", "")) if agent else ""
+        if agentId:
+            outbox.record_applied_after_commit(
+                operation="agent.create",
+                entity_type="Agent",
+                entity_id=agentId,
+                payload={
+                    "user_id": userId,
+                    "name": name,
+                    "description": description,
+                },
+            )
 
     try:
         neo4j.create_audit_log(
             user_id=userId,
             event_type="agent_created",
             description=f"Created agent: {name}",
-            agent_id=str(agent.get("id", "")),
+            agent_id=str(agent.get("id", "")) if agent else "",
         )
     except Exception:
         logger.warning("agent_service_audit_log_failed", exc_info=True)
@@ -179,8 +195,24 @@ def create_agent_for_user(
 
 
 def update_agent_for_user(user, agent_id: str, **fields) -> dict:
+    """Update an agent the current user owns.
+
+    Writes the Neo4j row directly for immediate consistency, then enqueues an
+    OutboxEvent inside the same Django transaction. The drain_outbox worker
+    replays the event idempotently (Cypher SET is idempotent), which acts as
+    a retry safety net if the direct write silently failed and a change
+    stream that downstream systems can consume.
+    """
     agentDict = get_agent_dict(user, agent_id)
-    updated = neo4j.update_agent(str(agentDict["id"]), **fields)
+    agentId = str(agentDict["id"])
+    with transaction.atomic():
+        updated = neo4j.update_agent(agentId, **fields)
+        outbox.enqueue_after_commit(
+            operation="agent.update",
+            entity_type="Agent",
+            entity_id=agentId,
+            payload={"fields": dict(fields)},
+        )
     if updated:
         return _agent_to_dict(updated)
     return agentDict
@@ -190,18 +222,26 @@ def delete_agent_for_user(user, agent_id: str) -> None:
     agentDict = get_agent_dict(user, agent_id)
     profile = _get_profile(user)
     userId = str(profile.pk)
+    targetId = str(agentDict["id"])
 
     try:
         neo4j.create_audit_log(
             user_id=userId,
             event_type="agent_deleted",
             description=f"Deleted agent: {agentDict.get('name', '')}",
-            agent_id=str(agentDict["id"]),
+            agent_id=targetId,
         )
     except Exception:
         logger.warning("agent_service_audit_log_failed", exc_info=True)
 
-    neo4j.delete_agent(str(agentDict["id"]))
+    with transaction.atomic():
+        neo4j.delete_agent(targetId)
+        outbox.enqueue_after_commit(
+            operation="agent.delete",
+            entity_type="Agent",
+            entity_id=targetId,
+            payload={"user_id": userId},
+        )
 
 
 def get_agent_skills(user, agent_id: str, enabled_only: bool = False) -> list[dict]:

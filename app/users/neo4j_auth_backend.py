@@ -2,6 +2,7 @@ from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
 
 from app.services import neo4j_memory as neo4j
+from app.users.models import UserProfile
 
 
 class Neo4jAuthenticationBackend:
@@ -26,8 +27,16 @@ class Neo4jAuthenticationBackend:
 
     @staticmethod
     def _build_user_object(data):
+        neoId = data.get("id", "")
+        username = data.get("username", "")
         try:
-            user = User.objects.get(pk=int(data.get("id", 0)))
-        except (User.DoesNotExist, ValueError, TypeError):
-            return None
-        return user
+            profile = UserProfile.objects.select_related("user").get(pk=int(neoId))
+            return profile.user
+        except (UserProfile.DoesNotExist, ValueError, TypeError):
+            pass
+        if username:
+            try:
+                return User.objects.get(username=username)
+            except User.DoesNotExist:
+                return None
+        return None

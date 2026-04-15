@@ -185,7 +185,7 @@ def _get_memory_bullets_for_user(user):
     memoryId = memoryData.get("id", "")
     if not memoryId:
         return []
-    return neo4j.get_bullets_for_memory(memoryId, learner_id=str(profile.user_id))
+    return neo4j.get_bullets_for_memory(memoryId, learner_id=str(profile.pk))
 
 
 def _apply_memory_bullet_filters(bullets, q="", memory_type="", topic="", strength_min=""):
@@ -227,14 +227,15 @@ def get_home_context_for_user(user):
 
 
 def create_home_session_for_user(user, content):
+    from .write_service import create_session_with_outbox, create_message_with_outbox
     profile = get_or_create_profile_for_user(user)
     profileId = str(profile.pk)
     trimmed = (content or "").strip()
     title = trimmed[:80] if trimmed else "New conversation"
-    sessionData = neo4j.create_session(profileId, title)
+    sessionData = create_session_with_outbox(profileId, title)
     sessionId = sessionData.get("id", "")
     if sessionId and trimmed:
-        neo4j.create_message(
+        create_message_with_outbox(
             session_id=sessionId,
             content=trimmed,
             created_by=profileId,
@@ -835,7 +836,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             memory_obj, _ = Memory.get_or_create_for_profile(profile)
             bullets = memory_obj.retrieve_ranked_bullets(
                 query=trimmed,
-                learner_id=str(profile.user_id),
+                learner_id=str(profile.pk),
                 context_scope_id=sessionId,
                 top_k=10,
                 min_learned=2,
@@ -868,7 +869,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             memory_obj, _ = Memory.get_or_create_for_profile(profile)
             bullets = memory_obj.retrieve_ranked_bullets(
                 query=trimmed,
-                learner_id=str(profile.user_id),
+                learner_id=str(profile.pk),
                 context_scope_id=sessionId,
                 top_k=10,
                 min_learned=2,
@@ -1301,7 +1302,7 @@ def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=8, visitedAgent
         memory_obj, _ = Memory.get_or_create_for_profile(profile)
         bullets = memory_obj.retrieve_ranked_bullets(
             query=prompt,
-            learner_id=str(profile.user_id),
+            learner_id=str(profile.pk),
             context_scope_id=sessionId,
             top_k=5,
             min_learned=2,

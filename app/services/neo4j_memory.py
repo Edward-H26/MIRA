@@ -263,6 +263,20 @@ def sync_memory_to_neo4j(learner_id: str, memory_obj) -> Dict[str, Any]:
     return store.save(data)
 
 
+def _log_neo4j_error(cypher: str, params: dict | None, exc: Exception) -> None:
+    try:
+        from memoria.event_log import log_event as _log_event
+        _log_event(
+            "neo4j_query_failed",
+            cypher=(cypher or "")[:200],
+            param_keys=",".join(sorted((params or {}).keys())),
+            error=str(exc)[:300],
+            error_type=exc.__class__.__name__,
+        )
+    except Exception:
+        pass
+
+
 def _run_query(cypher: str, params: dict | None = None) -> list[dict]:
     driver = _get_driver()
     if driver is None:
@@ -272,7 +286,8 @@ def _run_query(cypher: str, params: dict | None = None) -> list[dict]:
         with driver.session(database=database) as session:
             result = session.run(cypher, params or {})
             return [dict(record) for record in result]
-    except Exception:
+    except Exception as exc:
+        _log_neo4j_error(cypher, params, exc)
         return []
 
 
@@ -435,14 +450,17 @@ def create_session(
     return session_data
 
 
-def get_sessions_for_user(user_id: str) -> list[dict]:
+def get_sessions_for_user(user_id: str, limit: int = 200, offset: int = 0) -> list[dict]:
+    safeLimit = max(1, min(int(limit or 200), 500))
+    safeOffset = max(0, int(offset or 0))
     rows = _run_query(
         """
         MATCH (u:User {id: $userId})-[:CREATED]->(s:Session)
         RETURN s
         ORDER BY s.updatedAt DESC
+        SKIP $offset LIMIT $limit
         """,
-        {"userId": str(user_id)},
+        {"userId": str(user_id), "limit": safeLimit, "offset": safeOffset},
     )
     return [_node_to_dict(row["s"]) for row in rows if "s" in row]
 
@@ -483,6 +501,66 @@ def delete_session(session_id: str) -> None:
         """,
         {"sessionId": str(session_id)},
     )
+
+
+def delete_user_cascade(user_id: str) -> dict:
+    """Remove the User node and all owned domain nodes from Neo4j.
+    Used by the Django UserProfile post_delete signal so the graph stays in
+    sync when a profile is deleted. Returns the number of nodes removed per
+    label so callers can log the cleanup."""
+    record = _run_single(
+        """
+        MATCH (u:User {id: $userId})
+        OPTIONAL MATCH (u)-[:OWNS]->(a:Agent)
+        OPTIONAL MATCH (u)-[:CREATED]->(s:Session)
+        OPTIONAL MATCH (s)-[:CONTAINS]->(m:Message)
+        OPTIONAL MATCH (u)-[:HAS_MEMORY]->(mem:Memory)-[:HAS_BULLET]->(mb:MemoryBullet)
+        OPTIONAL MATCH (u)-[:HAS_ACE_MEMORY]->(ace:AceMemoryState)
+        OPTIONAL MATCH (u)-[:HAS_DOCUMENT]->(d:Document)
+        OPTIONAL MATCH (u)-[:HAS_NOTIFICATION]->(n:Notification)
+        OPTIONAL MATCH (u)-[:HAS_LOG]->(al:AuditLog)
+        OPTIONAL MATCH (u)-[:HAS_SKILL]->(sk:Skill)
+        OPTIONAL MATCH (u)-[:HAS_REQUEST_LOG]->(rl:RequestLog)
+        OPTIONAL MATCH (u)-[:HAS_SUBSCRIPTION]->(sub:Subscription)
+        OPTIONAL MATCH (u)-[:MADE_PAYMENT]->(pay:Payment)
+        WITH u, collect(DISTINCT a) AS agents,
+             collect(DISTINCT s) AS sessions,
+             collect(DISTINCT m) AS messages,
+             collect(DISTINCT mem) AS memories,
+             collect(DISTINCT mb) AS bullets,
+             collect(DISTINCT ace) AS aces,
+             collect(DISTINCT d) AS docs,
+             collect(DISTINCT n) AS notifs,
+             collect(DISTINCT al) AS audits,
+             collect(DISTINCT sk) AS skills,
+             collect(DISTINCT rl) AS reqlogs,
+             collect(DISTINCT sub) AS subs,
+             collect(DISTINCT pay) AS payments
+        FOREACH (x IN agents   | DETACH DELETE x)
+        FOREACH (x IN messages | DETACH DELETE x)
+        FOREACH (x IN sessions | DETACH DELETE x)
+        FOREACH (x IN bullets  | DETACH DELETE x)
+        FOREACH (x IN memories | DETACH DELETE x)
+        FOREACH (x IN aces     | DETACH DELETE x)
+        FOREACH (x IN docs     | DETACH DELETE x)
+        FOREACH (x IN notifs   | DETACH DELETE x)
+        FOREACH (x IN audits   | DETACH DELETE x)
+        FOREACH (x IN skills   | DETACH DELETE x)
+        FOREACH (x IN reqlogs  | DETACH DELETE x)
+        FOREACH (x IN subs     | DETACH DELETE x)
+        FOREACH (x IN payments | DETACH DELETE x)
+        DETACH DELETE u
+        RETURN size(agents) AS agents, size(sessions) AS sessions,
+               size(messages) AS messages, size(memories) AS memories,
+               size(bullets) AS bullets, size(aces) AS aces,
+               size(docs) AS docs, size(notifs) AS notifs,
+               size(audits) AS audits, size(skills) AS skills,
+               size(reqlogs) AS reqlogs, size(subs) AS subs,
+               size(payments) AS payments
+        """,
+        {"userId": str(user_id)},
+    )
+    return dict(record) if record else {}
 
 
 def create_message(
@@ -670,7 +748,10 @@ def get_notifications(
     user_id: str,
     unread_only: bool = False,
     limit: int = 10,
+    offset: int = 0,
 ) -> list[dict]:
+    safeLimit = max(1, min(int(limit or 10), 200))
+    safeOffset = max(0, int(offset or 0))
     where_clause = "AND n.isRead = false" if unread_only else ""
     rows = _run_query(
         f"""
@@ -678,9 +759,9 @@ def get_notifications(
         WHERE true {where_clause}
         RETURN n
         ORDER BY n.createdAt DESC
-        LIMIT $limit
+        SKIP $offset LIMIT $limit
         """,
-        {"userId": str(user_id), "limit": limit},
+        {"userId": str(user_id), "limit": safeLimit, "offset": safeOffset},
     )
     return [_node_to_dict(row["n"]) for row in rows if "n" in row]
 
@@ -1023,9 +1104,9 @@ def cleanup_expired_sessions() -> int:
     record = _run_single(
         """
         MATCH (s:DjangoSession) WHERE s.expireDate <= datetime()
-        WITH s, count(s) AS cnt
-        DELETE s
-        RETURN cnt
+        WITH collect(s) AS expired
+        FOREACH (x IN expired | DELETE x)
+        RETURN size(expired) AS cnt
         """,
         {},
     )
@@ -1201,23 +1282,32 @@ def create_document(
     return {}
 
 
-def get_documents_for_user(user_id: str, agent_id: str | None = None) -> list[dict]:
+def get_documents_for_user(
+    user_id: str,
+    agent_id: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[dict]:
+    safeLimit = max(1, min(int(limit or 100), 500))
+    safeOffset = max(0, int(offset or 0))
     if agent_id:
         rows = _run_query(
             """
             MATCH (u:User {id: $userId})-[:HAS_DOCUMENT]->(d:Document)
             MATCH (a:Agent {id: $agentId})-[:HAS_DOCUMENT]->(d)
             RETURN d ORDER BY d.createdAt DESC
+            SKIP $offset LIMIT $limit
             """,
-            {"userId": str(user_id), "agentId": str(agent_id)},
+            {"userId": str(user_id), "agentId": str(agent_id), "limit": safeLimit, "offset": safeOffset},
         )
     else:
         rows = _run_query(
             """
             MATCH (u:User {id: $userId})-[:HAS_DOCUMENT]->(d:Document)
             RETURN d ORDER BY d.createdAt DESC
+            SKIP $offset LIMIT $limit
             """,
-            {"userId": str(user_id)},
+            {"userId": str(user_id), "limit": safeLimit, "offset": safeOffset},
         )
     return [_node_to_dict(row["d"]) for row in rows if "d" in row]
 
@@ -1329,15 +1419,23 @@ def create_skill(
     return {}
 
 
-def get_skills_for_user(user_id: str, enabled_only: bool = False) -> list[dict]:
+def get_skills_for_user(
+    user_id: str,
+    enabled_only: bool = False,
+    limit: int = 200,
+    offset: int = 0,
+) -> list[dict]:
+    safeLimit = max(1, min(int(limit or 200), 1000))
+    safeOffset = max(0, int(offset or 0))
     where = "AND sk.isEnabled = true" if enabled_only else ""
     rows = _run_query(
         f"""
         MATCH (u:User {{id: $userId}})-[:HAS_SKILL]->(sk:Skill)
         WHERE true {where}
         RETURN sk ORDER BY sk.updatedAt DESC
+        SKIP $offset LIMIT $limit
         """,
-        {"userId": str(user_id)},
+        {"userId": str(user_id), "limit": safeLimit, "offset": safeOffset},
     )
     return [_node_to_dict(row["sk"]) for row in rows if "sk" in row]
 
@@ -2203,18 +2301,36 @@ def init_neo4j_constraints() -> bool:
         "CREATE CONSTRAINT plan_id_unique IF NOT EXISTS FOR (p:Plan) REQUIRE p.id IS UNIQUE",
         "CREATE CONSTRAINT subscription_id_unique IF NOT EXISTS FOR (sub:Subscription) REQUIRE sub.id IS UNIQUE",
         "CREATE CONSTRAINT payment_id_unique IF NOT EXISTS FOR (pay:Payment) REQUIRE pay.id IS UNIQUE",
+        "CREATE CONSTRAINT ace_memory_state_id_unique IF NOT EXISTS FOR (a:AceMemoryState) REQUIRE a.id IS UNIQUE",
+        "CREATE CONSTRAINT django_session_key_unique IF NOT EXISTS FOR (s:DjangoSession) REQUIRE s.sessionKey IS UNIQUE",
         "CREATE INDEX bullet_learner_idx IF NOT EXISTS FOR (mb:MemoryBullet) ON (mb.learnerId)",
         "CREATE INDEX bullet_content_hash_idx IF NOT EXISTS FOR (mb:MemoryBullet) ON (mb.contentHash)",
         "CREATE INDEX bullet_skill_idx IF NOT EXISTS FOR (mb:MemoryBullet) ON (mb.isSkill)",
         "CREATE INDEX session_access_key_idx IF NOT EXISTS FOR (s:Session) ON (s.accessKey)",
+        "CREATE INDEX session_updated_at_idx IF NOT EXISTS FOR (s:Session) ON (s.updatedAt)",
+        "CREATE INDEX message_created_at_idx IF NOT EXISTS FOR (m:Message) ON (m.createdAt)",
+        "CREATE INDEX notification_unread_idx IF NOT EXISTS FOR (n:Notification) ON (n.isRead)",
+        "CREATE INDEX notification_created_at_idx IF NOT EXISTS FOR (n:Notification) ON (n.createdAt)",
+        "CREATE INDEX django_session_expire_idx IF NOT EXISTS FOR (s:DjangoSession) ON (s.expireDate)",
     ]
+    failures = 0
     try:
         with driver.session(database=database) as sess:
             for cypher in statements:
                 try:
                     sess.run(cypher)
-                except Exception:
-                    pass
-        return True
-    except Exception:
+                except Exception as exc:
+                    failures += 1
+                    try:
+                        from memoria.event_log import log_event as _log_event
+                        _log_event("neo4j_constraint_failed", cypher=cypher[:120], error=str(exc))
+                    except Exception:
+                        pass
+        return failures == 0
+    except Exception as exc:
+        try:
+            from memoria.event_log import log_event as _log_event
+            _log_event("neo4j_constraint_init_failed", error=str(exc))
+        except Exception:
+            pass
         return False

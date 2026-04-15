@@ -7,7 +7,7 @@ from allauth.account.signals import user_signed_up
 from django.contrib.auth.models import User as AuthUser
 from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from .models import UserProfile
@@ -87,7 +87,7 @@ def _sync_google_user_names(user, extra_data):
             continue
 
     profile, _ = UserProfile.objects.get_or_create(user=user)
-    if not profile.display_name:
+    if display_name and profile.display_name != display_name:
         profile.display_name = display_name
         profile.save(update_fields=["display_name"])
     return profile
@@ -118,3 +118,31 @@ def sync_google_avatar_on_signup(request, user, sociallogin=None, **kwargs):
     profile = _sync_google_user_names(user, sociallogin.account.extra_data or {})
     picture_url = sociallogin.account.extra_data.get("picture")
     _save_google_avatar(profile, picture_url)
+
+
+@receiver(post_delete, sender=UserProfile)
+def cascade_delete_neo4j_on_profile_delete(sender, instance, **kwargs):
+    """When a Django UserProfile is deleted, also delete the corresponding
+    Neo4j User node and every node it owns. Without this, the graph accumulates
+    orphan Agents, Sessions, Messages, and Memory data forever."""
+    try:
+        from app.services import neo4j_memory as neo4j
+        from memoria.event_log import log_event
+    except Exception:
+        return
+    try:
+        summary = neo4j.delete_user_cascade(str(instance.pk))
+        log_event(
+            "neo4j_user_cascade_deleted",
+            profile_pk=str(instance.pk),
+            **{k: int(v or 0) for k, v in (summary or {}).items()},
+        )
+    except Exception as exc:
+        try:
+            log_event(
+                "neo4j_user_cascade_failed",
+                profile_pk=str(instance.pk),
+                error=str(exc)[:300],
+            )
+        except Exception:
+            pass

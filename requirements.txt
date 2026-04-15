@@ -27,17 +27,14 @@ google-genai==1.66.0
 openai==2.24.0
 neo4j==5.28.1
 
-# --- Image / OCR / PDF upload pipeline ---
+# --- Image upload (OCR handled by Gemini multimodal, see app/services/ocr.py) ---
 pillow==12.1.0
-easyocr>=1.7.0
-pdfplumber>=0.11.0
 
 # --- Embeddings (ACE runtime, memory search, agent/skill catalogs) ---
 sentence-transformers>=3.0.0
 
 # --- PyTorch (CPU-only; +cpu local version is published on the CPU index) ---
 torch==2.10.0+cpu
-torchvision==0.25.0+cpu
 
 # --- Scientific stack ---
 numpy==2.4.2

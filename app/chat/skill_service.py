@@ -108,7 +108,7 @@ def auto_generate_skills_for_user(user):
     profile = _get_profile(user)
 
     memory = neo4j.get_or_create_memory(str(profile.pk))
-    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.user_id))
+    allBullets = neo4j.get_bullets_for_memory(memory["id"], learner_id=str(profile.pk))
 
     filtered = [
         b for b in allBullets
