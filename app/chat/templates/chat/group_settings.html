@@ -20,12 +20,12 @@
         <textarea name="description" rows="3"
           class="w-full bg-white border border-slate-200 rounded-[10px] px-4 py-2.5 font-inter text-[14px] text-slate-700 outline-none focus:ring-2 focus:ring-mm-primary/30 focus:border-mm-primary resize-none">{{ session.description }}</textarea>
       </div>
-      {% if session.access_key %}
+      {% if session.accessKey %}
       <div>
         <label class="font-inter font-semibold text-slate-600 text-[13px] mb-1.5 block">Invite Key</label>
         <div class="flex items-center gap-2">
-          <code class="flex-1 bg-slate-50 border border-slate-200 rounded-[10px] px-4 py-2.5 font-mono text-[14px] text-mm-primary">{{ session.access_key }}</code>
-          <button type="button" onclick="navigator.clipboard.writeText('{{ session.access_key }}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)" class="px-3 py-2.5 rounded-[10px] bg-mm-primary/10 text-mm-primary font-inter font-semibold text-[13px] hover:bg-mm-primary/20 transition-colors">Copy</button>
+          <code class="flex-1 bg-slate-50 border border-slate-200 rounded-[10px] px-4 py-2.5 font-mono text-[14px] text-mm-primary">{{ session.accessKey }}</code>
+          <button type="button" onclick="navigator.clipboard.writeText('{{ session.accessKey }}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)" class="px-3 py-2.5 rounded-[10px] bg-mm-primary/10 text-mm-primary font-inter font-semibold text-[13px] hover:bg-mm-primary/20 transition-colors">Copy</button>
         </div>
       </div>
       {% endif %}

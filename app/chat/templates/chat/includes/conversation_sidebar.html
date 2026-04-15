@@ -47,19 +47,15 @@
                 <div class="font-inter font-semibold text-slate-400 text-[10px] tracking-[0.5px] uppercase leading-5">
                     Groups
                 </div>
-                <div class="flex gap-1">
-                    <button type="button" onclick="openGroupModal('create')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary" title="Create group">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <div class="flex gap-2 items-center">
+                    <button type="button" onclick="openGroupModal('create')" class="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary" title="Create group" aria-label="Create group">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
                     </button>
-                    <button type="button" onclick="openGroupModal('join')" class="w-5 h-5 flex items-center justify-center rounded hover:bg-white/40 transition-colors text-slate-400 hover:text-mm-primary" title="Join group">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"></path>
-                            <polyline points="10 17 15 12 10 7"></polyline>
-                            <line x1="15" y1="12" x2="3" y2="12"></line>
-                        </svg>
+                    <button type="button" onclick="openGroupModal('join')" class="px-2 h-6 flex items-center justify-center rounded-md border border-mm-primary/30 bg-mm-primary/5 hover:bg-mm-primary/10 transition-colors font-inter font-semibold text-[10px] tracking-[0.5px] uppercase text-mm-primary" title="Join group with invite code">
+                        Join
                     </button>
                 </div>
             </div>
@@ -93,19 +89,12 @@
                 {% for s in sessions %}
                 {% if not s.accessKey %}
                 <div class="conv-sidebar-item" data-id="{{ s.id }}">
-                    <a href="/chat/c/{{ s.id }}/" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex gap-3 items-center px-2 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
-                        <div class="relative rounded-[12px] shrink-0 w-8 h-8 shadow-md bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center">
-                            <span class="conv-sidebar-avatar font-inter font-semibold text-white text-[14px]">
-                                {{ s.title|default:"U"|slice:":1"|upper }}
-                            </span>
+                    <a href="/chat/c/{{ s.id }}/" oncontextmenu="showContextMenu(event, '{{ s.id }}')" class="conv-sidebar-content flex flex-col px-3 py-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 {% if session and session.id == s.id %}bg-white/50 backdrop-blur-sm shadow-sm{% endif %}">
+                        <div class="conv-sidebar-title font-inter font-semibold text-slate-700 text-[13px] tracking-[0.35px] leading-5 truncate">
+                            {{ s.title|default:"Untitled" }}
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="conv-sidebar-title font-inter font-semibold text-slate-700 text-[12px] tracking-[0.35px] leading-4 truncate">
-                                {{ s.title|default:"Untitled" }}
-                            </div>
-                            <div class="font-inter font-medium text-slate-500/70 text-[10px] tracking-[0.35px] leading-5 truncate">
-                                {{ s.updated_at|relative_time }}
-                            </div>
+                        <div class="font-inter font-medium text-slate-500/70 text-[10px] tracking-[0.35px] leading-4 truncate">
+                            {{ s.updated_at|relative_time }}
                         </div>
                     </a>
                 </div>

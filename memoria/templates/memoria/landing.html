@@ -32,14 +32,14 @@
       </div>
 
       <div class="relative z-10">
-        <nav class="landing-nav relative z-20 flex items-center justify-between">
-          <div class="shrink-0" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <nav class="landing-nav relative z-20 flex items-center justify-between" style="min-height: 64px; padding: 12px 20px;">
+          <a href="{% url 'memoria:landing' %}" class="landing-nav-logo shrink-0" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
             <img
               src="{% static 'images/logomark.png' %}"
               alt="Memoria logo"
-              style="max-width: 100%; max-height: 100%; display: block; object-fit: contain;"
+              style="width: 100%; height: 100%; display: block; object-fit: contain;"
             >
-          </div>
+          </a>
 
           {% if user.is_authenticated %}
             <a href="{% url 'memoria:home' %}" class="bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">

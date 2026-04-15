@@ -483,15 +483,18 @@ _ACTIVE_GENERATIONS: dict[str, _GenerationBroadcast] = {}
 def _get_generation_pool() -> _ThreadPoolExecutor:
     global _GENERATION_POOL
     if _GENERATION_POOL is None:
-        max_workers = safe_env_int("CHAT_GENERATION_POOL_SIZE", 8)
-        _GENERATION_POOL = _ThreadPoolExecutor(
-            max_workers=max(2, max_workers),
-            thread_name_prefix="agent-gen",
-        )
+        with _GENERATION_STATE_LOCK:
+            if _GENERATION_POOL is None:
+                max_workers = safe_env_int("CHAT_GENERATION_POOL_SIZE", 8)
+                _GENERATION_POOL = _ThreadPoolExecutor(
+                    max_workers=max(2, max_workers),
+                    thread_name_prefix="agent-gen",
+                )
     return _GENERATION_POOL
 
 
 _PREPROCESS_POOL: _ThreadPoolExecutor | None = None
+_PREPROCESS_POOL_LOCK = _threading.Lock()
 
 
 def _get_preprocess_pool() -> _ThreadPoolExecutor:
@@ -501,11 +504,13 @@ def _get_preprocess_pool() -> _ThreadPoolExecutor:
     for every chat message."""
     global _PREPROCESS_POOL
     if _PREPROCESS_POOL is None:
-        max_workers = safe_env_int("CHAT_PREPROCESS_POOL_SIZE", 8)
-        _PREPROCESS_POOL = _ThreadPoolExecutor(
-            max_workers=max(2, max_workers),
-            thread_name_prefix="chat-pre",
-        )
+        with _PREPROCESS_POOL_LOCK:
+            if _PREPROCESS_POOL is None:
+                max_workers = safe_env_int("CHAT_PREPROCESS_POOL_SIZE", 8)
+                _PREPROCESS_POOL = _ThreadPoolExecutor(
+                    max_workers=max(2, max_workers),
+                    thread_name_prefix="chat-pre",
+                )
     return _PREPROCESS_POOL
 
 

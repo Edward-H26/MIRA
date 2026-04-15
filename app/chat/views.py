@@ -14,9 +14,10 @@ from app.services import neo4j_memory as neo4j
 from memoria.event_log import log_event
 from .service import (
     stream_user_message_with_agent_reply,
-    start_background_generation_async,
+    start_background_generation,
+    subscribe_to_active_generation,
     subscribe_to_active_generation_async,
-    stream_queue_payloads_async,
+    stream_queue_payloads,
     get_or_create_profile_for_user,
     get_memory_list_data,
     get_memory_summary,
@@ -119,9 +120,16 @@ def _conversation_messages_get(request, session_id):
 
 
 async def _conversation_messages_post(request, session_id):
-    user = request.user
-    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(user, session_id)
-    profile = await sync_to_async(get_or_create_profile_for_user, thread_sensitive=True)(user)
+    try:
+        user = request.user
+        session = await sync_to_async(get_session_for_user, thread_sensitive=True)(user, session_id)
+        profile = await sync_to_async(get_or_create_profile_for_user, thread_sensitive=True)(user)
+    except Http404:
+        raise
+    except Exception as exc:
+        log_event("chat_message_submit_setup_failed", request=request, session_id=str(session_id), error=str(exc))
+        return JsonResponse({"error": "service_busy", "message": "Please retry in a moment."}, status=503)
+
     session["_user"] = user
     session["_profile_id"] = str(profile.pk)
     content = (request.POST.get("message") or "").strip()
@@ -129,7 +137,13 @@ async def _conversation_messages_post(request, session_id):
         return JsonResponse({"error": "Empty message"}, status=400)
     sessionId = session["id"]
     log_event("chat_message_submit", request=request, session_id=sessionId)
-    acquired = await sync_to_async(neo4j.acquire_session_generation_lock)(sessionId)
+
+    try:
+        acquired = await sync_to_async(neo4j.acquire_session_generation_lock)(sessionId)
+    except Exception as exc:
+        log_event("chat_message_submit_lock_failed", request=request, session_id=sessionId, error=str(exc))
+        return JsonResponse({"error": "service_busy"}, status=503)
+
     if not acquired:
         log_event("chat_generation_rejected_locked", request=request, session_id=sessionId)
         return JsonResponse(
@@ -138,11 +152,14 @@ async def _conversation_messages_post(request, session_id):
         )
 
     autoTitle = None
-    has_messages = await sync_to_async(neo4j.session_has_messages)(sessionId)
-    if session.get("title", "") in ("New Chat", "") and not has_messages:
-        autoTitle = content[:60].strip()
-        if autoTitle:
-            await sync_to_async(neo4j.update_session)(sessionId, title=autoTitle)
+    try:
+        has_messages = await sync_to_async(neo4j.session_has_messages)(sessionId)
+        if session.get("title", "") in ("New Chat", "") and not has_messages:
+            autoTitle = content[:60].strip()
+            if autoTitle:
+                await sync_to_async(neo4j.update_session)(sessionId, title=autoTitle)
+    except Exception as exc:
+        log_event("chat_message_submit_title_failed", request=request, session_id=sessionId, error=str(exc))
 
     if request.headers.get("x-requested-with") != "XMLHttpRequest":
         def _run_sync():
@@ -155,17 +172,24 @@ async def _conversation_messages_post(request, session_id):
         return redirect(f"/chat/c/{sessionId}/")
 
     try:
-        queue = await start_background_generation_async(session, content)
+        queue = await sync_to_async(start_background_generation, thread_sensitive=True)(session, content)
     except TimeoutError:
         await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
         return JsonResponse(
             {"error": "service_busy", "message": "The agent service is at capacity; please retry in a moment."},
             status=503,
         )
+    except Exception as exc:
+        log_event("chat_background_start_failed", request=request, session_id=sessionId, error=str(exc))
+        await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
+        return JsonResponse(
+            {"error": "service_busy", "message": "The agent service could not start; please retry."},
+            status=503,
+        )
 
-    async def event_stream():
+    def event_stream():
         titleInjected = not autoTitle
-        async for payload in stream_queue_payloads_async(queue):
+        for payload in stream_queue_payloads(queue):
             if not titleInjected:
                 payload = {**payload, "auto_title": autoTitle, "session_id": sessionId}
                 titleInjected = True
@@ -224,15 +248,15 @@ async def message_resend_view(request, session_id, message_id):
     await sync_to_async(_prune_later_messages)()
 
     try:
-        queue = await start_background_generation_async(
+        queue = await sync_to_async(start_background_generation, thread_sensitive=True)(
             session, targetMsg.get("content", ""), skip_user_message=True,
         )
     except TimeoutError:
         await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
         return JsonResponse({"error": "service_busy"}, status=503)
 
-    async def event_stream():
-        async for payload in stream_queue_payloads_async(queue):
+    def event_stream():
+        for payload in stream_queue_payloads(queue):
             yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(
@@ -297,13 +321,15 @@ async def conversation_upload_view(request, session_id):
     )
 
     try:
-        queue = await start_background_generation_async(session, aiPrompt, skip_user_message=True)
+        queue = await sync_to_async(start_background_generation, thread_sensitive=True)(
+            session, aiPrompt, skip_user_message=True,
+        )
     except TimeoutError:
         await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
         return JsonResponse({"error": "service_busy"}, status=503)
 
-    async def event_stream():
-        async for payload in stream_queue_payloads_async(queue):
+    def event_stream():
+        for payload in stream_queue_payloads(queue):
             yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(
@@ -360,12 +386,12 @@ async def conversation_stream_subscribe_view(request, session_id):
     """
     session = await sync_to_async(get_session_for_user, thread_sensitive=True)(request.user, session_id)
     sessionId = session["id"]
-    queue = subscribe_to_active_generation_async(sessionId)
+    queue = await sync_to_async(subscribe_to_active_generation, thread_sensitive=True)(sessionId)
 
-    async def event_stream():
+    def event_stream():
         if queue is None:
             return
-        async for payload in stream_queue_payloads_async(queue):
+        for payload in stream_queue_payloads(queue):
             yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(

@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let isStreaming = false;
   let lastStreamedMessageId = null;
   let streamCooldown = false;
+  let activeStreamAbort = null;
   const pendingAgentTurns = [];
   const currentUserId = form.dataset.currentUserId || "";
   const defaultAgentName = form.dataset.initialAgentName || "Assistant";
@@ -27,9 +28,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const scrollToBottom = () => {
-    requestAnimationFrame(() => {
-      messages.scrollTo({ top: messages.scrollHeight, behavior: "smooth" });
+  let pendingScrollFrame = null;
+  const scrollToBottom = (smooth = false) => {
+    if (pendingScrollFrame) return;
+    pendingScrollFrame = requestAnimationFrame(() => {
+      pendingScrollFrame = null;
+      messages.scrollTo({ top: messages.scrollHeight, behavior: smooth ? "smooth" : "auto" });
     });
   };
 
@@ -280,10 +284,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const updateAssistantBubble = (assistantUi, content, html = "") => {
     if (html) {
       assistantUi.contentNode.innerHTML = html;
+      assistantUi.streamTextNode = null;
       decorateCodeBlocks(assistantUi.contentNode);
       renderLatex(assistantUi.contentNode);
     } else {
       assistantUi.contentNode.textContent = content;
+      assistantUi.streamTextNode = null;
     }
     const hasContent = hasVisibleAssistantContent(content, html, assistantUi.contentNode);
     if (assistantUi.dotsNode) {
@@ -294,6 +300,22 @@ document.addEventListener("DOMContentLoaded", () => {
         assistantUi.dotsNode.hidden = false;
       }
     }
+    scrollToBottom();
+  };
+
+  const appendStreamChunk = (assistantUi, chunk) => {
+    if (!chunk) return;
+    if (assistantUi.dotsNode) {
+      assistantUi.dotsNode.remove();
+      assistantUi.dotsNode = null;
+    }
+    if (!assistantUi.streamTextNode) {
+      assistantUi.contentNode.textContent = "";
+      const textNode = document.createTextNode("");
+      assistantUi.contentNode.appendChild(textNode);
+      assistantUi.streamTextNode = textNode;
+    }
+    assistantUi.streamTextNode.appendData(chunk);
     scrollToBottom();
   };
 
@@ -384,6 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const abortController = new AbortController();
     const streamTimeoutId = setTimeout(() => abortController.abort(), 90000);
+    activeStreamAbort = abortController;
 
     try {
       const response = await fetch(streamUrl, {
@@ -425,9 +448,14 @@ document.addEventListener("DOMContentLoaded", () => {
             if (senderLabel) senderLabel.textContent = payload.agentName;
             addThinker(payload.agentName);
           }
-          assistantText += payload.content || "";
-          assistantHtml = payload.html || assistantHtml;
-          updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          const chunk = payload.content || "";
+          assistantText += chunk;
+          if (payload.html) {
+            assistantHtml = payload.html;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          } else {
+            appendStreamChunk(assistantUi, chunk);
+          }
           return;
         }
 
@@ -470,6 +498,9 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     } finally {
       clearTimeout(streamTimeoutId);
+      if (activeStreamAbort === abortController) {
+        activeStreamAbort = null;
+      }
       debugLog("request-end");
 
       const revealAgentTurns = () => {
@@ -561,9 +592,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         receivedAny = true;
         if (payload.type === "delta") {
-          assistantText += payload.content || "";
-          assistantHtml = payload.html || assistantHtml;
-          updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          const chunk = payload.content || "";
+          assistantText += chunk;
+          if (payload.html) {
+            assistantHtml = payload.html;
+            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          } else {
+            appendStreamChunk(assistantUi, chunk);
+          }
           return;
         }
         if (payload.type === "done") {
@@ -665,15 +701,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     stagedFile = file;
     if (previewName) previewName.textContent = file.name;
-    if (file.type === "application/pdf") {
-      if (previewThumb) previewThumb.classList.add("hidden");
-      if (previewPdfIcon) previewPdfIcon.classList.remove("hidden");
-    } else {
-      if (previewPdfIcon) previewPdfIcon.classList.add("hidden");
-      if (previewThumb) {
-        previewThumb.classList.remove("hidden");
+    // Explicit style.display toggling makes the thumb/icon mutually exclusive
+    // regardless of the surrounding CSS framework state. Always show exactly
+    // one: thumbnail for images, icon for PDFs/docs.
+    const isPdf = file.type === "application/pdf";
+    if (previewThumb) {
+      if (isPdf) {
+        previewThumb.style.display = "none";
+        previewThumb.removeAttribute("src");
+      } else {
         previewThumb.src = URL.createObjectURL(file);
+        previewThumb.style.display = "";
       }
+    }
+    if (previewPdfIcon) {
+      previewPdfIcon.style.display = isPdf ? "" : "none";
     }
     if (previewBar) previewBar.classList.remove("hidden");
     input.focus();
@@ -683,8 +725,11 @@ document.addEventListener("DOMContentLoaded", () => {
     stagedFile = null;
     if (fileInput) fileInput.value = "";
     if (previewBar) previewBar.classList.add("hidden");
-    if (previewThumb) { previewThumb.src = ""; previewThumb.classList.remove("hidden"); }
-    if (previewPdfIcon) previewPdfIcon.classList.add("hidden");
+    if (previewThumb) {
+      previewThumb.removeAttribute("src");
+      previewThumb.style.display = "none";
+    }
+    if (previewPdfIcon) previewPdfIcon.style.display = "none";
   };
 
   if (previewRemove) {
@@ -1329,9 +1374,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!resp.ok) throw new Error(`Resend failed (${resp.status})`);
         await readStream(resp, (payload) => {
           if (payload.type === "delta") {
-            assistantText += payload.content || "";
-            assistantHtml = payload.html || assistantHtml;
-            updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            const chunk = payload.content || "";
+            assistantText += chunk;
+            if (payload.html) {
+              assistantHtml = payload.html;
+              updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+            } else {
+              appendStreamChunk(assistantUi, chunk);
+            }
           } else if (payload.type === "done") {
             assistantText = payload.content || assistantText;
             assistantHtml = payload.html || assistantHtml;
@@ -1355,4 +1405,21 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+
+  const abortActiveStream = () => {
+    if (activeStreamAbort) {
+      try { activeStreamAbort.abort(); } catch (_) {}
+      activeStreamAbort = null;
+    }
+  };
+
+  window.addEventListener("pagehide", abortActiveStream);
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link) return;
+    if (link.target === "_blank" || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const href = link.getAttribute("href") || "";
+    if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+    abortActiveStream();
+  }, true);
 });

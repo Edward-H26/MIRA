@@ -1,80 +1,53 @@
-﻿asgiref==3.11.0
-asttokens==3.0.0
-certifi==2026.1.4
-cffi==2.0.0
-charset-normalizer==3.4.4
-colorama==0.4.6
-comm==0.2.3
-contourpy==1.3.3
-cryptography==46.0.5
-cycler==0.12.1
-debugpy==1.8.17
-decorator==5.2.1
+# =============================================================================
+# Install CPU-only PyTorch instead of the default GPU wheel.
+# The default wheel pulls ~6 GB of nvidia-*-cu12 runtime libraries on Linux,
+# which are pure dead weight on Render's CPU-only instances.
+# =============================================================================
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- Django core ---
 Django==6.0.1
+gunicorn==23.0.0
+uvicorn[standard]>=0.30
+whitenoise==6.8.2
 django-allauth==65.14.3
 django-cors-headers==4.9.0
 django-environ==0.12.0
-executing==2.2.1
-fonttools==4.61.1
-google-genai==1.66.0
-gunicorn==23.0.0
-idna==3.11
-ipykernel==7.1.0
-ipython==9.7.0
-ipython_pygments_lexers==1.1.1
-jedi==0.19.2
-jupyter_client==8.6.3
-jupyter_core==5.9.1
-kiwisolver==1.4.9
-matplotlib==3.10.6
-matplotlib-inline==0.2.1
-Markdown==3.7
-nest-asyncio==1.6.0
-numpy==2.4.2
-packaging==26.0
-parso==0.8.5
-pillow==12.1.0
-platformdirs==4.5.1
-prompt_toolkit==3.0.52
-psutil==7.1.3
-pure_eval==0.2.3
-pycparser==3.0
-Pygments==2.19.2
-PyJWT==2.10.1
-pyparsing==3.3.2
-python-dateutil==2.9.0.post0
-pyzmq==27.1.0
-requests==2.32.5
-setuptools==80.9.0
-six==1.17.0
-sqlparse==0.5.5
-stack-data==0.6.3
-tornado==6.5.2
-traitlets==5.14.3
-tzdata==2025.3
-urllib3==2.6.3
-uvicorn[standard]>=0.30
-wcwidth==0.2.14
-wheel==0.45.1
-whitenoise==6.8.2
-accelerate==1.12.0
-datasets==4.6.1
-openai==2.24.0
-pandas==3.0.1
-peft==0.18.1
-protobuf==7.34.0
-python-dotenv==1.2.2
-sentencepiece==0.2.1
-torch==2.10.0
-torchaudio==2.10.0
-torchvision==0.25.0
-transformers==5.2.0
-trl==0.29.0
-neo4j==5.28.1
-sentence-transformers>=3.0.0
-scikit-learn>=1.5.0
-easyocr>=1.7.0
-pdfplumber>=0.11.0
-pusher>=3.3.4
 dj-database-url>=2.1.0
 psycopg2-binary>=2.9.9
+
+# --- Crypto / HTTP ---
+cryptography==46.0.5
+PyJWT==2.10.1
+requests==2.32.5
+
+# --- External services ---
+pusher>=3.3.4
+google-genai==1.66.0
+openai==2.24.0
+neo4j==5.28.1
+
+# --- Image / OCR / PDF upload pipeline ---
+pillow==12.1.0
+easyocr>=1.7.0
+pdfplumber>=0.11.0
+
+# --- Embeddings (ACE runtime, memory search, agent/skill catalogs) ---
+sentence-transformers>=3.0.0
+
+# --- PyTorch (CPU-only; +cpu local version is published on the CPU index) ---
+torch==2.10.0+cpu
+torchvision==0.25.0+cpu
+
+# --- Scientific stack ---
+numpy==2.4.2
+scikit-learn>=1.5.0
+
+# --- Charts (chat analytics) ---
+matplotlib==3.10.6
+
+# --- Small runtime utilities ---
+python-dotenv==1.2.2
+psutil==7.1.3
+Markdown==3.7
+sqlparse==0.5.5
