@@ -58,5 +58,13 @@ e2e-tests/
 plans/
 docs/superpowers/
 
+# Remotion video project (300MB deps, rendered MP4s, Veo/VO cached outputs)
+video/
+
+# Browser-automation debug screenshots at repo root
+/codeblock-*.png
+/landing-*.png
+/orbit-*.png
+
 
 

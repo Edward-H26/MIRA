@@ -34,7 +34,20 @@ def _get_driver():
 
         with _DRIVER_LOCK:
             if _DRIVER is None:
-                _DRIVER = GraphDatabase.driver(uri, auth=(user, password))
+                _DRIVER = GraphDatabase.driver(
+                    uri,
+                    auth=(user, password),
+                    max_connection_pool_size=_safe_env_int(
+                        "NEO4J_MAX_CONNECTION_POOL_SIZE", 32
+                    ),
+                    connection_timeout=_safe_env_float(
+                        "NEO4J_CONNECTION_TIMEOUT", 30.0
+                    ),
+                    max_transaction_retry_time=_safe_env_float(
+                        "NEO4J_MAX_TX_RETRY", 15.0
+                    ),
+                    keep_alive=True,
+                )
         return _DRIVER
     except Exception:
         return None

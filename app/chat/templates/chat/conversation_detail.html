@@ -42,8 +42,7 @@
       <div class="flex gap-2 items-center flex-shrink-0">
         <div class="conv-header-secondary flex gap-2 items-center">
         {% if session.access_key %}
-        <button type="button" class="font-inter text-slate-500/60 text-[13px] hover:text-mm-primary transition-colors cursor-pointer" onclick="document.getElementById('members-panel').classList.toggle('hidden')">{{ session.memberCount }} member{{ session.memberCount|pluralize }}</button>
-        {% if session.access_key %}
+        <button type="button" class="font-inter text-slate-500/60 text-[13px] hover:text-mm-primary transition-colors cursor-pointer" onclick="document.getElementById('info-panel').classList.toggle('hidden')">{{ session.memberCount }} member{{ session.memberCount|pluralize }}</button>
         <button type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-mm-primary/10 hover:bg-mm-primary/20 transition-colors" onclick="navigator.clipboard.writeText('{{ session.access_key }}'); this.querySelector('span').textContent='Copied!'; setTimeout(() => this.querySelector('span').textContent='{{ session.access_key }}', 1500)" title="Click to copy invite key">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -52,23 +51,44 @@
           <span class="font-inter font-mono text-mm-primary text-[11px]">{{ session.access_key }}</span>
         </button>
         {% endif %}
-        {% endif %}
         </div>
-        <div class="relative">
-          <button type="button" class="p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" onclick="document.getElementById('members-panel').classList.toggle('hidden')">
+        <div class="relative" id="info-panel-wrapper">
+          <button type="button" class="p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300 backdrop-blur-sm" onclick="document.getElementById('info-panel').classList.toggle('hidden')" aria-label="Conversation info">
             <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="16" x2="12" y2="12"></line>
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
           </button>
-          {% if session.access_key %}
-          <div id="members-panel" class="hidden absolute right-0 mt-2 w-[min(88vw,320px)] rounded-[16px] border border-slate-200 bg-white shadow-xl overflow-hidden" style="z-index: 150;">
+          <div id="info-panel" class="hidden absolute right-0 mt-2 w-[min(92vw,340px)] rounded-[16px] border border-slate-200 bg-white shadow-xl overflow-hidden" style="z-index: 150;">
+            <div class="px-4 py-3 border-b border-slate-100">
+              <div class="font-inter font-semibold text-sm text-mm-text truncate">{{ session.title|default:"Conversation" }}</div>
+              <div class="font-inter text-mm-muted text-[11px] mt-0.5">
+                {% if session.access_key %}Group chat{% else %}Private chat{% endif %}
+                {% if session.messageCount %} · {{ session.messageCount }} message{{ session.messageCount|pluralize }}{% endif %}
+              </div>
+            </div>
+
+            {% if session.access_key %}
+            <div class="px-4 py-3 border-b border-slate-100">
+              <div class="text-[10px] font-semibold text-mm-muted uppercase tracking-[0.5px] mb-1.5">Invite code</div>
+              <button type="button" class="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-[8px] bg-mm-primary/5 hover:bg-mm-primary/10 border border-mm-primary/20 transition-colors" onclick="navigator.clipboard.writeText('{{ session.access_key }}'); const s = this.querySelector('[data-copy-label]'); if(!s) return; const orig = s.textContent; s.textContent = 'Copied!'; setTimeout(() => s.textContent = orig, 1500);" title="Click to copy invite key">
+                <span class="font-mono text-[13px] text-mm-primary truncate">{{ session.access_key }}</span>
+                <span class="flex items-center gap-1 text-[11px] font-semibold text-mm-muted flex-shrink-0" data-copy-label>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                  </svg>
+                  Copy
+                </span>
+              </button>
+              <div class="text-[11px] text-mm-muted mt-1.5">Share this code so others can join the conversation.</div>
+            </div>
             <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <span class="font-inter font-semibold text-sm text-mm-text">Members ({{ session.memberCount }})</span>
+              <span class="font-inter font-semibold text-[13px] text-mm-text">Members ({{ session.memberCount }})</span>
               <a href="{% url 'chat:group_settings' session.id %}" class="font-inter text-mm-primary text-[11px] hover:underline">Settings</a>
             </div>
-            <div class="max-h-64 overflow-y-auto">
+            <div class="max-h-56 overflow-y-auto">
               {% for member in session.members %}
               <div class="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
                 {% if member.user.profile_img %}
@@ -98,8 +118,36 @@
                 </button>
               </form>
             </div>
+            {% else %}
+            <div class="px-4 py-3 border-b border-slate-100">
+              <div class="text-[10px] font-semibold text-mm-muted uppercase tracking-[0.5px] mb-1">Last updated</div>
+              <div class="font-inter text-[13px] text-mm-text">{{ session.updated_at|date:"M j, Y · g:i A" }}</div>
+            </div>
+            <div class="py-1">
+              <button type="button" class="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 font-inter text-[13px] text-mm-text transition-colors" onclick="document.getElementById('info-panel').classList.add('hidden'); if(typeof renameConversation==='function'){renameConversation('{{ session.id }}');}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Rename conversation
+              </button>
+              <form method="post" action="{% url 'chat:session_delete' session_id=session.id %}" data-delete-form onsubmit="return handleDeleteSubmit(this);">
+                {% csrf_token %}
+                <button type="submit" data-delete-btn class="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-red-50 font-inter text-[13px] text-red-500 transition-colors disabled:opacity-60 disabled:cursor-wait">
+                  <svg data-delete-icon width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                  </svg>
+                  <svg data-delete-spinner width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden animate-spin">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+                  </svg>
+                  <span data-delete-label>Delete conversation</span>
+                </button>
+              </form>
+            </div>
+            {% endif %}
           </div>
-          {% endif %}
         </div>
         <button class="lg:hidden p-2 rounded-[12px] hover:bg-white/40 transition-all duration-300" onclick="toggleConvSidebar()">
           <svg class="w-5 h-5 text-slate-600/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -209,9 +257,13 @@
           data-upload-url="{% url 'chat:conversation_upload' session.id %}"
           data-typing-url="{% url 'chat:typing' session.id %}"
           data-lock-wait-url="{% url 'chat:conversation_lock_wait' session.id %}"
+          data-stream-subscribe-url="{% url 'chat:conversation_stream_subscribe' session.id %}"
           data-pending-prompt="{{ pending_prompt|default:''|escape }}"
           data-generation-in-progress="{% if generation_in_progress %}1{% else %}0{% endif %}"
           data-current-user-id="{{ request.user.pk }}"
+          data-current-user-name="{{ request.user.profile.display_name|default:request.user.username|default:'You' }}"
+          data-current-user-initial="{{ request.user.profile.display_name|default:request.user.username|default:'Y'|slice:':1'|upper }}"
+          data-current-user-avatar-url="{% if request.user.profile.profile_img %}{{ request.user.profile.profile_img.url }}{% endif %}"
           data-initial-agent-name="{{ userAgents.0.name|default:'Assistant' }}"
         >
           {% csrf_token %}
@@ -275,4 +327,38 @@
 
 {% block extra_js %}
 <script src="{% static 'js/conversation.js' %}?v={% now 'U' %}" defer></script>
+<script>
+  document.addEventListener("click", function(e) {
+    var panel = document.getElementById("info-panel");
+    var wrapper = document.getElementById("info-panel-wrapper");
+    if (!panel || !wrapper) return;
+    if (panel.classList.contains("hidden")) return;
+    if (wrapper.contains(e.target)) return;
+    panel.classList.add("hidden");
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key !== "Escape") return;
+    var panel = document.getElementById("info-panel");
+    if (panel && !panel.classList.contains("hidden")) panel.classList.add("hidden");
+  });
+
+  // Delete-button loading state: confirm first, then disable the button and
+  // swap the trash icon for a spinner so the user sees the action is in
+  // flight. The server responds with a redirect, so the spinner naturally
+  // disappears on page transition.
+  function handleDeleteSubmit(form) {
+    if (!confirm("Delete this conversation? This cannot be undone.")) {
+      return false;
+    }
+    var btn = form.querySelector("[data-delete-btn]");
+    var icon = form.querySelector("[data-delete-icon]");
+    var spinner = form.querySelector("[data-delete-spinner]");
+    var label = form.querySelector("[data-delete-label]");
+    if (btn) btn.disabled = true;
+    if (icon) icon.classList.add("hidden");
+    if (spinner) spinner.classList.remove("hidden");
+    if (label) label.textContent = "Deleting…";
+    return true;
+  }
+</script>
 {% endblock %}

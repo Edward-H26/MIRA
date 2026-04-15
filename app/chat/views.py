@@ -1,7 +1,9 @@
+import asyncio
 import csv
 import json
 import time
 
+from asgiref.sync import sync_to_async
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
@@ -12,6 +14,9 @@ from app.services import neo4j_memory as neo4j
 from memoria.event_log import log_event
 from .service import (
     stream_user_message_with_agent_reply,
+    start_background_generation_async,
+    subscribe_to_active_generation_async,
+    stream_queue_payloads_async,
     get_or_create_profile_for_user,
     get_memory_list_data,
     get_memory_summary,
@@ -69,10 +74,10 @@ def memory_list_view(request):
 
 
 @login_required(login_url="/")
-def conversation_messages_view(request, session_id):
+async def conversation_messages_view(request, session_id):
     if request.method == "GET":
-        return _conversation_messages_get(request, session_id)
-    return _conversation_messages_post(request, session_id)
+        return await sync_to_async(_conversation_messages_get, thread_sensitive=True)(request, session_id)
+    return await _conversation_messages_post(request, session_id)
 
 
 def _conversation_messages_get(request, session_id):
@@ -113,17 +118,19 @@ def _conversation_messages_get(request, session_id):
     )
 
 
-def _conversation_messages_post(request, session_id):
-    session = get_session_for_user(request.user, session_id)
-    profile = get_or_create_profile_for_user(request.user)
-    session["_user"] = request.user
+async def _conversation_messages_post(request, session_id):
+    user = request.user
+    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(user, session_id)
+    profile = await sync_to_async(get_or_create_profile_for_user, thread_sensitive=True)(user)
+    session["_user"] = user
     session["_profile_id"] = str(profile.pk)
     content = (request.POST.get("message") or "").strip()
     if not content:
         return JsonResponse({"error": "Empty message"}, status=400)
     sessionId = session["id"]
     log_event("chat_message_submit", request=request, session_id=sessionId)
-    if not neo4j.acquire_session_generation_lock(sessionId):
+    acquired = await sync_to_async(neo4j.acquire_session_generation_lock)(sessionId)
+    if not acquired:
         log_event("chat_generation_rejected_locked", request=request, session_id=sessionId)
         return JsonResponse(
             {"error": "generation_in_progress", "message": "Previous response is still generating."},
@@ -131,29 +138,38 @@ def _conversation_messages_post(request, session_id):
         )
 
     autoTitle = None
-    if session.get("title", "") in ("New Chat", "") and not neo4j.session_has_messages(sessionId):
+    has_messages = await sync_to_async(neo4j.session_has_messages)(sessionId)
+    if session.get("title", "") in ("New Chat", "") and not has_messages:
         autoTitle = content[:60].strip()
         if autoTitle:
-            neo4j.update_session(sessionId, title=autoTitle)
+            await sync_to_async(neo4j.update_session)(sessionId, title=autoTitle)
 
     if request.headers.get("x-requested-with") != "XMLHttpRequest":
-        try:
-            for _ in stream_user_message_with_agent_reply(session, content):
-                pass
-        finally:
-            neo4j.release_session_generation_lock(sessionId)
+        def _run_sync():
+            try:
+                for _ in stream_user_message_with_agent_reply(session, content):
+                    pass
+            finally:
+                neo4j.release_session_generation_lock(sessionId)
+        await sync_to_async(_run_sync)()
         return redirect(f"/chat/c/{sessionId}/")
 
-    def event_stream():
+    try:
+        queue = await start_background_generation_async(session, content)
+    except TimeoutError:
+        await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
+        return JsonResponse(
+            {"error": "service_busy", "message": "The agent service is at capacity; please retry in a moment."},
+            status=503,
+        )
+
+    async def event_stream():
         titleInjected = not autoTitle
-        try:
-            for payload in stream_user_message_with_agent_reply(session, content):
-                if not titleInjected:
-                    payload = {**payload, "auto_title": autoTitle, "session_id": sessionId}
-                    titleInjected = True
-                yield json.dumps(payload, ensure_ascii=False) + "\n"
-        finally:
-            neo4j.release_session_generation_lock(sessionId)
+        async for payload in stream_queue_payloads_async(queue):
+            if not titleInjected:
+                payload = {**payload, "auto_title": autoTitle, "session_id": sessionId}
+                titleInjected = True
+            yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(
         event_stream(),
@@ -179,14 +195,15 @@ def message_edit_view(request, session_id, message_id):
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
-def message_resend_view(request, session_id, message_id):
-    session = get_session_for_user(request.user, session_id)
-    profile = get_or_create_profile_for_user(request.user)
-    session["_user"] = request.user
+async def message_resend_view(request, session_id, message_id):
+    user = request.user
+    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(user, session_id)
+    profile = await sync_to_async(get_or_create_profile_for_user, thread_sensitive=True)(user)
+    session["_user"] = user
     session["_profile_id"] = str(profile.pk)
     sessionId = session["id"]
 
-    allMessages = neo4j.get_messages_for_session(sessionId)
+    allMessages = await sync_to_async(neo4j.get_messages_for_session)(sessionId)
     targetMsg = None
     for m in allMessages:
         if str(m.get("id", "")) == str(message_id) and m.get("role") == "user":
@@ -195,20 +212,28 @@ def message_resend_view(request, session_id, message_id):
     if targetMsg is None:
         return JsonResponse({"error": "Message not found"}, status=404)
 
-    if not neo4j.acquire_session_generation_lock(sessionId):
+    acquired = await sync_to_async(neo4j.acquire_session_generation_lock)(sessionId)
+    if not acquired:
         return JsonResponse({"error": "generation_in_progress"}, status=409)
 
-    targetCreatedAt = targetMsg.get("createdAt", "")
-    for m in allMessages:
-        if m.get("createdAt", "") > targetCreatedAt:
-            neo4j.delete_message(str(m["id"]))
+    def _prune_later_messages():
+        targetCreatedAt = targetMsg.get("createdAt", "")
+        for m in allMessages:
+            if m.get("createdAt", "") > targetCreatedAt:
+                neo4j.delete_message(str(m["id"]))
+    await sync_to_async(_prune_later_messages)()
 
-    def event_stream():
-        try:
-            for payload in stream_user_message_with_agent_reply(session, targetMsg.get("content", ""), skip_user_message=True):
-                yield json.dumps(payload, ensure_ascii=False) + "\n"
-        finally:
-            neo4j.release_session_generation_lock(sessionId)
+    try:
+        queue = await start_background_generation_async(
+            session, targetMsg.get("content", ""), skip_user_message=True,
+        )
+    except TimeoutError:
+        await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
+        return JsonResponse({"error": "service_busy"}, status=503)
+
+    async def event_stream():
+        async for payload in stream_queue_payloads_async(queue):
+            yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(
         event_stream(),
@@ -221,8 +246,9 @@ def message_resend_view(request, session_id, message_id):
 
 @login_required(login_url="/")
 @require_http_methods(["POST"])
-def conversation_upload_view(request, session_id):
-    session = get_session_for_user(request.user, session_id)
+async def conversation_upload_view(request, session_id):
+    user = request.user
+    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(user, session_id)
     sessionId = session["id"]
 
     uploadedFile = request.FILES.get("file")
@@ -236,7 +262,7 @@ def conversation_upload_view(request, session_id):
         return JsonResponse({"error": errorMsg}, status=400)
 
     try:
-        ocrResult = extract_text_from_file(uploadedFile)
+        ocrResult = await sync_to_async(extract_text_from_file)(uploadedFile)
     except Exception as exc:
         log_event("chat_upload_ocr_crash", session_id=sessionId, error=str(exc))
         return JsonResponse({"error": f"Document processing failed: {exc}"}, status=400)
@@ -261,18 +287,24 @@ def conversation_upload_view(request, session_id):
 
     log_event("chat_document_upload", request=request, session_id=sessionId)
 
-    if not neo4j.acquire_session_generation_lock(sessionId):
+    acquired = await sync_to_async(neo4j.acquire_session_generation_lock)(sessionId)
+    if not acquired:
         return JsonResponse({"error": "generation_in_progress"}, status=409)
 
-    profile = get_or_create_profile_for_user(request.user)
-    neo4j.create_message(sessionId, displayContent, str(profile.pk), role="user")
+    profile = await sync_to_async(get_or_create_profile_for_user, thread_sensitive=True)(user)
+    await sync_to_async(neo4j.create_message)(
+        sessionId, displayContent, str(profile.pk), role="user",
+    )
 
-    def event_stream():
-        try:
-            for payload in stream_user_message_with_agent_reply(session, aiPrompt, skip_user_message=True):
-                yield json.dumps(payload, ensure_ascii=False) + "\n"
-        finally:
-            neo4j.release_session_generation_lock(sessionId)
+    try:
+        queue = await start_background_generation_async(session, aiPrompt, skip_user_message=True)
+    except TimeoutError:
+        await sync_to_async(neo4j.release_session_generation_lock)(sessionId)
+        return JsonResponse({"error": "service_busy"}, status=503)
+
+    async def event_stream():
+        async for payload in stream_queue_payloads_async(queue):
+            yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
 
     response = StreamingHttpResponse(
         event_stream(),
@@ -316,8 +348,43 @@ def conversation_lock_status_view(request, session_id):
 
 @login_required(login_url="/")
 @require_http_methods(["GET"])
-def conversation_wait_for_unlock_view(request, session_id):
-    session = get_session_for_user(request.user, session_id)
+async def conversation_stream_subscribe_view(request, session_id):
+    """Subscribe to an in-flight agent generation.
+
+    When a user navigates back to a conversation whose agent is still thinking,
+    the browser calls this endpoint to reconnect to the live stream. The
+    subscriber queue is seeded with any payloads already produced, then
+    forwards new payloads as the background worker emits them. If no generation
+    is active, the response ends immediately so the client can fall back to
+    polling the lock endpoint.
+    """
+    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(request.user, session_id)
+    sessionId = session["id"]
+    queue = subscribe_to_active_generation_async(sessionId)
+
+    async def event_stream():
+        if queue is None:
+            return
+        async for payload in stream_queue_payloads_async(queue):
+            yield (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
+
+    response = StreamingHttpResponse(
+        event_stream(),
+        content_type="application/x-ndjson; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+@login_required(login_url="/")
+@require_http_methods(["GET"])
+async def conversation_wait_for_unlock_view(request, session_id):
+    """Block until the session generation lock is released, or until the client's
+    timeout budget expires. Under ASGI this coroutine sleeps on
+    ``asyncio.wait_for(queue.get, ...)`` — the worker thread is released for
+    other requests while this coroutine is parked on the event loop."""
+    session = await sync_to_async(get_session_for_user, thread_sensitive=True)(request.user, session_id)
     sessionId = session["id"]
     try:
         timeoutSeconds = int(request.GET.get("timeout", "55"))
@@ -325,26 +392,46 @@ def conversation_wait_for_unlock_view(request, session_id):
         timeoutSeconds = 55
     timeoutSeconds = min(max(timeoutSeconds, 5), 120)
 
+    def _ok_released():
+        return JsonResponse({
+            "session_id": sessionId,
+            "generation_in_progress": False,
+            "timed_out": False,
+        })
+
+    def _ok_timed_out():
+        return JsonResponse({
+            "session_id": sessionId,
+            "generation_in_progress": True,
+            "timed_out": True,
+        })
+
+    is_fresh = await sync_to_async(neo4j.ensure_generation_lock_fresh)(sessionId)
+    if not is_fresh:
+        return _ok_released()
+
+    queue = subscribe_to_active_generation_async(sessionId)
     deadline = time.monotonic() + timeoutSeconds
-    while True:
-        isGenerating = neo4j.ensure_generation_lock_fresh(sessionId)
-        if not isGenerating:
-            return JsonResponse(
-                {
-                    "session_id": sessionId,
-                    "generation_in_progress": False,
-                    "timed_out": False,
-                }
-            )
-        if time.monotonic() >= deadline:
-            return JsonResponse(
-                {
-                    "session_id": sessionId,
-                    "generation_in_progress": True,
-                    "timed_out": True,
-                }
-            )
-        time.sleep(0.5)
+
+    if queue is not None:
+        while time.monotonic() < deadline:
+            remaining = max(0.5, min(5.0, deadline - time.monotonic()))
+            try:
+                payload = await asyncio.wait_for(queue.get(), timeout=remaining)
+            except asyncio.TimeoutError:
+                continue
+            if payload is None:
+                return _ok_released()
+        return _ok_timed_out()
+
+    # Fallback: no local broadcast (orphan lock from previous process or
+    # different worker). Poll the DB infrequently without blocking the worker.
+    while time.monotonic() < deadline:
+        await asyncio.sleep(2)
+        still_fresh = await sync_to_async(neo4j.ensure_generation_lock_fresh)(sessionId)
+        if not still_fresh:
+            return _ok_released()
+    return _ok_timed_out()
 
 
 @login_required(login_url="/")

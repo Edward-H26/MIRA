@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const defaultAgentName = form.dataset.initialAgentName || "Assistant";
   const initialGenerationInProgress = form.dataset.generationInProgress === "1";
   const lockWaitUrl = form.dataset.lockWaitUrl || "";
+  const streamSubscribeUrl = form.dataset.streamSubscribeUrl || "";
   const streamDebug =
     new URLSearchParams(window.location.search).get("stream_debug") === "1" ||
     window.localStorage.getItem("chat_stream_debug") === "1";
@@ -76,7 +77,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       pre.dataset.copyReady = "1";
-      pre.classList.add("chat-code-block");
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "chat-code-block";
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
 
       const copyButton = document.createElement("button");
       copyButton.type = "button";
@@ -97,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }, 1200);
         }
       });
-      pre.appendChild(copyButton);
+      wrapper.appendChild(copyButton);
     });
   };
 
@@ -120,41 +125,61 @@ document.addEventListener("DOMContentLoaded", () => {
     return ((node && node.textContent) || "").trim().length > 0;
   };
 
+  const currentUserName = form.dataset.currentUserName || "You";
+  const currentUserInitial = (form.dataset.currentUserInitial || currentUserName.charAt(0) || "Y").toUpperCase();
+  const currentUserAvatarUrl = form.dataset.currentUserAvatarUrl || "";
+
   const appendMessage = (role, content = "", options = {}) => {
     removeEmptyState();
 
     const container = document.getElementById("message-list") || messages;
 
     const row = document.createElement("div");
-    row.className = `flex gap-4 chat-msg-row ${role === "user" ? "flex-row-reverse" : ""}`;
+    row.className = `flex gap-3 chat-msg-row chat-message-appear ${role === "user" ? "flex-row-reverse" : ""}`;
 
-    const senderName = options.senderName || (role === "user" ? "You" : "Assistant");
-    const senderInitial = role === "user" ? "U" : senderName.charAt(0).toUpperCase();
+    const senderName = options.senderName || (role === "user" ? currentUserName : "Assistant");
+    const senderInitial = role === "user"
+      ? currentUserInitial
+      : (senderName.charAt(0) || "A").toUpperCase();
 
-    const avatar = document.createElement("div");
-    avatar.className = "flex-shrink-0 w-10 h-10 rounded-[12px] flex items-center justify-center text-white font-semibold text-[14px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-md";
-    avatar.textContent = senderInitial;
+    let avatar;
+    if (role === "user" && currentUserAvatarUrl) {
+      avatar = document.createElement("img");
+      avatar.src = currentUserAvatarUrl;
+      avatar.alt = "";
+      avatar.className = "flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm";
+    } else {
+      avatar = document.createElement("div");
+      avatar.className = role === "user"
+        ? "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm"
+        : "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm";
+      avatar.textContent = senderInitial;
+    }
 
     const contentWrapper = document.createElement("div");
-    contentWrapper.className = `flex-1 flex flex-col ${role === "user" ? "items-end" : ""}`;
+    contentWrapper.className = `flex-1 flex flex-col max-w-full sm:max-w-[85%] md:max-w-[75%] ${role === "user" ? "items-end" : ""}`;
 
     const meta = document.createElement("div");
-    meta.className = "flex items-center gap-2 mb-2";
+    meta.className = "flex items-center gap-2 mb-1";
     const sender = document.createElement("div");
-    sender.className = "font-inter font-semibold text-slate-700/80 text-[14px] leading-5";
+    sender.className = "font-inter font-semibold text-mm-text text-[13px] leading-5";
     sender.textContent = senderName;
     sender.dataset.senderLabel = "true";
     const time = document.createElement("div");
-    time.className = "font-inter text-slate-500/60 text-[12px] leading-4";
+    time.className = "font-inter text-mm-light text-[11px] leading-4";
     time.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     meta.appendChild(sender);
     meta.appendChild(time);
 
     const bubble = document.createElement("div");
-    bubble.className = `${role === "user" ? "bg-gradient-to-br from-[#6C86C0]/90 to-[#6C86C0]/90 text-white shadow-[0_4px_20px_rgba(108, 134, 192,0.3)]" : "bg-white/60 backdrop-blur-md shadow-sm text-slate-700/90"} rounded-[16px] px-4 py-3 max-w-[600px] border border-white/30`;
+    bubble.className = role === "user"
+      ? "bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] text-white shadow-[0_2px_12px_rgba(108,134,192,0.2)] rounded-[18px] rounded-br-[4px] px-4 py-3 border border-white/20"
+      : "bg-white shadow-sm text-slate-700 rounded-[18px] rounded-bl-[4px] px-4 py-3 border border-white/20";
 
     const contentNode = document.createElement(role === "assistant" ? "div" : "span");
-    contentNode.className = role === "assistant" ? "message-content message-content-markdown font-inter text-[14px] leading-5" : "message-content font-inter text-[14px] leading-5 whitespace-pre-wrap";
+    contentNode.className = role === "assistant"
+      ? "message-content message-content-markdown font-inter text-[14px] leading-6"
+      : "message-content font-inter text-[14px] leading-6 whitespace-pre-wrap";
     contentNode.textContent = content;
     bubble.appendChild(contentNode);
 
@@ -505,10 +530,63 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       if (payload.timed_out) {
-        waitForUnlock();
+        window.setTimeout(waitForUnlock, 2000);
       }
     } catch (_) {
       window.setTimeout(waitForUnlock, 3000);
+    }
+  };
+
+  const reconnectToLiveStream = async () => {
+    if (!streamSubscribeUrl) {
+      waitForUnlock();
+      return;
+    }
+    setStreamingState(true);
+    const assistantUi = appendMessage("assistant", "", { pending: true });
+    let assistantText = "";
+    let assistantHtml = "";
+    let receivedAny = false;
+    try {
+      const response = await fetch(streamSubscribeUrl, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(`subscribe failed with status ${response.status}`);
+      }
+      await readStream(response, (payload) => {
+        if (payload.type === "heartbeat") {
+          return;
+        }
+        receivedAny = true;
+        if (payload.type === "delta") {
+          assistantText += payload.content || "";
+          assistantHtml = payload.html || assistantHtml;
+          updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+          return;
+        }
+        if (payload.type === "done") {
+          assistantText = payload.content || assistantText;
+          assistantHtml = payload.html || assistantHtml;
+          updateAssistantBubble(assistantUi, assistantText, assistantHtml);
+        }
+        if (payload.type === "error") {
+          updateAssistantBubble(
+            assistantUi,
+            payload.error || "Sorry, I couldn't finish the response.",
+          );
+        }
+      });
+    } catch (error) {
+      debugLog("reconnect-error", String(error));
+    } finally {
+      setStreamingState(false);
+      if (!receivedAny) {
+        waitForUnlock();
+      } else {
+        window.location.reload();
+      }
     }
   };
 
@@ -550,10 +628,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   scrollToBottom();
   decorateCodeBlocks(messages);
-  setStreamingState(initialGenerationInProgress);
   if (initialGenerationInProgress) {
-    appendMessage("assistant", "", { pending: true });
-    waitForUnlock();
+    reconnectToLiveStream();
+  } else {
+    setStreamingState(false);
   }
 
   const pendingPrompt = form.dataset.pendingPrompt || "";

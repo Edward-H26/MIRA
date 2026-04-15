@@ -4,6 +4,34 @@
     box-sizing: border-box;
 }
 
+/* Tintable logomark — uses the white-on-transparent PNG as an alpha mask so
+   any caller can set --logomark-color (or rely on currentColor) without
+   regenerating the image. Fall back to the static logomark.png when masks
+   aren't supported. */
+.logomark-tinted {
+    display: inline-block;
+    background-color: var(--logomark-color, currentColor);
+    -webkit-mask-image: url("/static/images/logomark-mask.png");
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-image: url("/static/images/logomark-mask.png");
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+@supports not ((mask-image: url("")) or (-webkit-mask-image: url(""))) {
+    .logomark-tinted {
+        background-image: url("/static/images/logomark.png");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        background-color: transparent;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+}
+
 html,
 body {
     margin: 0;

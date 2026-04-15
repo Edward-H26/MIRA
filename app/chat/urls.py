@@ -9,6 +9,7 @@ page_urlpatterns = [
     path("c/<str:session_id>/", views.conversation_messages_view, name="conversation_detail"),
     path("c/<str:session_id>/lock-status/", views.conversation_lock_status_view, name="conversation_lock_status"),
     path("c/<str:session_id>/lock-wait/", views.conversation_wait_for_unlock_view, name="conversation_lock_wait"),
+    path("c/<str:session_id>/stream/", views.conversation_stream_subscribe_view, name="conversation_stream_subscribe"),
     path("c/<str:session_id>/rename/", views.session_rename_view, name="session_rename"),
     path("c/<str:session_id>/delete/", views.session_delete_view, name="session_delete"),
     path("c/<str:session_id>/typing/", views.typing_view, name="typing"),

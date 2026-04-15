@@ -41,6 +41,20 @@ _DANGEROUS_URL_SCHEME = re.compile(
     re.IGNORECASE,
 )
 
+_DANGEROUS_TAGS = re.compile(
+    r"<(/?)(\s*)("
+    r"script|style|iframe|object|embed|link|meta|base|form|applet|"
+    r"svg|math|foreignObject|annotation-xml|image|audio|video|source|track|"
+    r"input|button|textarea|select|option|frame|frameset|noframes|marquee"
+    r")\b([^>]*)>",
+    re.IGNORECASE,
+)
+
+_DANGEROUS_EVENT_HANDLERS = re.compile(
+    r"\son[a-z]+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+)",
+    re.IGNORECASE,
+)
+
 
 def compact_mention_handle(name):
     if not name:
@@ -112,6 +126,17 @@ def _strip_dangerous_urls(html):
     return _DANGEROUS_URL_SCHEME.sub(r'\1=\2#\2', html)
 
 
+def _escape_dangerous_tags(html):
+    html = _DANGEROUS_TAGS.sub(
+        lambda m: f"&lt;{m.group(1)}{m.group(2)}{m.group(3)}{m.group(4)}&gt;",
+        html,
+    )
+    # Strip any ``on*=`` event-handler attributes that slipped through on
+    # otherwise-safe tags (``<p onclick="...">`` → ``<p>``).
+    html = _DANGEROUS_EVENT_HANDLERS.sub("", html)
+    return html
+
+
 def render_assistant_markdown_html(text):
     raw = text or ""
     if markdown_lib is None:
@@ -120,9 +145,8 @@ def render_assistant_markdown_html(text):
 
     normalized = normalize_mentions(raw)
     protected, placeholders = _protect_latex(normalized)
-    escaped_text = escape(protected)
     rendered = markdown_lib.markdown(
-        escaped_text,
+        protected,
         extensions=MARKDOWN_EXTENSIONS,
         output_format="html5",
     )
@@ -130,4 +154,5 @@ def render_assistant_markdown_html(text):
     rendered = _unescape_dollars(rendered)
     rendered = _highlight_mentions(rendered)
     rendered = _strip_dangerous_urls(rendered)
+    rendered = _escape_dangerous_tags(rendered)
     return mark_safe(rendered)

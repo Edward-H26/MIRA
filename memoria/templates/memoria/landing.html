@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{% static 'users/auth-modal.css' %}?v={% now 'U' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
     <style>
       :root {
         --primary-blue: #6C86C0;
@@ -31,11 +33,11 @@
 
       <div class="relative z-10">
         <nav class="landing-nav relative z-20 flex items-center justify-between">
-          <div class="h-10 w-[43px] shrink-0">
+          <div class="shrink-0" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
             <img
-              src="{% static 'images/logo.svg' %}"
+              src="{% static 'images/logomark.png' %}"
               alt="Memoria logo"
-              class="block size-full"
+              style="max-width: 100%; max-height: 100%; display: block; object-fit: contain;"
             >
           </div>
 
@@ -617,7 +619,7 @@
           <div class="flex justify-center items-center">
             <div id="orbit-stage" class="orbit-stage">
               <div class="orbit-center">
-                <img src="{% static 'images/logo.svg' %}" alt="Memoria">
+                <img src="{% static 'images/logomark.png' %}" alt="Memoria">
               </div>
               <div class="orbit-ring">
                 <div class="orbit-tile" data-category="messaging" data-brand="slack" style="--angle: 0deg; --radius: 200px;">

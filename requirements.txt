@@ -53,6 +53,7 @@ tornado==6.5.2
 traitlets==5.14.3
 tzdata==2025.3
 urllib3==2.6.3
+uvicorn[standard]>=0.30
 wcwidth==0.2.14
 wheel==0.45.1
 whitenoise==6.8.2

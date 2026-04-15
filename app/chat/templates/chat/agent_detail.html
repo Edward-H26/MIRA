@@ -77,13 +77,13 @@
                                 </svg>
                                 Agent Name
                             </label>
-                            <input type="text" name="name" value="{{ agent.name }}" readonly class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-text text-[15px] bg-slate-50 cursor-default outline-none">
+                            <input type="text" name="name" value="{{ agent.name }}" readonly class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-muted text-[15px] bg-slate-200 cursor-default outline-none">
                         </div>
                         <div class="flex flex-col gap-1.5">
                             <label class="flex items-center gap-1.5 uppercase text-[12px] font-semibold text-mm-muted tracking-[0.5px] font-inter">
                                 Role
                             </label>
-                            <input type="text" value="AI Agent" disabled class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-muted text-[15px] bg-mm-card">
+                            <input type="text" value="AI Agent" disabled class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-muted text-[15px] bg-slate-200">
                         </div>
                     </div>
 
@@ -97,7 +97,7 @@
                             </svg>
                             Description
                         </label>
-                        <textarea name="description" rows="3" class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-text text-[15px] focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all resize-y min-h-[100px]">{{ agent.description }}</textarea>
+                        <textarea name="description" rows="3" class="border border-mm-border rounded-[8px] px-4 py-3 font-inter text-mm-text text-[15px] bg-white focus:ring-2 focus:ring-mm-primary focus:border-transparent outline-none transition-all resize-y min-h-[100px]">{{ agent.description }}</textarea>
                     </div>
 
                     <div class="flex items-center gap-3 pt-2">

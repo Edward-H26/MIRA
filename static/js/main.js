@@ -559,6 +559,8 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     window.toggleConvSidebar = toggleConvSidebar
+    window.openConvSidebar = openConvSidebar
+    window.closeConvSidebar = closeConvSidebar
     window.renameConversation = renameConversation
     window.deleteConversation = deleteConversation
     window.createNewChat = createNewChat
