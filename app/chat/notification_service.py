@@ -68,20 +68,39 @@ def get_recent_notifications(user, limit: int = 10) -> list[dict]:
     ]
 
 
+def _invalidate_notification_cache(uid: str) -> None:
+    """The user_notifications context processor caches counts with a 10s TTL.
+    Without invalidation the unread badge keeps showing the stale count for
+    up to 10 seconds after the user opens or dismisses notifications."""
+    try:
+        from django.core.cache import cache
+        cache.delete(f"chat:ctx:notifications:{uid}")
+    except Exception:
+        pass
+
+
 def mark_notification_read(user, notification_id: str) -> None:
     neo4j.mark_notification_read(notification_id)
+    profile = _get_profile(user)
+    _invalidate_notification_cache(str(profile.pk))
 
 
 def mark_all_read(user) -> int:
     profile = _get_profile(user)
-    return neo4j.mark_all_notifications_read(str(profile.pk))
+    uid = str(profile.pk)
+    result = neo4j.mark_all_notifications_read(uid)
+    _invalidate_notification_cache(uid)
+    return result
 
 
 def mark_read_by_related_url(user, related_url: str) -> int:
     if not related_url:
         return 0
     profile = _get_profile(user)
-    return neo4j.mark_notifications_read_by_related_url(str(profile.pk), related_url)
+    uid = str(profile.pk)
+    result = neo4j.mark_notifications_read_by_related_url(uid, related_url)
+    _invalidate_notification_cache(uid)
+    return result
 
 
 def dismiss_notification(user, notification_id: str) -> None:

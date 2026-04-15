@@ -48,11 +48,36 @@ def user_sessions(request):
             request,
             f"chat:ctx:sessions:{uid}",
             _SESSIONS_TTL,
-            lambda: neo4j.get_sessions_for_user(uid),
+            lambda: _merged_sessions_for_user(uid),
         )
         return {"sessions": sessions}
     except Exception:
         return {"sessions": []}
+
+
+def _merged_sessions_for_user(uid: str) -> list:
+    """Union of sessions the user CREATED and sessions they only MEMBER_OF.
+    Without this merge the sidebar hides any group the user joined but did
+    not create, so the sidebar "Groups" section appears empty for invitees."""
+    owned = neo4j.get_sessions_for_user(uid) or []
+    memberOnly = []
+    try:
+        memberSessions = neo4j.get_sessions_for_member(uid) or []
+        ownedIds = {str(s.get("id", "")) for s in owned}
+        for s in memberSessions:
+            sid = str(s.get("id", ""))
+            if not sid or sid in ownedIds:
+                continue
+            memberOnly.append(s)
+    except Exception:
+        pass
+
+    combined = list(owned) + memberOnly
+    combined.sort(
+        key=lambda s: (s.get("updatedAt") or s.get("createdAt") or ""),
+        reverse=True,
+    )
+    return combined
 
 
 def user_notifications(request):

@@ -55,8 +55,12 @@ def get_or_create_user_agent(user) -> _AttrDict:
     agents = neo4j.get_agents_for_user(userId)
     if agents:
         return _AttrDict(_agent_to_dict(agents[0]))
-    displayName = getattr(profile, "display_name", "") or user.get_full_name() or user.username
-    agentName = f"{displayName}'s Agent"
+    # Auto-generated agent name uses the Django username with spaces
+    # stripped. Derived from username (stable identifier) rather than
+    # display_name (which can change or hold stale social-login values).
+    rawUsername = (getattr(user, "username", "") or "User").strip()
+    compactUsername = "".join(rawUsername.split()) or "User"
+    agentName = f"{compactUsername}'s Agent"
     created = neo4j.create_agent(
         user_id=userId,
         name=agentName,

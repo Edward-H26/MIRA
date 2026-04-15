@@ -146,17 +146,28 @@ document.addEventListener("DOMContentLoaded", () => {
       ? currentUserInitial
       : (senderName.charAt(0) || "A").toUpperCase();
 
+    const fallbackAvatarClass = role === "user"
+      ? "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm"
+      : "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm";
+
     let avatar;
     if (role === "user" && currentUserAvatarUrl) {
       avatar = document.createElement("img");
       avatar.src = currentUserAvatarUrl;
       avatar.alt = "";
       avatar.className = "flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm";
+      // If the avatar URL 404s (common with stale Google-hosted URLs or when
+      // the user's profile_img path is served from a different origin), swap
+      // in the initial-based fallback so we never render a broken-image icon.
+      avatar.addEventListener("error", () => {
+        const fallback = document.createElement("div");
+        fallback.className = fallbackAvatarClass;
+        fallback.textContent = senderInitial;
+        avatar.replaceWith(fallback);
+      });
     } else {
       avatar = document.createElement("div");
-      avatar.className = role === "user"
-        ? "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm"
-        : "flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-slate-600 to-slate-700 shadow-sm";
+      avatar.className = fallbackAvatarClass;
       avatar.textContent = senderInitial;
     }
 

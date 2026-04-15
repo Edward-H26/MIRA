@@ -174,7 +174,7 @@
               <!-- Avatar -->
               {% if message.role == 2 or message.role == "user" %}
                 {% if request.user.profile.profile_img %}
-                <img src="{{ request.user.profile.profile_img.url }}" alt="" class="flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm">
+                <img src="{{ request.user.profile.profile_img.url }}" alt="" class="flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm" onerror="this.outerHTML='<div class=&quot;flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm&quot;>{{ request.user.profile.display_name|default:request.user.username|slice:":1"|upper|escapejs }}</div>'">
                 {% else %}
                 <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm">
                   {{ request.user.profile.display_name|default:request.user.username|slice:":1"|upper }}

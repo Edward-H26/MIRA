@@ -94,6 +94,16 @@ def _conversation_messages_get(request, session_id):
         if session is None:
             raise Http404
         session["messages"] = neo4j.get_messages_for_session(str(session_id))
+    # Populate live member info + count. Without this the info panel's
+    # "Members ()" template tag renders empty and the auto-refreshed count
+    # in the header pill shows nothing.
+    try:
+        if session.get("accessKey"):
+            membersList = neo4j.get_members_for_session(str(session["id"]))
+            session["members"] = membersList
+            session["memberCount"] = len(membersList)
+    except Exception:
+        pass
     try:
         from .notification_service import mark_read_by_related_url
         mark_read_by_related_url(request.user, f"/chat/c/{session['id']}/")
@@ -654,11 +664,6 @@ def agent_detail_view(request, agent_id):
 
     if request.method == "POST":
         fields = {}
-        name = request.POST.get("name")
-        if name is not None:
-            trimmedName = name.strip()[:100]
-            if trimmedName:
-                fields["name"] = trimmedName
         description = request.POST.get("description")
         if description is not None:
             fields["description"] = description.strip()
