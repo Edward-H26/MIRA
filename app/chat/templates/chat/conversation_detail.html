@@ -91,16 +91,12 @@
             <div class="max-h-56 overflow-y-auto">
               {% for member in session.members %}
               <div class="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                {% if member.user.profile_img %}
-                <img src="{{ member.user.profile_img.url }}" alt="" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
-                {% else %}
                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[12px] flex-shrink-0">
-                  {{ member.user.display_name|default:member.user.user.username|slice:":1"|upper }}
+                  {{ member.displayName|default:member.username|default:"?"|slice:":1"|upper }}
                 </div>
-                {% endif %}
                 <div class="flex-1 min-w-0">
-                  <div class="font-inter font-semibold text-mm-text text-[13px] truncate">{{ member.user.display_name|default:member.user.user.username }}</div>
-                  <div class="font-inter text-mm-muted text-[11px]">{{ member.role }}</div>
+                  <div class="font-inter font-semibold text-mm-text text-[13px] truncate">{{ member.displayName|default:member.username|default:"Unknown user" }}</div>
+                  <div class="font-inter text-mm-muted text-[11px]">{{ member.role|default:"member" }}</div>
                 </div>
               </div>
               {% endfor %}

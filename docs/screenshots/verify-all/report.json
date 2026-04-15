@@ -1,0 +1,193 @@
+{
+  "baseUrl": "http://127.0.0.1:8765",
+  "startedAt": "2026-04-15T17:06:26.480Z",
+  "features": [
+    {
+      "feature": "landing",
+      "assertion": "HTTP 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "feature": "landing",
+      "assertion": "nav logo rendered with object-fit: contain",
+      "ok": true,
+      "detail": "{\"present\":true,\"width\":\"36px\",\"height\":\"36px\",\"objectFit\":\"contain\"}"
+    },
+    {
+      "feature": "landing",
+      "assertion": "Sign in button present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "feature": "login-modal",
+      "assertion": "title + email + password + Google present",
+      "ok": true,
+      "detail": "{\"titleVisible\":true,\"emailPresent\":true,\"passwordPresent\":true,\"googlePresent\":true}"
+    },
+    {
+      "feature": "login-modal",
+      "assertion": "redirects to /home/ after submit",
+      "ok": true,
+      "detail": "url=http://127.0.0.1:8765/home/"
+    },
+    {
+      "feature": "home-tabs",
+      "assertion": "create tab starts active, join tab muted",
+      "ok": true,
+      "detail": "{\"createActive\":true,\"joinMuted\":true}"
+    },
+    {
+      "feature": "home-tabs",
+      "assertion": "click Join -> Create becomes muted, Join active",
+      "ok": true,
+      "detail": "{\"createMuted\":true,\"joinActive\":true}"
+    },
+    {
+      "feature": "groups-header",
+      "assertion": "+ button matches JOIN button height",
+      "ok": true,
+      "detail": "{\"plus\":{\"h\":\"24px\",\"bg\":\"rgba(0, 0, 0, 0)\",\"border\":\"0px solid\"},\"join\":{\"h\":\"24px\",\"bg\":\"rgba(0, 0, 0, 0)\",\"border\":\"0px solid\"}}"
+    },
+    {
+      "feature": "groups-header",
+      "assertion": "JOIN button is ghost style (no filled background)",
+      "ok": true,
+      "detail": "bg=rgba(0, 0, 0, 0)"
+    },
+    {
+      "feature": "new-chat",
+      "assertion": "POST /chat/new/ returns 200 with redirect to /chat/c/<id>/",
+      "ok": true,
+      "detail": "{\"status\":200,\"url\":\"http://127.0.0.1:8765/chat/c/f1a3c146-3a9a-4456-a2c3-49f6e8fa3ba6/\"}"
+    },
+    {
+      "feature": "group-create",
+      "assertion": "POST /chat/groups/create/ returns 200",
+      "ok": true,
+      "detail": "{\"status\":200,\"url\":\"http://127.0.0.1:8765/chat/c/ba80f8bd-507a-4cd7-a39d-db524643ade1/\"}"
+    },
+    {
+      "feature": "sidebar",
+      "assertion": "newly created group appears in sidebar",
+      "ok": true,
+      "detail": "total_entries=23"
+    },
+    {
+      "feature": "group-chat",
+      "assertion": "GET /chat/c/<id>/ returns 200 (not 500 from member.user)",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "feature": "group-chat",
+      "assertion": "header pill shows member count like \"1 member\"",
+      "ok": true,
+      "detail": "\"1 member\""
+    },
+    {
+      "feature": "group-chat",
+      "assertion": "invite code pill shows hex access key",
+      "ok": true,
+      "detail": "code=192df1d6b3ba"
+    },
+    {
+      "feature": "info-panel",
+      "assertion": "panel visible with Members (N) count",
+      "ok": true,
+      "detail": "count=1"
+    },
+    {
+      "feature": "info-panel",
+      "assertion": "panel shows invite code",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "feature": "info-panel",
+      "assertion": "member row renders name (no member.user 500)",
+      "ok": true,
+      "detail": "text preview=VerifyGroup_mo0aysy1\nGroup chat\nINVITE CODE\n192df1d6b3ba\nCopy\nShare this code so"
+    },
+    {
+      "feature": "group-settings",
+      "assertion": "settings page returns 200",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "feature": "group-settings",
+      "assertion": "form pre-filled with title and member count header",
+      "ok": true,
+      "detail": "{\"titleInput\":\"VerifyGroup_mo0aysy1\",\"memberHeader\":\"Members (1)\"}"
+    },
+    {
+      "feature": "agent-detail",
+      "assertion": "/chat/agents/my/ returns 200",
+      "ok": true,
+      "detail": "status=200, final=http://127.0.0.1:8765/chat/agents/42925498-1e70-486a-a975-63b847be9408/"
+    },
+    {
+      "feature": "agent-detail",
+      "assertion": "name field is readonly",
+      "ok": true,
+      "detail": "{\"value\":\"Bob\",\"readonly\":true,\"hasSpacesInName\":false}"
+    },
+    {
+      "feature": "agent-detail",
+      "assertion": "agent name has no spaces (derived from username)",
+      "ok": true,
+      "detail": "value=Bob"
+    },
+    {
+      "feature": "notification-typography",
+      "assertion": "View conversation (a) and Mark as read (button) have matching font-family/size/weight",
+      "ok": true,
+      "detail": "{\"a\":{\"ff\":\"Inter, sans-serif\",\"fs\":\"12px\",\"fw\":\"500\"},\"b\":{\"ff\":\"Inter, sans-serif\",\"fs\":\"12px\",\"fw\":\"500\"}}"
+    },
+    {
+      "feature": "allauth-fallback-login",
+      "assertion": "title uses Memoria branding",
+      "ok": true,
+      "detail": "Memoria"
+    },
+    {
+      "feature": "allauth-fallback-login",
+      "assertion": "body uses Inter font",
+      "ok": true,
+      "detail": "Inter, sans-serif"
+    },
+    {
+      "feature": "allauth-fallback-login",
+      "assertion": "login input uses Inter font",
+      "ok": false
+    },
+    {
+      "feature": "allauth-fallback-login",
+      "assertion": "input border is mm-primary tinted (not browser-default inset grey)",
+      "ok": true
+    },
+    {
+      "feature": "mobile",
+      "assertion": "landing at 390px returns 200",
+      "ok": true,
+      "detail": "status=200"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+  ],
+  "failedRequests": [],
+  "http500s": [],
+  "finishedAt": "2026-04-15T17:06:59.491Z"
+}

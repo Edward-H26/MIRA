@@ -59,13 +59,13 @@ canvas {
     max-width: 100%;
 }
 
-button,
-input,
-select,
-textarea {
-    font: inherit;
-}
-
+/* Tailwind v4's preflight already emits `button, input, select, textarea { font: inherit }`
+   inside `@layer base`. Duplicating that rule outside any layer makes it win
+   against every utility in `@layer utilities`, so Tailwind font-size /
+   font-weight utilities silently stop working on buttons and inputs (root
+   cause of the "View conversation" vs "Mark as read" typography mismatch).
+   Keep only the Inter font-family override for form controls, narrowly
+   scoped to `font-family` so other typography utilities keep authority. */
 form,
 form input,
 form select,
