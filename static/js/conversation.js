@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const row = document.createElement("div");
     row.className = `flex gap-3 chat-msg-row chat-message-appear ${role === "user" ? "flex-row-reverse" : ""}`;
 
-    const senderName = options.senderName || (role === "user" ? currentUserName : "Assistant");
+    const senderName = options.senderName || (role === "user" ? currentUserName : (defaultAgentName || "Assistant"));
     const senderInitial = role === "user"
       ? currentUserInitial
       : (senderName.charAt(0) || "A").toUpperCase();
@@ -1368,7 +1368,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const msgText = contentEl ? contentEl.textContent.trim() : "";
       const assistantUi = appendMessage("assistant", "", { pending: true });
       setStreamingState(true);
-      showTypingIndicator("Assistant", true);
+      showTypingIndicator(defaultAgentName || "Assistant", true);
 
       let assistantText = "";
       let assistantHtml = "";

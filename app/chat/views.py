@@ -118,6 +118,19 @@ def _conversation_messages_get(request, session_id):
         request.session.pop(PENDING_PROMPT_SESSION_KEY, None)
     if pendingPrompt:
         request.session.modified = True
+
+    sessionDefaultAgentName = ""
+    try:
+        sessionAgents = neo4j.get_agents_for_session(str(session["id"]))
+        if sessionAgents:
+            sessionDefaultAgentName = str(sessionAgents[0].get("name", "") or "")
+        if not sessionDefaultAgentName:
+            from .agent_service import get_or_create_user_agent
+            ownAgent = get_or_create_user_agent(request.user)
+            sessionDefaultAgentName = str(ownAgent.get("name", "") or "") if ownAgent else ""
+    except Exception:
+        sessionDefaultAgentName = ""
+
     return render(
         request,
         "chat/conversation_detail.html",
@@ -125,6 +138,7 @@ def _conversation_messages_get(request, session_id):
             "session": session,
             "pending_prompt": pendingPrompt,
             "generation_in_progress": isGenerating,
+            "session_default_agent_name": sessionDefaultAgentName,
         },
     )
 
@@ -1278,20 +1292,57 @@ def agent_start_chat_view(request, template_id):
             existing = s
             break
 
+    materializedAgentId = ""
+    try:
+        existingUserAgents = neo4j.get_agents_for_user(userId)
+        matched = next((a for a in existingUserAgents if a.get("name") == template["name"]), None)
+        if matched:
+            materializedAgentId = str(matched.get("id", ""))
+        else:
+            from .write_service import create_agent_with_outbox
+            created = create_agent_with_outbox(
+                user_id=userId,
+                name=template["name"],
+                description=template.get("description", ""),
+                system_prompt=template.get("systemPrompt", ""),
+                temperature=float(template.get("temperature", 0.7)),
+                max_tokens=int(template.get("maxTokens", 1024)),
+                configuration={"source": "marketplace", "template_id": template.get("id", "")},
+            )
+            materializedAgentId = str(created.get("id", ""))
+    except Exception:
+        materializedAgentId = ""
+
     if existing:
+        if materializedAgentId:
+            try:
+                alreadyLinked = neo4j.get_agents_for_session(str(existing["id"]))
+                if not any(str(a.get("id", "")) == materializedAgentId for a in alreadyLinked):
+                    neo4j.add_agent_to_session(str(existing["id"]), materializedAgentId)
+            except Exception:
+                pass
         return redirect("chat:conversation_detail", session_id=existing["id"])
 
     from .write_service import create_session_with_outbox, create_message_with_outbox
     session = create_session_with_outbox(userId, agentTitle)
+    sessionId = session["id"]
+
+    if materializedAgentId:
+        try:
+            neo4j.add_agent_to_session(sessionId, materializedAgentId)
+        except Exception:
+            pass
+
     create_message_with_outbox(
-        session["id"],
+        sessionId,
         f"Hi! I'm {template['name']}. {template['description']} How can I help you?",
         userId,
         role="assistant",
+        sender_agent_id=materializedAgentId or None,
         sender_agent_name=template["name"],
     )
 
-    return redirect("chat:conversation_detail", session_id=session["id"])
+    return redirect("chat:conversation_detail", session_id=sessionId)
 
 
 @login_required(login_url="/")

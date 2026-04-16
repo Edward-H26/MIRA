@@ -498,6 +498,20 @@ def get_session(user_id: str, session_id: str) -> dict | None:
     return None
 
 
+def agent_name_exists(name: str) -> bool:
+    """Returns True if any :Agent node in the database has the exact given
+    name. Used by the default-agent factory to pick a unique name by
+    appending an incrementing suffix when the preferred name is already
+    taken by another user."""
+    if not name:
+        return False
+    record = _run_single(
+        "MATCH (a:Agent {name: $name}) RETURN a LIMIT 1",
+        {"name": str(name)},
+    )
+    return bool(record and record.get("a"))
+
+
 def user_can_access_session(user_id: str, session_id: str) -> bool:
     """Single-query ACL check used by real-time channel authorization. Returns
     True iff the user has a :CREATED or :MEMBER_OF edge to the session. This

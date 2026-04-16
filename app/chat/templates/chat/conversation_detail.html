@@ -260,7 +260,7 @@
           data-current-user-name="{{ request.user.profile.display_name|default:request.user.username|default:'You' }}"
           data-current-user-initial="{{ request.user.profile.display_name|default:request.user.username|default:'Y'|slice:':1'|upper }}"
           data-current-user-avatar-url="{% if request.user.profile.profile_img %}{{ request.user.profile.profile_img.url }}{% endif %}"
-          data-initial-agent-name="{{ userAgents.0.name|default:'Assistant' }}"
+          data-initial-agent-name="{{ session_default_agent_name|default:userAgents.0.name|default:'Assistant' }}"
         >
           {% csrf_token %}
           <div class="bg-white/50 backdrop-blur-md rounded-[16px] border border-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">

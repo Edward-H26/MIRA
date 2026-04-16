@@ -785,6 +785,14 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
 
     if responding_agent is None:
         try:
+            session_agents = neo4j.get_agents_for_session(sessionId)
+            if session_agents:
+                responding_agent = dict(session_agents[0])
+        except Exception:
+            pass
+
+    if responding_agent is None:
+        try:
             from .agent_service import get_or_create_user_agent
             responding_agent = dict(get_or_create_user_agent(sessionUser))
         except Exception:

@@ -47,18 +47,54 @@ def _agent_to_dict(agent: dict, includeOwner: bool = False) -> dict:
     return result
 
 
+def _derive_agent_first_name(user) -> str:
+    """Extract the user-facing first name that seeds the default agent name.
+
+    Precedence: Django User.first_name -> UserProfile.display_name first token
+    -> compacted username -> literal "User". Whitespace and apostrophes are
+    stripped so the final agent name is a clean "{firstName}'s Agent"."""
+    raw = (getattr(user, "first_name", "") or "").strip()
+    if not raw:
+        display = getattr(getattr(user, "profile", None), "display_name", "") or ""
+        tokens = display.strip().split()
+        raw = tokens[0] if tokens else ""
+    if not raw:
+        raw = (getattr(user, "username", "") or "User").strip()
+    compact = "".join(raw.split()).replace("'", "")
+    return compact or "User"
+
+
+def _find_existing_default_agent(agents: list[dict], firstName: str) -> dict | None:
+    pattern = re.compile(rf"^{re.escape(firstName)}(\d*)'s Agent$")
+    for agent in agents:
+        if pattern.match(agent.get("name", "") or ""):
+            return agent
+    return None
+
+
+def _pick_unique_default_agent_name(firstName: str) -> str:
+    candidate = f"{firstName}'s Agent"
+    counter = 1
+    while neo4j.agent_name_exists(candidate):
+        candidate = f"{firstName}{counter}'s Agent"
+        counter += 1
+        if counter > 10000:
+            break
+    return candidate
+
+
 def get_or_create_user_agent(user) -> _AttrDict:
     profile = _get_profile(user)
     userId = str(profile.pk)
     agents = neo4j.get_agents_for_user(userId)
-    rawUsername = (getattr(user, "username", "") or "User").strip()
-    compactUsername = "".join(rawUsername.split()) or "User"
-    displayName = getattr(getattr(user, "profile", None), "display_name", "") or compactUsername
-    agentName = f"{compactUsername}'s Agent"
-    if agents:
-        for agent in agents:
-            if agent.get("name") == agentName:
-                return _AttrDict(_agent_to_dict(agent))
+    firstName = _derive_agent_first_name(user)
+    displayName = getattr(getattr(user, "profile", None), "display_name", "") or firstName
+
+    existing = _find_existing_default_agent(agents, firstName)
+    if existing:
+        return _AttrDict(_agent_to_dict(existing))
+
+    agentName = _pick_unique_default_agent_name(firstName)
     defaultPrompt = (
         f"You are {agentName}, a personal AI assistant for {displayName}. "
         f"You always respond as {agentName} and never identify as any other AI, "
