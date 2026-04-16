@@ -771,16 +771,21 @@ body.search-modal-open {
         max-width: 100%;
         min-width: 0;
     }
-    /* Sticky composer flush to bottom with safe-area respect.
-       No divider: the inner rounded card carries the visual separation
-       while the wrapper remains transparent so the conversation
-       background bleeds through as whitespace. */
+    /* Sticky composer must clear the fixed mobile bottom nav. Both elements
+       anchor to the viewport bottom; without this offset the composer slides
+       behind the nav (Safari iOS especially, where sticky behaviour with
+       safe-area is fragile). The body.has-bottom-nav class guarantees we
+       only push the composer up when the nav is actually present. */
     .conv-composer {
         position: sticky;
         bottom: 0;
         background: transparent;
         border-top: 0;
         padding: 8px 12px calc(12px + var(--safe-bottom));
+        z-index: 31;
+    }
+    body.has-bottom-nav .conv-composer {
+        bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px));
     }
 
     /* Header dropdowns (notifications, agent menu, etc.) anchor with
