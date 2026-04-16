@@ -746,11 +746,30 @@ body.search-modal-open {
     }
     .chat-msg-row > .flex-1 {
         max-width: calc(100% - 44px) !important;
+        min-width: 0 !important;
     }
     .chat-msg-row .message-content,
     .chat-msg-row .message-content-markdown {
         font-size: 15px;
         line-height: 1.55;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        min-width: 0;
+    }
+    .chat-msg-row .message-content-markdown p,
+    .chat-msg-row .message-content-markdown li,
+    .chat-msg-row .message-content-markdown a,
+    .chat-msg-row .message-content-markdown strong,
+    .chat-msg-row .message-content-markdown em,
+    .chat-msg-row .message-content-markdown span {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
+    }
+    .chat-msg-row .bg-white,
+    .chat-msg-row [class*="bg-gradient-to-br"]:not([class*="rounded-full"]):not([class*="rounded-\\[12px\\]"]) {
+        max-width: 100%;
+        min-width: 0;
     }
     /* Sticky composer flush to bottom with safe-area respect.
        No divider: the inner rounded card carries the visual separation
@@ -762,6 +781,27 @@ body.search-modal-open {
         background: transparent;
         border-top: 0;
         padding: 8px 12px calc(12px + var(--safe-bottom));
+    }
+
+    /* Header dropdowns (notifications, agent menu, etc.) anchor with
+       right: 0 to the bell/button wrapper. On narrow viewports the
+       wrapper sits well left of the right edge, so a fixed-width
+       dropdown overflows past the left edge of the screen. Pin them to
+       the viewport edges instead so content never gets clipped. */
+    #notification-dropdown {
+        position: fixed !important;
+        top: 56px !important;
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+        max-width: calc(100vw - 16px) !important;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+    }
+    #notification-dropdown .notif-item,
+    #notification-dropdown #notification-list > * {
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 }
 
