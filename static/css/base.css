@@ -771,11 +771,14 @@ body.search-modal-open {
         max-width: 100%;
         min-width: 0;
     }
-    /* Sticky composer must clear the fixed mobile bottom nav. Both elements
-       anchor to the viewport bottom; without this offset the composer slides
-       behind the nav (Safari iOS especially, where sticky behaviour with
-       safe-area is fragile). The body.has-bottom-nav class guarantees we
-       only push the composer up when the nav is actually present. */
+    /* Composer must clear the fixed mobile bottom nav. Safari iOS handles
+       position:sticky inside non-scrollable ancestors unreliably (the offset
+       is ignored and the composer slides behind the nav). Using fixed
+       positioning pins the composer to the visual viewport, which is the
+       same coordinate space the bottom nav uses, so the offset is honored
+       on every browser. The opaque blurred background prevents chat content
+       from bleeding through, and the matching padding-bottom on the scroll
+       container keeps the last message above the composer. */
     .conv-composer {
         position: sticky;
         bottom: 0;
@@ -785,7 +788,18 @@ body.search-modal-open {
         z-index: 31;
     }
     body.has-bottom-nav .conv-composer {
+        position: fixed;
         bottom: calc(var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px));
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(255, 255, 255, 0.55);
+        padding: 8px 12px;
+    }
+    body.has-bottom-nav #conversation-messages {
+        padding-bottom: calc(var(--composer-height, 76px) + var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 16px) !important;
     }
 
     /* Header dropdowns (notifications, agent menu, etc.) anchor with
