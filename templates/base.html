@@ -703,7 +703,7 @@
             // channel so the bell badge and list update without a page reload.
             {% if request.user.is_authenticated %}
             try {
-                var userChan = window.pusherClient.subscribe("private-user-{{ request.user.pk }}");
+                var userChan = window.pusherClient.subscribe("private-user-{{ request.user.profile.pk }}");
                 userChan.bind("notification:new", function(payload) {
                     try {
                         var badge = document.getElementById("notification-badge");

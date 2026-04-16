@@ -1,6 +1,10 @@
+import logging
+
 from django.core.cache import cache
 
 from app.services import neo4j_memory as neo4j
+
+logger = logging.getLogger(__name__)
 
 # Context processors run on every authenticated page render, triggering 3-4
 # Neo4j round trips per load. A short in-process cache (Django's default
@@ -13,12 +17,23 @@ _NOTIFICATIONS_TTL = 10
 _AGENTS_TTL = 60
 
 
-def _user_id(request):
+def _user_id(request) -> str:
+    """Resolve the canonical Neo4j :User.id for the requester. Returns "" on
+    failure; callers MUST treat the empty string as "unauthenticated" and
+    return their empty default. Never fall back to request.user.pk — that id
+    lives in a different integer sequence than UserProfile.pk and causes
+    cross-user data leaks when the two spaces collide numerically."""
     try:
-        profile = request.user.profile
+        from app.users.services import get_or_create_profile_for_user
+        profile = get_or_create_profile_for_user(request.user)
         return str(profile.pk)
     except Exception:
-        return str(request.user.pk)
+        logger.error(
+            "ctx_processor_profile_resolution_failed",
+            extra={"user_pk": getattr(request.user, "pk", None)},
+            exc_info=True,
+        )
+        return ""
 
 
 def _cached(request, key: str, ttl: int, loader):
@@ -43,6 +58,8 @@ def user_sessions(request):
     if not request.user.is_authenticated:
         return {"sessions": []}
     uid = _user_id(request)
+    if not uid:
+        return {"sessions": []}
     try:
         sessions = _cached(
             request,
@@ -56,35 +73,22 @@ def user_sessions(request):
 
 
 def _merged_sessions_for_user(uid: str) -> list:
-    """Union of sessions the user CREATED and sessions they only MEMBER_OF.
-    Without this merge the sidebar hides any group the user joined but did
-    not create, so the sidebar "Groups" section appears empty for invitees."""
-    owned = neo4j.get_sessions_for_user(uid) or []
-    memberOnly = []
+    """Sessions the user CREATED or joined as a MEMBER_OF, merged and sorted in
+    a single Cypher round trip so the sidebar does not pay two queries plus a
+    Python merge on every authenticated page load."""
     try:
-        memberSessions = neo4j.get_sessions_for_member(uid) or []
-        ownedIds = {str(s.get("id", "")) for s in owned}
-        for s in memberSessions:
-            sid = str(s.get("id", ""))
-            if not sid or sid in ownedIds:
-                continue
-            memberOnly.append(s)
+        return neo4j.get_all_sessions_for_user(uid) or []
     except Exception:
-        pass
-
-    combined = list(owned) + memberOnly
-    combined.sort(
-        key=lambda s: (s.get("updatedAt") or s.get("createdAt") or ""),
-        reverse=True,
-    )
-    return combined
+        return []
 
 
 def user_notifications(request):
     if not request.user.is_authenticated:
         return {"unreadNotificationCount": 0, "recentNotifications": []}
+    uid = _user_id(request)
+    if not uid:
+        return {"unreadNotificationCount": 0, "recentNotifications": []}
     try:
-        uid = _user_id(request)
         data = _cached(
             request,
             f"chat:ctx:notifications:{uid}",
@@ -102,9 +106,11 @@ def user_notifications(request):
 def user_agents(request):
     if not request.user.is_authenticated:
         return {"userAgents": []}
+    uid = _user_id(request)
+    if not uid:
+        return {"userAgents": []}
     try:
         from .agent_service import get_agents_for_user
-        uid = _user_id(request)
         agents = _cached(
             request,
             f"chat:ctx:agents:{uid}",

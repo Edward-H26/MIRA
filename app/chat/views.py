@@ -983,10 +983,7 @@ def dashboard_view(request):
     memberSessions = neo4j.get_sessions_for_member(userId)
     totalGroups = sum(1 for s in memberSessions if s.get("accessKey"))
 
-    totalMessages = 0
-    for s in allSessions:
-        msgs = neo4j.get_messages_for_session(s["id"], limit=9999)
-        totalMessages += len(msgs)
+    totalMessages = neo4j.get_total_message_count_for_user(userId)
 
     return render(request, "chat/dashboard.html", {
         "agent": agent,
@@ -1054,10 +1051,43 @@ def pusher_auth_view(request):
     if not socketId or not channelName:
         return JsonResponse({"error": "Missing parameters"}, status=400)
 
+    try:
+        profile = get_or_create_profile_for_user(request.user)
+    except Exception:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+    userId = str(profile.pk)
+
+    if channelName.startswith("private-group-"):
+        sessionId = channelName[len("private-group-"):]
+        if not sessionId or not neo4j.user_can_access_session(userId, sessionId):
+            _log_pusher_denial(userId, channelName, "no-session-access")
+            return JsonResponse({"error": "Forbidden"}, status=403)
+    elif channelName.startswith("private-user-"):
+        targetUid = channelName[len("private-user-"):]
+        if targetUid != userId:
+            _log_pusher_denial(userId, channelName, "uid-mismatch")
+            return JsonResponse({"error": "Forbidden"}, status=403)
+    else:
+        _log_pusher_denial(userId, channelName, "unknown-channel")
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
     authResponse = pusher_service.authenticate_channel(channelName, socketId)
     if authResponse is None:
         return JsonResponse({"error": "Auth failed"}, status=403)
     return JsonResponse(authResponse)
+
+
+def _log_pusher_denial(user_id: str, channel: str, reason: str) -> None:
+    try:
+        from memoria.event_log import log_event
+        log_event(
+            "pusher_channel_auth_denied",
+            userId=user_id,
+            channel=channel,
+            reason=reason,
+        )
+    except Exception:
+        pass
 
 
 @login_required(login_url="/")
@@ -1306,14 +1336,15 @@ def group_list_view(request):
     memberSessions = neo4j.get_sessions_for_member(userId)
     groups = []
     for s in memberSessions:
+        if not s.get("accessKey"):
+            continue
         sessionId = s.get("id", "")
-        memberCount = neo4j.count_session_members(sessionId)
         groups.append({
             "id": sessionId,
             "title": s.get("title", ""),
             "description": s.get("description", ""),
             "access_key": s.get("accessKey", ""),
-            "member_count": memberCount,
+            "member_count": s.get("memberCount", 0),
             "role": s.get("memberRole", "member"),
             "url": f"/chat/c/{sessionId}/",
         })
@@ -1349,7 +1380,6 @@ def group_create_view(request):
     session = create_session_with_outbox(userId, title)
     sessionId = session["id"]
     update_session_with_outbox(sessionId, description=description, access_key=accessKey)
-    neo4j.add_member_to_session(sessionId, userId, role="admin")
     try:
         from app.services import pusher_service
         pusher_service.send_member_joined(sessionId, {

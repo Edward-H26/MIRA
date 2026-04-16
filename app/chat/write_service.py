@@ -56,6 +56,63 @@ def delete_session_with_outbox(session_id: str) -> None:
         )
 
 
+def create_agent_with_outbox(
+    user_id: str,
+    name: str,
+    description: str = "",
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 1024,
+    configuration: dict | None = None,
+) -> dict:
+    with transaction.atomic():
+        agent = neo4j.create_agent(
+            user_id=str(user_id),
+            name=name,
+            description=description,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            configuration=configuration or {},
+        )
+        agentId = str(agent.get("id", "")) if agent else ""
+        if agentId:
+            outbox.record_applied_after_commit(
+                operation="agent.create",
+                entity_type="Agent",
+                entity_id=agentId,
+                payload={
+                    "user_id": str(user_id),
+                    "name": name,
+                    "description": description,
+                },
+            )
+    return agent or {}
+
+
+def update_agent_with_outbox(agent_id: str, **fields) -> dict | None:
+    with transaction.atomic():
+        updated = neo4j.update_agent(str(agent_id), **fields)
+        outbox.enqueue_after_commit(
+            operation="agent.update",
+            entity_type="Agent",
+            entity_id=str(agent_id),
+            payload={"fields": dict(fields)},
+        )
+    return updated
+
+
+def delete_agent_with_outbox(agent_id: str, user_id: str = "") -> None:
+    with transaction.atomic():
+        neo4j.delete_agent(str(agent_id))
+        outbox.enqueue_after_commit(
+            operation="agent.delete",
+            entity_type="Agent",
+            entity_id=str(agent_id),
+            payload={"user_id": str(user_id)},
+        )
+
+
 def create_message_with_outbox(
     session_id: str,
     content: str,

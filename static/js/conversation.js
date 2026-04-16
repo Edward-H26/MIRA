@@ -924,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   if (window.pusherClient && sessionId) {
-    const channel = window.pusherClient.subscribe(`group-${sessionId}`);
+    const channel = window.pusherClient.subscribe(`private-group-${sessionId}`);
 
     channel.bind("message:sent", (data) => {
       if (isStreaming || streamCooldown) return;

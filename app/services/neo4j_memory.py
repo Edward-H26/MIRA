@@ -436,6 +436,7 @@ def create_session(
             updatedAt: datetime()
         })
         CREATE (u)-[:CREATED]->(s)
+        CREATE (u)-[:MEMBER_OF {role: 'admin', joinedAt: datetime()}]->(s)
         RETURN s
         """,
         {"userId": str(user_id), "title": title},
@@ -448,6 +449,25 @@ def create_session(
             add_agent_to_session(session_id, aid)
 
     return session_data
+
+
+def get_all_sessions_for_user(user_id: str, limit: int = 500) -> list[dict]:
+    """Sessions the user either CREATED or is MEMBER_OF, unioned in one Cypher
+    round trip and deduplicated. Used by the sidebar to avoid two separate
+    queries plus a Python-side merge.
+    """
+    safeLimit = max(1, min(int(limit or 500), 1000))
+    rows = _run_query(
+        """
+        MATCH (u:User {id: $userId})-[:CREATED|MEMBER_OF]->(s:Session)
+        WITH DISTINCT s
+        RETURN s
+        ORDER BY s.updatedAt DESC
+        LIMIT $limit
+        """,
+        {"userId": str(user_id), "limit": safeLimit},
+    )
+    return [_node_to_dict(row["s"]) for row in rows if "s" in row]
 
 
 def get_sessions_for_user(user_id: str, limit: int = 200, offset: int = 0) -> list[dict]:
@@ -476,6 +496,24 @@ def get_session(user_id: str, session_id: str) -> dict | None:
     if record and "s" in record:
         return _node_to_dict(record["s"])
     return None
+
+
+def user_can_access_session(user_id: str, session_id: str) -> bool:
+    """Single-query ACL check used by real-time channel authorization. Returns
+    True iff the user has a :CREATED or :MEMBER_OF edge to the session. This
+    is the authoritative gate for Pusher channel subscription — every code
+    path that serves session data to a user MUST ultimately go through an
+    equivalent check."""
+    if not user_id or not session_id:
+        return False
+    record = _run_single(
+        """
+        MATCH (u:User {id: $userId})-[:CREATED|MEMBER_OF]->(s:Session {id: $sessionId})
+        RETURN s LIMIT 1
+        """,
+        {"userId": str(user_id), "sessionId": str(session_id)},
+    )
+    return bool(record and record.get("s"))
 
 
 def add_agent_to_session(session_id: str, agent_id: str) -> dict:
@@ -1851,7 +1889,9 @@ def get_sessions_for_member(user_id: str) -> list[dict]:
     rows = _run_query(
         """
         MATCH (u:User {id: $userId})-[r:MEMBER_OF]->(s:Session)
-        RETURN s, r.role AS role
+        OPTIONAL MATCH (u2:User)-[:MEMBER_OF]->(s)
+        WITH s, r, count(DISTINCT u2) AS memberCount
+        RETURN s, r.role AS role, memberCount
         ORDER BY s.updatedAt DESC
         """,
         {"userId": str(user_id)},
@@ -1860,6 +1900,7 @@ def get_sessions_for_member(user_id: str) -> list[dict]:
     for row in rows:
         data = _node_to_dict(row.get("s", {}))
         data["memberRole"] = row.get("role")
+        data["memberCount"] = int(row.get("memberCount") or 0)
         results.append(data)
     return results
 
@@ -2312,6 +2353,12 @@ def init_neo4j_constraints() -> bool:
         "CREATE INDEX notification_unread_idx IF NOT EXISTS FOR (n:Notification) ON (n.isRead)",
         "CREATE INDEX notification_created_at_idx IF NOT EXISTS FOR (n:Notification) ON (n.createdAt)",
         "CREATE INDEX django_session_expire_idx IF NOT EXISTS FOR (s:DjangoSession) ON (s.expireDate)",
+        "CREATE INDEX user_email_idx IF NOT EXISTS FOR (u:User) ON (u.email)",
+        "CREATE INDEX message_role_idx IF NOT EXISTS FOR (m:Message) ON (m.role)",
+        "CREATE INDEX audit_created_at_idx IF NOT EXISTS FOR (al:AuditLog) ON (al.createdAt)",
+        "CREATE INDEX audit_event_type_idx IF NOT EXISTS FOR (al:AuditLog) ON (al.eventType)",
+        "CREATE INDEX request_log_created_at_idx IF NOT EXISTS FOR (rl:RequestLog) ON (rl.createdAt)",
+        "CREATE INDEX plan_is_active_idx IF NOT EXISTS FOR (p:Plan) ON (p.isActive)",
     ]
     failures = 0
     try:

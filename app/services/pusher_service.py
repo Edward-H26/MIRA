@@ -59,7 +59,7 @@ def get_pusher_cluster() -> str:
 
 
 def _channel_for_session(session_id: str | int) -> str:
-    return f"group-{session_id}"
+    return f"private-group-{session_id}"
 
 
 def _channel_for_user(user_id: str | int) -> str:
