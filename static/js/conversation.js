@@ -455,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
             removeThinker(currentStreamAgent);
             currentStreamAgent = payload.agentName;
             initialAgentName = payload.agentName;
-            const senderLabel = assistantUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+            const senderLabel = assistantUi.bubble.closest(".chat-msg-row")?.querySelector("[data-sender-label]");
             if (senderLabel) senderLabel.textContent = payload.agentName;
             addThinker(payload.agentName);
           }
@@ -480,9 +480,9 @@ document.addEventListener("DOMContentLoaded", () => {
             lastStreamedMessageId = payload.message_id;
           }
           if (payload.agentName) {
-            const senderLabel = assistantUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+            const senderLabel = assistantUi.bubble.closest(".chat-msg-row")?.querySelector("[data-sender-label]");
             if (senderLabel) senderLabel.textContent = payload.agentName;
-            const avatarEl = assistantUi.bubble.closest(".flex.gap-4")?.querySelector(".rounded-full, .rounded-\\[12px\\]");
+            const avatarEl = assistantUi.bubble.closest(".chat-msg-row")?.querySelector(".rounded-full, .rounded-\\[12px\\]");
             if (avatarEl) avatarEl.textContent = payload.agentName.charAt(0).toUpperCase();
           }
         }
@@ -930,7 +930,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (isStreaming || streamCooldown) return;
       const sName = data.agentName || (data.role === "user" ? "User" : "Assistant");
       const row = document.createElement("div");
-      row.className = `flex gap-4 ${data.role === "user" ? "flex-row-reverse" : ""}`;
+      row.className = `flex gap-3 chat-msg-row ${data.role === "user" ? "flex-row-reverse" : ""}`;
       const avatar = document.createElement("div");
       avatar.className = "flex-shrink-0 w-10 h-10 rounded-[12px] flex items-center justify-center text-white font-semibold text-[14px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-md";
       avatar.textContent = data.role === "user" ? "U" : sName.charAt(0);
@@ -1401,7 +1401,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (payload.message_id) lastStreamedMessageId = payload.message_id;
           } else if (payload.type === "agent_turn") {
             const turnUi = appendMessage("assistant", "", { pending: false, senderName: payload.agentName || "Agent" });
-            const senderLabel = turnUi.bubble.closest(".flex.gap-4")?.querySelector("[data-sender-label]");
+            const senderLabel = turnUi.bubble.closest(".chat-msg-row")?.querySelector("[data-sender-label]");
             if (senderLabel) senderLabel.textContent = payload.agentName || "Agent";
             updateAssistantBubble(turnUi, payload.content || "", payload.html || "");
             if (payload.message_id) lastStreamedMessageId = payload.message_id;

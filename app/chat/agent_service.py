@@ -51,17 +51,26 @@ def get_or_create_user_agent(user) -> _AttrDict:
     profile = _get_profile(user)
     userId = str(profile.pk)
     agents = neo4j.get_agents_for_user(userId)
-    if agents:
-        return _AttrDict(_agent_to_dict(agents[0]))
-    # Auto-generated agent name uses the Django username with spaces
-    # stripped. Derived from username (stable identifier) rather than
-    # display_name (which can change or hold stale social-login values).
     rawUsername = (getattr(user, "username", "") or "User").strip()
     compactUsername = "".join(rawUsername.split()) or "User"
+    displayName = getattr(getattr(user, "profile", None), "display_name", "") or compactUsername
     agentName = f"{compactUsername}'s Agent"
+    if agents:
+        for agent in agents:
+            if agent.get("name") == agentName:
+                return _AttrDict(_agent_to_dict(agent))
+    defaultPrompt = (
+        f"You are {agentName}, a personal AI assistant for {displayName}. "
+        f"You always respond as {agentName} and never identify as any other AI, "
+        f"language model, or assistant. If asked who you are, introduce yourself "
+        f"as {agentName}. You are helpful, knowledgeable, and friendly. "
+        f"You help {displayName} with tasks, answer questions, and have "
+        f"conversations while staying in character at all times."
+    )
     created = neo4j.create_agent(
         user_id=userId,
         name=agentName,
+        system_prompt=defaultPrompt,
         temperature=0.7,
         max_tokens=1024,
     )

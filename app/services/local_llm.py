@@ -241,7 +241,7 @@ RESPONSE_TEMPLATE = """You are a helpful AI assistant called Memoria. Answer the
 Provide a direct, helpful answer. Be concise but thorough."""
 
 
-def generate_response(user_text: str, guidance: str = "", conversation_context: str = "") -> str | None:
+def generate_response(user_text: str, guidance: str = "", conversation_context: str = "", system_prompt: str = "") -> str | None:
     trimmed = (user_text or "").strip()
     if not trimmed:
         return None
@@ -253,7 +253,8 @@ def generate_response(user_text: str, guidance: str = "", conversation_context: 
 
         guidanceBlock = guidance.strip() if guidance else ""
         contextBlock = conversation_context.strip() if conversation_context else ""
-        systemParts = ["You are Memoria, a helpful AI assistant. Answer concisely."]
+        baseIdentity = system_prompt.strip() if system_prompt else "You are a helpful AI assistant. Answer concisely."
+        systemParts = [baseIdentity]
         if guidanceBlock:
             systemParts.append(f"Context: {guidanceBlock[:500]}")
         if contextBlock:

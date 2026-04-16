@@ -113,12 +113,12 @@ def _extract_response_text(response) -> str:
     return "".join(chunks).strip()
 
 
-def generate_reply_stream(user_text: str, *, max_output_tokens: int = DEFAULT_STREAM_MAX_OUTPUT_TOKENS):
+def generate_reply_stream(user_text: str, *, system_instruction: str = "", max_output_tokens: int = DEFAULT_STREAM_MAX_OUTPUT_TOKENS):
     with _gemini_slot("chat"):
         response = client.models.generate_content_stream(
             model=MODEL_ID,
             contents=user_text,
-            config=_build_generation_config(max_output_tokens=max_output_tokens),
+            config=_build_generation_config(system_instruction=system_instruction, max_output_tokens=max_output_tokens),
         )
         usage = None
         for chunk in response:

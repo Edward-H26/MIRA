@@ -783,6 +783,13 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
     except Exception:
         pass
 
+    if responding_agent is None:
+        try:
+            from .agent_service import get_or_create_user_agent
+            responding_agent = dict(get_or_create_user_agent(sessionUser))
+        except Exception:
+            pass
+
     doc_chunks = []
     classification = "complex"
 
@@ -853,10 +860,14 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                 guidance = guidance + "\n\n[Relevant Documents]\n" + doc_text
             conversation_context = _build_local_preprocess_context(session)
 
+            agentSystemPrompt = ""
+            if responding_agent:
+                agentSystemPrompt = responding_agent.get("systemPrompt", "") if isinstance(responding_agent, dict) else getattr(responding_agent, "system_prompt", "")
             local_response = local_llm.generate_response(
                 trimmed,
                 guidance=guidance,
                 conversation_context=conversation_context,
+                system_prompt=agentSystemPrompt,
             )
             if local_response:
                 log_event("chat_local_response_ok", session_id=sessionId, answer_len=len(local_response), bullets_retrieved=len(bullets))
@@ -888,8 +899,6 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                 system_prompt = responding_agent.get("systemPrompt", "") if isinstance(responding_agent, dict) else getattr(responding_agent, "system_prompt", "")
 
             context_parts = []
-            if system_prompt:
-                context_parts.append(f"[System Instructions]\n{system_prompt}")
             if guidance:
                 context_parts.append(f"[Relevant Knowledge]\n{guidance}")
             if doc_chunks:
@@ -903,7 +912,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
                 responding_agent.get("name", "") if responding_agent else ""
             )
             try:
-                for chunk in generate_reply_stream(full_prompt):
+                for chunk in generate_reply_stream(full_prompt, system_instruction=system_prompt):
                     if isinstance(chunk, dict) and chunk.get("_type") == "usage_metadata":
                         usage_metadata = chunk
                     elif isinstance(chunk, str) and chunk:
