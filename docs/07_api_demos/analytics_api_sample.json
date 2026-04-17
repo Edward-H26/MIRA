@@ -1,0 +1,205 @@
+{
+  "metadata": {
+    "user": "mohitg2",
+    "snapshot_at_utc": "2026-04-17T20:59:34.240718Z",
+    "data_window_days": 90,
+    "data_source_neo4j_nodes": [
+      "MemoryBullet",
+      "Session",
+      "Message",
+      "RequestLog"
+    ],
+    "live_endpoint": "/chat/api/analytics/",
+    "analytics_view": "/chat/analytics/"
+  },
+  "summary_user_behavior": {
+    "total_memories": 70,
+    "total_sessions": 21,
+    "total_messages": 232,
+    "avg_strength": 61.857142857142854,
+    "total_helpful": 0,
+    "total_harmful": 0,
+    "type_distribution_raw": [
+      {
+        "memory_type": 1,
+        "count": 24
+      },
+      {
+        "memory_type": 2,
+        "count": 27
+      },
+      {
+        "memory_type": 3,
+        "count": 19
+      }
+    ]
+  },
+  "summary_performance": {
+    "avg_latency_ms": 641,
+    "p50_latency_ms": 645,
+    "p95_latency_ms": 1164,
+    "total_requests": 1641,
+    "error_rate_pct": 3.1,
+    "throughput_per_day": 18.4,
+    "requests_by_status": [
+      {
+        "status": "error",
+        "count": 51
+      },
+      {
+        "status": "fallback",
+        "count": 84
+      },
+      {
+        "status": "success",
+        "count": 1506
+      }
+    ]
+  },
+  "summary_cost": {
+    "total_cost_usd": 0.5967,
+    "total_tokens": 2382737,
+    "total_prompt_tokens": 1432747,
+    "total_completion_tokens": 949990,
+    "avg_cost_per_request": 0.000364,
+    "cost_by_model": [
+      {
+        "model_name": "gemini-3-flash-preview",
+        "total_cost": 0.536939,
+        "request_count": 1126,
+        "tokens": 1626793
+      },
+      {
+        "model_name": "gemini-3.1-flash-lite-preview",
+        "total_cost": 0.059726,
+        "request_count": 246,
+        "tokens": 356067
+      },
+      {
+        "model_name": "qwen3.5-0.8b",
+        "total_cost": 0.0,
+        "request_count": 269,
+        "tokens": 399877
+      }
+    ]
+  },
+  "dashboard_context_keys": [
+    "total_memories",
+    "total_sessions",
+    "total_messages",
+    "avg_strength",
+    "type_summary",
+    "session_group",
+    "memory_group",
+    "session_grouped_rows",
+    "memory_grouped_rows",
+    "session_group_count",
+    "memory_group_count",
+    "perf_avg_latency",
+    "perf_p50_latency",
+    "perf_p95_latency",
+    "perf_total_requests",
+    "perf_error_rate",
+    "perf_throughput",
+    "perf_requests_by_status",
+    "cost_total",
+    "cost_total_tokens",
+    "cost_prompt_tokens",
+    "cost_completion_tokens",
+    "cost_avg_per_request",
+    "cost_by_model"
+  ],
+  "dashboard_context_full": {
+    "total_memories": 70,
+    "total_sessions": 21,
+    "total_messages": 232,
+    "avg_strength": 61.857142857142854,
+    "type_summary": [
+      {
+        "label": "Semantic",
+        "count": 24
+      },
+      {
+        "label": "Episodic",
+        "count": 27
+      },
+      {
+        "label": "Procedural",
+        "count": 19
+      }
+    ],
+    "session_group": "month",
+    "memory_group": "memory_type",
+    "session_grouped_rows": [
+      {
+        "group_label": "2026-04",
+        "session_count": 21,
+        "message_count": 232
+      }
+    ],
+    "memory_grouped_rows": [
+      {
+        "group_label": "Semantic",
+        "bullet_count": 24,
+        "avg_strength": 63.666666666666664
+      },
+      {
+        "group_label": "Episodic",
+        "bullet_count": 27,
+        "avg_strength": 60.407407407407405
+      },
+      {
+        "group_label": "Procedural",
+        "bullet_count": 19,
+        "avg_strength": 61.63157894736842
+      }
+    ],
+    "session_group_count": 1,
+    "memory_group_count": 3,
+    "perf_avg_latency": 641,
+    "perf_p50_latency": 645,
+    "perf_p95_latency": 1164,
+    "perf_total_requests": 1641,
+    "perf_error_rate": 3.1,
+    "perf_throughput": 18.4,
+    "perf_requests_by_status": [
+      {
+        "status": "error",
+        "count": 51
+      },
+      {
+        "status": "fallback",
+        "count": 84
+      },
+      {
+        "status": "success",
+        "count": 1506
+      }
+    ],
+    "cost_total": 0.5967,
+    "cost_total_tokens": 2382737,
+    "cost_prompt_tokens": 1432747,
+    "cost_completion_tokens": 949990,
+    "cost_avg_per_request": 0.000364,
+    "cost_by_model": [
+      {
+        "model_name": "gemini-3-flash-preview",
+        "total_cost": 0.536939,
+        "request_count": 1126,
+        "tokens": 1626793
+      },
+      {
+        "model_name": "gemini-3.1-flash-lite-preview",
+        "total_cost": 0.059726,
+        "request_count": 246,
+        "tokens": 356067
+      },
+      {
+        "model_name": "qwen3.5-0.8b",
+        "total_cost": 0.0,
+        "request_count": 269,
+        "tokens": 399877
+      }
+    ]
+  }
+}

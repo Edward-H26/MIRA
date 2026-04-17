@@ -330,6 +330,8 @@ The analytics page at `/chat/analytics/` displays three server-side charts gener
 
 Each chart is served as a standalone PNG image at its own URL endpoint (e.g., `/chat/analytics/memory-type.png`).
 
+For the INFO490 Analytics Dashboard submission (Parts 1 and 2, 26 widgets across System Performance, User Behavior, Cost), see [`docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md`](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md) and the rendered [PDF](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.pdf). Live dashboard at `https://mira-ydqq.onrender.com/chat/analytics/` with seeded test login `mohitg2 / uiuc12345`.
+
 ---
 
 ## API Endpoints

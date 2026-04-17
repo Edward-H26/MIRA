@@ -802,6 +802,21 @@ body.search-modal-open {
         padding-bottom: calc(var(--composer-height, 76px) + var(--bottom-nav-height, 56px) + var(--safe-bottom, 0px) + 16px) !important;
     }
 
+    /* iOS Safari containing-block trap: ANY ancestor with backdrop-filter,
+       filter, transform, or perspective becomes the containing block for
+       position:fixed descendants. The chat <main> uses backdrop-blur to
+       achieve the glass-morphism background, which silently demotes the
+       composer's "fixed" positioning to be main-relative — desynchronized
+       from the bottom nav (which is viewport-fixed). On a tall main this
+       hides the composer below the visible area on real iOS Safari, even
+       though Chrome DevTools renders it correctly. Drop the backdrop-blur
+       on mobile and reproduce the visual via a translucent background only;
+       the composer then pins to the true viewport and stays clickable. */
+    main.backdrop-blur-\[20px\] {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
     /* Header dropdowns (notifications, agent menu, etc.) anchor with
        right: 0 to the bell/button wrapper. On narrow viewports the
        wrapper sits well left of the right edge, so a fixed-width

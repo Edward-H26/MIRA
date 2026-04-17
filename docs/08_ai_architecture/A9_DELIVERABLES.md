@@ -107,3 +107,9 @@ grep -n "MODEL_ID" app/services/embedding.py app/services/local_llm.py
 # 4. Git hygiene
 git check-ignore -v llm_test/cache/ .env 2>/dev/null || echo "already gitignored"
 ```
+
+---
+
+## Sibling deliverable: A10 Analytics Dashboard
+
+The Analytics Dashboard assignment (Parts 1 and 2, 100 points) is documented separately in [`A10_ANALYTICS_DASHBOARD.md`](A10_ANALYTICS_DASHBOARD.md) with the rendered submission at [`A10_ANALYTICS_DASHBOARD.pdf`](A10_ANALYTICS_DASHBOARD.pdf). Live URL: `https://mira-ydqq.onrender.com/chat/analytics/`. Test login: `mohitg2 / uiuc12345`. Sample API JSON: [`docs/07_api_demos/analytics_api_sample.json`](../07_api_demos/analytics_api_sample.json). Tab screenshots: [`docs/screenshots/analytics/`](../screenshots/analytics/).
