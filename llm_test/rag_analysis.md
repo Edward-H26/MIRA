@@ -1,6 +1,6 @@
 # RAG System Analysis
 
-**Course:** INFO 490 | **Date:** March 2026 | **Dataset:** BEI Medical Systems SEC 10-K Filing (1999)
+**Date:** March 2026 | **Dataset:** BEI Medical Systems SEC 10-K Filing (1999)
 
 ---
 

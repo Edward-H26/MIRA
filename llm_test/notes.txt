@@ -2,7 +2,7 @@
   SMALL MODELS, BIG VALUE: A 15-MODEL BENCHMARK FOR COST-EFFICIENT
   DIETARY AI ON CONSUMER GPU HARDWARE
 ================================================================================
-  Memoria Project | INFO 490 | Production Reflection and Cost Analysis
+  Memoria Project | Production Reflection and Cost Analysis
   Benchmark Hardware: NVIDIA RTX 4060 Laptop GPU (8 GB VRAM)
   Evaluation Oracle: GPT-5.4-Pro (Response Quality v2 Schema)
   Date: March 2026

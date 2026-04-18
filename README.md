@@ -275,7 +275,7 @@ For detailed AI architecture documentation, see [README_AI.md](README_AI.md).
 
 ## Acknowledgements
 
-The LTMBSE-ACE algorithm implemented in MEMORIA derives from foundational work on the NOODEIA project conducted at SALT Lab. We thank the INFO 490 course for providing the framework and guidance that enabled this research contribution.
+The LTMBSE-ACE algorithm implemented in MEMORIA derives from foundational work on the NOODEIA project conducted at SALT Lab.
 
 ---
 
@@ -330,7 +330,7 @@ The analytics page at `/chat/analytics/` displays three server-side charts gener
 
 Each chart is served as a standalone PNG image at its own URL endpoint (e.g., `/chat/analytics/memory-type.png`).
 
-For the INFO490 Analytics Dashboard submission (Parts 1 and 2, 26 widgets across System Performance, User Behavior, Cost), see [`docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md`](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md) and the rendered [PDF](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.pdf). Live dashboard at `https://mira-ydqq.onrender.com/chat/analytics/` with seeded test login `mohitg2 / uiuc12345`.
+For the Analytics Dashboard design and implementation (26 widgets across System Performance, User Behavior, and Cost), see [`docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md`](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md) and the rendered [PDF](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.pdf). Live dashboard at `https://mira-ydqq.onrender.com/chat/analytics/` with seeded test login `mohitg2 / uiuc12345`.
 
 ---
 
@@ -440,4 +440,4 @@ This project uses Django 6.0.1. For development setup, ensure you have Python 3.
 
 ## License
 
-This project is developed for INFO 490.
+All rights reserved.
