@@ -1,7 +1,7 @@
 # Analytics Dashboard — Memoria
 
 **Live dashboard:** <https://mira-ydqq.onrender.com/chat/analytics/>
-**Test login:** `mohitg2` / `uiuc12345`
+**Test login:** email `mohitg2@example.com` / password `uiuc12345`
 **Snapshot:** 2026-04-17 — 1,641 requests, 70 memory bullets, and $0.5967 in total spend across 90 days.
 
 ## Part 1 — Analytics Design
@@ -76,6 +76,6 @@
 |---|---|
 | Live dashboard | <https://mira-ydqq.onrender.com/chat/analytics/> |
 | Local dashboard | <http://127.0.0.1:8000/chat/analytics/> |
-| Test login | `mohitg2` / `uiuc12345` |
+| Test login | email `mohitg2@example.com`, password `uiuc12345` |
 | Sample JSON | `docs/07_api_demos/analytics_api_sample.json` |
 | Screenshots | `docs/screenshots/analytics/{01,02,03}_*.png` |

@@ -330,7 +330,7 @@ The analytics page at `/chat/analytics/` displays three server-side charts gener
 
 Each chart is served as a standalone PNG image at its own URL endpoint (e.g., `/chat/analytics/memory-type.png`).
 
-For the Analytics Dashboard design and implementation (26 widgets across System Performance, User Behavior, and Cost), see [`docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md`](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md) and the rendered [PDF](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.pdf). Live dashboard at `https://mira-ydqq.onrender.com/chat/analytics/` with seeded test login `mohitg2 / uiuc12345`.
+For the Analytics Dashboard design and implementation (26 widgets across System Performance, User Behavior, and Cost), see [`docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md`](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.md) and the rendered [PDF](docs/08_ai_architecture/A10_ANALYTICS_DASHBOARD.pdf). Live dashboard at `https://mira-ydqq.onrender.com/chat/analytics/` with seeded test login `mohitg2@example.com / uiuc12345`.
 
 ---
 
