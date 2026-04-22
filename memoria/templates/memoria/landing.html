@@ -27,7 +27,7 @@
       </div>
 
       <div class="relative z-10">
-        <nav class="landing-nav relative z-20 flex items-center justify-between" style="min-height: 64px; padding: 12px 20px;">
+        <nav class="landing-nav relative z-20 flex items-center justify-center" style="min-height: 64px; padding: 12px 20px;">
           <a href="{% url 'memoria:landing' %}" class="landing-nav-logo shrink-0" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
             <img
               src="{% static 'images/logomark.png' %}"
@@ -36,15 +36,17 @@
             >
           </a>
 
-          {% if user.is_authenticated %}
-            <a href="{% url 'memoria:home' %}" class="bg-mm-bg-subtle px-5 py-2 rounded-full text-mm-muted text-sm font-medium hover:bg-white transition-colors">
-              Open app
-            </a>
-          {% else %}
-            <button type="button" id="open-login" class="landing-clickable bg-mm-bg-subtle px-5 py-2 rounded-full text-mm-muted text-sm font-medium hover:bg-white transition-colors">
-              Sign in
-            </button>
-          {% endif %}
+          <div style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%);">
+            {% if user.is_authenticated %}
+              <a href="{% url 'memoria:home' %}" class="px-5 py-2 rounded-full text-sm font-medium transition-colors" style="background: rgba(255, 255, 255, 0.85); color: #1C1E2E; backdrop-filter: saturate(150%) blur(10px); -webkit-backdrop-filter: saturate(150%) blur(10px); box-shadow: 0 1px 3px rgba(28, 30, 46, 0.08);">
+                Open app
+              </a>
+            {% else %}
+              <button type="button" id="open-login" class="landing-clickable px-5 py-2 rounded-full text-sm font-medium transition-colors" style="background: rgba(255, 255, 255, 0.85); color: #1C1E2E; border: 0; backdrop-filter: saturate(150%) blur(10px); -webkit-backdrop-filter: saturate(150%) blur(10px); box-shadow: 0 1px 3px rgba(28, 30, 46, 0.08);">
+                Sign in
+              </button>
+            {% endif %}
+          </div>
         </nav>
 
         <section id="hero" data-scroll="hero" class="px-5 py-12 md:py-20 lg:py-24 text-center max-w-4xl mx-auto">
@@ -58,11 +60,11 @@
             </p>
             <div class="landing-cta-group">
               {% if user.is_authenticated %}
-                <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-white px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors" style="color: #ffffff;">
                   Go to your workspace
                 </a>
               {% else %}
-                <button type="button" id="open-register" class="landing-clickable bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                <button type="button" id="open-register" class="landing-clickable bg-[#282828] text-white px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors" style="color: #ffffff; border: 0;">
                   Get started for free
                 </button>
               {% endif %}
@@ -658,11 +660,11 @@
         <section class="px-5 py-16 md:py-24 text-center">
           <div class="landing-cta-group">
             {% if user.is_authenticated %}
-              <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+              <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-white px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors" style="color: #ffffff;">
                 Go to your workspace
               </a>
             {% else %}
-              <button type="button" id="open-register-bottom" class="landing-clickable bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+              <button type="button" id="open-register-bottom" class="landing-clickable bg-[#282828] text-white px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors" style="color: #ffffff; border: 0;">
                 Get started for free
               </button>
             {% endif %}
