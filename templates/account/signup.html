@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'design/colors_and_type.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/tailwind.built.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
     <style>
@@ -21,7 +22,7 @@
                 radial-gradient(ellipse at 20% 10%, rgba(108, 134, 192, 0.18) 0%, transparent 45%),
                 radial-gradient(ellipse at 80% 90%, rgba(180, 237, 228, 0.18) 0%, transparent 45%),
                 linear-gradient(135deg, #F7F8FF 0%, #EEF1FB 50%, #F4EFFB 100%);
-            color: #1b1b1b;
+            color: var(--mm-fg-1);
         }
         .auth-card {
             background: rgba(255, 255, 255, 0.82);
@@ -35,7 +36,7 @@
         .auth-input {
             font-family: "Inter", sans-serif;
             font-size: 14px;
-            color: #1b1b1b;
+            color: var(--mm-fg-1);
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(108, 134, 192, 0.18);
             border-radius: 10px;
@@ -44,9 +45,9 @@
             outline: none;
             transition: border-color 0.18s ease, box-shadow 0.18s ease;
         }
-        .auth-input::placeholder { color: #9ca3af; }
+        .auth-input::placeholder { color: var(--mm-fg-light); }
         .auth-input:focus {
-            border-color: #6C86C0;
+            border-color: var(--mm-primary);
             box-shadow: 0 0 0 3px rgba(108, 134, 192, 0.18);
         }
         .auth-btn-primary {
@@ -54,7 +55,7 @@
             font-weight: 600;
             font-size: 14px;
             color: #fff;
-            background: linear-gradient(135deg, #6C86C0 0%, #8DA0FF 100%);
+            background: var(--mm-primary);
             border: none;
             border-radius: 12px;
             padding: 12px 16px;
@@ -68,7 +69,7 @@
             font-family: "Inter", sans-serif;
             font-weight: 500;
             font-size: 14px;
-            color: #1b1b1b;
+            color: var(--mm-fg-1);
             background: #fff;
             border: 1px solid rgba(28, 30, 46, 0.12);
             border-radius: 12px;
@@ -84,7 +85,7 @@
         }
         .auth-btn-google:hover { background: #F7F8FF; border-color: rgba(108, 134, 192, 0.28); }
         .auth-link {
-            color: #6C86C0;
+            color: var(--mm-primary);
             text-decoration: none;
             font-weight: 500;
             transition: color 0.15s ease;
@@ -104,7 +105,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #9ca3af;
+            color: var(--mm-fg-light);
             font-size: 12px;
             letter-spacing: 0.3px;
             margin: 20px 0 16px;
@@ -134,7 +135,7 @@
             </a>
 
             <div class="auth-card rounded-[18px] px-7 py-7">
-                <h1 class="font-manrope font-extrabold text-[22px] tracking-tight text-[#1b1b1b] mb-1 text-center">Create your account</h1>
+                <h1 class="font-manrope font-extrabold text-[22px] tracking-tight text-mm-text mb-1 text-center">Create your account</h1>
                 <p class="text-[13px] text-[#6a7290] text-center mb-6">
                     Already have one? <a class="auth-link" href="{{ login_url }}">Sign in</a>.
                 </p>
@@ -165,7 +166,7 @@
                         <p class="text-[12px] text-red-500 mt-1">{{ field.errors|join:' ' }}</p>
                         {% endif %}
                         {% if field.help_text %}
-                        <p class="text-[11px] text-[#9ca3af] mt-1">{{ field.help_text|safe }}</p>
+                        <p class="text-[11px] text-mm-light mt-1">{{ field.help_text|safe }}</p>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -192,7 +193,7 @@
                 </a>
             </div>
 
-            <p class="text-center text-[11px] text-[#9ca3af] mt-6">
+            <p class="text-center text-[11px] text-mm-light mt-6">
                 © {% now "Y" %} Memoria · <a class="auth-link" href="{% url 'memoria:privacy' %}">Privacy</a>
             </p>
         </div>

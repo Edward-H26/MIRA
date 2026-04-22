@@ -13,28 +13,28 @@
         Back to Agent Templates
     </a>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+    <div class="border border-mm-border rounded-2xl p-8 bg-white mb-6">
         <div class="flex items-center gap-4 mb-4">
             <div class="w-14 h-14 rounded-2xl bg-mm-primary flex items-center justify-center text-white font-bold text-[24px] font-inter flex-shrink-0">{{ template.name|first }}</div>
             <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">{{ template.name }}</h1>
         </div>
         <div class="flex gap-2.5 items-center flex-wrap mb-4">
             <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">Agent</span>
-            <span class="bg-mm-card text-[#64748b] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ template.category }}</span>
+            <span class="bg-mm-card text-mm-muted-2 rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ template.category }}</span>
         </div>
-        <p class="font-inter text-[#64748b] text-[16px] leading-relaxed">{{ template.description }}</p>
+        <p class="font-inter text-mm-muted-2 text-[16px] leading-relaxed">{{ template.description }}</p>
     </div>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">Default Configuration</h2>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white mb-6">
+        <h2 class="font-inter font-bold text-mm-text-2 text-[16px] mb-4">Default Configuration</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             <div class="bg-[#f8fafc] rounded-xl p-4">
-                <div class="font-inter text-[11px] font-semibold text-[#64748b] uppercase tracking-wider mb-1">Temperature</div>
-                <div class="font-inter text-[14px] font-medium text-[#0f172a]">{{ template.temperature }}</div>
+                <div class="font-inter text-[11px] font-semibold text-mm-muted-2 uppercase tracking-wider mb-1">Temperature</div>
+                <div class="font-inter text-[14px] font-medium text-mm-text-2">{{ template.temperature }}</div>
             </div>
             <div class="bg-[#f8fafc] rounded-xl p-4">
-                <div class="font-inter text-[11px] font-semibold text-[#64748b] uppercase tracking-wider mb-1">Max Tokens</div>
-                <div class="font-inter text-[14px] font-medium text-[#0f172a]">{{ template.maxTokens }}</div>
+                <div class="font-inter text-[11px] font-semibold text-mm-muted-2 uppercase tracking-wider mb-1">Max Tokens</div>
+                <div class="font-inter text-[14px] font-medium text-mm-text-2">{{ template.maxTokens }}</div>
             </div>
         </div>
         <form method="post" action="{% url 'chat:agent_template_install' template_id=template.id %}" id="install-form">
@@ -49,9 +49,9 @@
         </form>
     </div>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">System Prompt</h2>
-        <div class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#374151] leading-relaxed whitespace-pre-wrap border border-[#e2e8f0]">{{ template.systemPrompt }}</div>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white">
+        <h2 class="font-inter font-bold text-mm-text-2 text-[16px] mb-4">System Prompt</h2>
+        <div class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#374151] leading-relaxed whitespace-pre-wrap border border-mm-border">{{ template.systemPrompt }}</div>
     </div>
 </div>
 {% endblock %}

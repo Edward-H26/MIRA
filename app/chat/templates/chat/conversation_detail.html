@@ -44,7 +44,7 @@
         {% if session.accessKey %}
         <button type="button" class="font-inter text-slate-500/60 text-[13px] hover:text-mm-primary transition-colors cursor-pointer" onclick="document.getElementById('info-panel').classList.toggle('hidden')">{{ session.memberCount }} member{{ session.memberCount|pluralize }}</button>
         <button type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-mm-primary/10 hover:bg-mm-primary/20 transition-colors" onclick="navigator.clipboard.writeText('{{ session.accessKey }}'); this.querySelector('span').textContent='Copied!'; setTimeout(() => this.querySelector('span').textContent='{{ session.accessKey }}', 1500)" title="Click to copy invite key">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-mm-primary" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
           </svg>
@@ -91,7 +91,7 @@
             <div class="max-h-56 overflow-y-auto">
               {% for member in session.members %}
               <div class="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[12px] flex-shrink-0">
+                <div class="w-8 h-8 rounded-full bg-mm-primary flex items-center justify-center text-white font-semibold text-[12px] flex-shrink-0">
                   {{ member.displayName|default:member.username|default:"?"|slice:":1"|upper }}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -170,9 +170,9 @@
               <!-- Avatar -->
               {% if message.role == 2 or message.role == "user" %}
                 {% if request.user.profile.profile_img %}
-                <img src="{{ request.user.profile.profile_img.url }}" alt="" class="flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm" onerror="this.outerHTML='<div class=&quot;flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm&quot;>{{ request.user.profile.display_name|default:request.user.username|slice:":1"|upper|escapejs }}</div>'">
+                <img src="{{ request.user.profile.profile_img.url }}" alt="" class="flex-shrink-0 w-9 h-9 rounded-full object-cover shadow-sm" onerror="this.outerHTML='<div class=&quot;flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-mm-primary shadow-sm&quot;>{{ request.user.profile.display_name|default:request.user.username|slice:":1"|upper|escapejs }}</div>'">
                 {% else %}
-                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] shadow-sm">
+                <div class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-[13px] bg-mm-primary shadow-sm">
                   {{ request.user.profile.display_name|default:request.user.username|slice:":1"|upper }}
                 </div>
                 {% endif %}
@@ -192,7 +192,7 @@
                     {{ message.createdAt|date:"g:i A" }}
                   </div>
                 </div>
-                <div class="{% if message.role == 2 or message.role == "user" %}bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] text-white shadow-[0_2px_12px_rgba(108, 134, 192,0.2)] rounded-[18px] rounded-br-[4px]{% else %}bg-white shadow-sm text-slate-700 rounded-[18px] rounded-bl-[4px]{% endif %} px-4 py-3 border border-white/20">
+                <div class="{% if message.role == 2 or message.role == "user" %}bg-mm-primary text-white shadow-[0_2px_12px_rgba(108, 134, 192,0.2)] rounded-[18px] rounded-br-[4px]{% else %}bg-white shadow-sm text-slate-700 rounded-[18px] rounded-bl-[4px]{% endif %} px-4 py-3 border border-white/20">
                   {% if message.role == 2 or message.role == "user" %}
                     <span class="message-content font-inter text-[14px] leading-6 whitespace-pre-wrap">{{ message.content|linebreaksbr }}</span>
                   {% else %}

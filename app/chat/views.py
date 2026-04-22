@@ -1073,7 +1073,14 @@ def pusher_auth_view(request):
 
     if channelName.startswith("private-group-"):
         sessionId = channelName[len("private-group-"):]
-        if not sessionId or not neo4j.user_can_access_session(userId, sessionId):
+        if not sessionId:
+            _log_pusher_denial(userId, channelName, "no-session-access")
+            return JsonResponse({"error": "Forbidden"}, status=403)
+        access = neo4j.user_can_access_session(userId, sessionId)
+        if access is None:
+            _log_pusher_denial(userId, channelName, "neo4j-transient")
+            return JsonResponse({"error": "Service busy"}, status=503)
+        if not access:
             _log_pusher_denial(userId, channelName, "no-session-access")
             return JsonResponse({"error": "Forbidden"}, status=403)
     elif channelName.startswith("private-user-"):
@@ -1325,7 +1332,11 @@ def agent_start_chat_view(request, template_id):
 
     from .write_service import create_session_with_outbox, create_message_with_outbox
     session = create_session_with_outbox(userId, agentTitle)
-    sessionId = session["id"]
+    sessionId = str(session.get("id", "")) if isinstance(session, dict) else ""
+    if not sessionId:
+        from django.contrib import messages as django_messages
+        django_messages.error(request, "Could not start that chat right now. Please try again.")
+        return redirect("chat:agent_marketplace")
 
     if materializedAgentId:
         try:
@@ -1408,7 +1419,12 @@ def new_chat_view(request):
     from .write_service import create_session_with_outbox
     profile = get_or_create_profile_for_user(request.user)
     session = create_session_with_outbox(str(profile.pk), "New Chat")
-    return redirect(f"/chat/c/{session['id']}/")
+    sessionId = str(session.get("id", "")) if isinstance(session, dict) else ""
+    if not sessionId:
+        from django.contrib import messages as django_messages
+        django_messages.error(request, "Could not create a new chat right now. Please try again.")
+        return redirect("memoria:home")
+    return redirect(f"/chat/c/{sessionId}/")
 
 
 @login_required(login_url="/")
@@ -1429,7 +1445,11 @@ def group_create_view(request):
         accessKey = uuid.uuid4().hex[:12]
     from .write_service import create_session_with_outbox, update_session_with_outbox
     session = create_session_with_outbox(userId, title)
-    sessionId = session["id"]
+    sessionId = str(session.get("id", "")) if isinstance(session, dict) else ""
+    if not sessionId:
+        from django.contrib import messages as django_messages
+        django_messages.error(request, "Could not create that group right now. Please try again.")
+        return redirect("memoria:home")
     update_session_with_outbox(sessionId, description=description, access_key=accessKey)
     try:
         from app.services import pusher_service

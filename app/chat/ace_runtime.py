@@ -892,6 +892,77 @@ def _ensure_seed_bullets_neo4j(memory_id, learner_id, seed_texts):
         )
 
 
+def persist_lessons_for_turn(session, user_text, answer):
+    """Extract and persist memory bullets for a completed chat turn.
+
+    Path A-success (local LLM returns text) and Path B (direct Gemini streaming)
+    both skip run_ace_chat_turn, so without this helper the user's Memory node
+    stays empty forever on those paths. Errors are caught and logged because a
+    memory-write failure must not break the user-facing reply that has already
+    been streamed to the browser."""
+    sid = _session_id(session)
+    try:
+        if isinstance(session, dict):
+            userId = session.get("userId", session.get("createdBy", ""))
+        else:
+            userId = str(session.user.pk)
+        if not userId or not user_text or not answer:
+            return
+        learnerId = userId
+        contextScopeId = sid
+
+        memoryData = neo4j.get_or_create_memory(userId)
+        memoryId = memoryData.get("id", "") if memoryData else ""
+        if not memoryId:
+            log_event("chat_persist_lessons_skipped", session_id=sid, reason="no_memory_id")
+            return
+
+        _ensure_seed_bullets_neo4j(memoryId, learnerId, META_STRATEGY_SEEDS)
+
+        trace = f"Final answer:\n{answer}"
+        lessons, lessonSource = _extract_lessons(user_text, answer, trace)
+        defaultConfidence = _safe_env_float("ACE_PATH_B_DEFAULT_CONFIDENCE", 0.75)
+        acceptedLessons, qualityGate = _apply_quality_gate(
+            question=user_text,
+            model_answer=answer,
+            lessons=lessons,
+            step_confidence=defaultConfidence,
+        )
+        log_event(
+            "chat_persist_lessons_gate",
+            session_id=sid,
+            should_apply=bool(qualityGate.get("should_apply_update")),
+            num_lessons_input=qualityGate.get("num_lessons_input", 0),
+            num_lessons_accepted=qualityGate.get("num_lessons_accepted", 0),
+            lesson_source=lessonSource,
+        )
+        if not qualityGate.get("should_apply_update"):
+            return
+
+        refreshedMemory = neo4j.get_memory(memoryId)
+        currentClock = int(refreshedMemory.get("accessClock", 0)) if refreshedMemory else 0
+        aceDelta = _apply_lessons_neo4j(
+            memory_id=memoryId,
+            learner_id=learnerId,
+            context_scope_id=contextScopeId,
+            lessons=acceptedLessons,
+            access_clock=currentClock,
+        )
+        log_event(
+            "chat_persist_lessons_applied",
+            session_id=sid,
+            num_new_bullets=aceDelta.get("num_new_bullets", 0),
+            num_updates=aceDelta.get("num_updates", 0),
+        )
+    except Exception as exc:
+        log_event(
+            "chat_persist_lessons_failed",
+            session_id=sid,
+            error_type=exc.__class__.__name__,
+            error=str(exc)[:200],
+        )
+
+
 def run_ace_chat_turn(session, user_text, preprocessed_context: str | None = None, agent=None, doc_chunks=None):
     sid = _session_id(session)
     if isinstance(session, dict):

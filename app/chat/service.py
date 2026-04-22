@@ -844,6 +844,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
     usage_metadata = None
     chunks_buf: list = []
     delta_idx = 0
+    ace_already_ran = False
 
     try:
         if use_local:
@@ -883,6 +884,7 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             else:
                 ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
                 assistant_text = (ace_result.get("answer") or "").strip() or FALLBACK_TEXT
+                ace_already_ran = True
         else:
             profile = get_or_create_profile_for_user(sessionUser)
             memory_obj, _ = Memory.get_or_create_for_profile(profile)
@@ -1273,27 +1275,17 @@ def stream_user_message_with_agent_reply(session, content, *, skip_user_message=
             except Exception:
                 pass
 
-    if not use_local and assistant_text and assistant_text != FALLBACK_TEXT:
-        import threading
-
-        def _run_post_response_learning():
-            try:
-                ace_result = run_ace_chat_turn(session, trimmed, agent=responding_agent, doc_chunks=doc_chunks)
-                log_event(
-                    "chat_post_response_memory",
-                    session_id=sessionId,
-                    ace_delta=ace_result.get("ace_delta"),
-                    quality_gate=ace_result.get("quality_gate", {}).get("should_apply_update"),
-                )
-            except Exception as exc:
-                log_event(
-                    "chat_post_response_memory_error",
-                    session_id=sessionId,
-                    error_type=exc.__class__.__name__,
-                    error=str(exc)[:500],
-                )
-
-        threading.Thread(target=_run_post_response_learning, daemon=True).start()
+    if not ace_already_ran and trimmed and assistant_text and assistant_text != FALLBACK_TEXT:
+        try:
+            from .ace_runtime import persist_lessons_for_turn
+            persist_lessons_for_turn(session, trimmed, assistant_text)
+        except Exception as exc:
+            log_event(
+                "chat_post_response_memory_error",
+                session_id=sessionId,
+                error_type=exc.__class__.__name__,
+                error=str(exc)[:500],
+            )
 
 
 def _agent_to_agent_turn(session, prompt, agent, depth, maxDepth=8, visitedAgents=None, userDisplayName=""):

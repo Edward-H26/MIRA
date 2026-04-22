@@ -68,7 +68,7 @@
         </div>
         <div class="border border-white/30 rounded-[12px] p-5 bg-white/60 backdrop-blur-md">
             <div class="font-inter text-mm-muted text-[12px] uppercase font-semibold tracking-[0.5px] mb-1">Disabled</div>
-            <div class="font-inter font-bold text-[#991b1b] text-[24px]">{{ disabled_count|default:"0" }}</div>
+            <div class="font-inter font-bold text-mm-danger-fg text-[24px]">{{ disabled_count|default:"0" }}</div>
         </div>
         <div class="border border-white/30 rounded-[12px] p-5 bg-white/60 backdrop-blur-md">
             <div class="font-inter text-mm-muted text-[12px] uppercase font-semibold tracking-[0.5px] mb-1">Groups</div>
@@ -118,7 +118,7 @@
                         {% if skill.skillEnabled %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[rgba(108,134,192,0.12)] text-mm-primary">Active</span>
                         {% else %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-[#fee2e2] text-[#991b1b]">Disabled</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.3px] bg-mm-danger-bg text-mm-danger-fg">Disabled</span>
                         {% endif %}
                     </div>
                     <p class="font-inter text-mm-text text-[14px] leading-relaxed skill-preview">{{ skill.content|truncatechars:120 }}</p>
@@ -181,7 +181,7 @@
         <div id="create-skill-card" class="border-2 border-dashed border-white/30 rounded-[12px] bg-white/40 backdrop-blur-md hover:border-mm-primary/40 hover:shadow-md transition-all cursor-pointer" onclick="toggleCreateSkill()">
             <div class="flex flex-col items-center justify-center py-10 px-6">
                 <div class="w-12 h-12 rounded-full bg-mm-primary/10 flex items-center justify-center mb-3">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C86C0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="text-mm-primary" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>

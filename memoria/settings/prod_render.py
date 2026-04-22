@@ -58,3 +58,35 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_SSL_REDIRECT = True
 
 X_FRAME_OPTIONS = "DENY"
+
+ENABLE_DEV_EVENT_LOG = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "event": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "stdout": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "event",
+        },
+    },
+    "loggers": {
+        "event_log_sink": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["stdout"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}

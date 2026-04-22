@@ -39,14 +39,8 @@ body {
 }
 
 body {
-    font-family: "Inter", sans-serif;
-    background:
-        radial-gradient(ellipse 55% 50% at 85% 12%, rgba(235, 170, 195, 0.65) 0%, transparent 70%),
-        radial-gradient(ellipse 70% 60% at 15% 40%, rgba(150, 190, 245, 0.6) 0%, transparent 70%),
-        radial-gradient(ellipse 55% 55% at 82% 85%, rgba(165, 150, 215, 0.55) 0%, transparent 65%),
-        radial-gradient(ellipse 40% 30% at 50% 8%, rgba(255, 255, 255, 0.3) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 10% 90%, rgba(140, 185, 230, 0.35) 0%, transparent 60%),
-        linear-gradient(135deg, #c4d8f5 0%, #cddcf8 20%, #d6e2fb 40%, #d8d4f2 65%, #c8bfe8 85%, #bfb8e4 100%);
+    font-family: var(--mm-font-body);
+    background: var(--mm-aurora-strong);
     background-attachment: fixed;
     min-height: 100vh;
 }
@@ -75,39 +69,9 @@ form button {
 }
 
 :root {
-    /* Unified brand color system — single accent, calm and minimal. */
-    --primary-blue: #6C86C0;
-    --primary-hover: #5A74AD;
-    --primary-active: #4A6399;
-    --primary-gradient-end: #6C86C0;
-    --primary-tint: rgba(108, 134, 192, 0.12);
-    --primary-tint-ultra: rgba(108, 134, 192, 0.06);
-
-    --header-bg: #f6fafe;
-    --sidebar-bg: #f0f4f8;
-    --content-bg: #ffffff;
-    --border-color: #E5E7EB;
-
-    /* Text system */
-    --text-dark: #1C1E2E;
-    --text-muted: #6B7280;
-    --text-light: #9CA3AF;
-    --icon-color: #6B7280;
-    --nav-inactive: #6B7280;
-
-    /* Reserved for destructive actions only */
-    --error-red-bg: #fee2e2;
-    --error-red-text: #991b1b;
-
-    --hover-bg: #F5F6FA;
-    --card-hover-bg: #F5F6FA;
     --header-height: 64px;
     --left-sidebar-width: 229px;
     --conv-sidebar-width: 229px;
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
 }
 
 .scroll-container {
@@ -188,7 +152,7 @@ form button {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--text-light);
+    background: var(--mm-fg-light);
     animation: bounce 1.4s infinite ease-in-out both;
 }
 
@@ -250,11 +214,11 @@ form button {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--mm-radius-lg);
     transition: all 0.3s ease;
     text-decoration: none;
     cursor: pointer;
-    color: var(--nav-inactive);
+    color: var(--mm-fg-muted);
 }
 
 /* ================================================================
@@ -280,7 +244,7 @@ form button {
 .header-icon-btn:hover,
 .header-icon-btn:focus-visible {
     background-color: rgba(255, 255, 255, 0.5);
-    color: var(--primary-blue, #6C86C0);
+    color: var(--mm-primary);
     outline: none;
 }
 .header-icon-btn > svg {
@@ -323,17 +287,17 @@ form button {
 }
 
 .sidebar-nav-link.is-active .sidebar-nav-icon {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 
 .sidebar-nav-link.is-active .sidebar-nav-label {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 
 .sidebar-nav-icon {
     width: 20px;
     height: 20px;
-    color: var(--nav-inactive);
+    color: var(--mm-fg-muted);
     flex-shrink: 0;
 }
 
@@ -342,13 +306,13 @@ form button {
     font-weight: 600;
     font-size: 14px;
     line-height: 20px;
-    color: var(--nav-inactive);
+    color: var(--mm-fg-muted);
 }
 
 #avatar-menu {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--radius-lg);
+    border-radius: var(--mm-radius-lg);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -361,7 +325,7 @@ form button {
     text-align: left;
     font-size: 14px;
     line-height: 20px;
-    color: var(--text-dark);
+    color: var(--mm-fg-1);
     background: transparent;
     border: 0;
     margin: 0;
@@ -375,7 +339,7 @@ form button {
     align-items: center;
     gap: 10px;
     padding: 12px 16px 8px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--mm-border);
 }
 
 #avatar-menu .menu-header-avatar {
@@ -383,7 +347,7 @@ form button {
     height: 32px;
     border-radius: 999px;
     overflow: hidden;
-    background: var(--sidebar-bg);
+    background: var(--mm-bg-sidebar);
     flex-shrink: 0;
 }
 
@@ -396,7 +360,7 @@ form button {
 #avatar-menu .menu-header-name {
     font-size: 13px;
     line-height: 18px;
-    color: var(--text-dark);
+    color: var(--mm-fg-1);
     font-weight: 600;
     max-width: 120px;
     white-space: nowrap;
@@ -405,22 +369,22 @@ form button {
 }
 
 #avatar-menu .menu-item-action:hover {
-    background: var(--hover-bg);
+    background: var(--mm-bg-hover);
 }
 
 #avatar-menu .menu-item-disabled {
-    color: var(--text-light);
+    color: var(--mm-fg-light);
     cursor: not-allowed;
 }
 
 #avatar-menu .menu-item-top {
-    border-top-left-radius: var(--radius-lg);
-    border-top-right-radius: var(--radius-lg);
+    border-top-left-radius: var(--mm-radius-lg);
+    border-top-right-radius: var(--mm-radius-lg);
 }
 
 #avatar-menu .menu-item-bottom {
-    border-bottom-left-radius: var(--radius-lg);
-    border-bottom-right-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--mm-radius-lg);
+    border-bottom-right-radius: var(--mm-radius-lg);
 }
 
 #avatar-menu a.menu-item {
@@ -538,17 +502,17 @@ body.search-modal-open {
 }
 
 .mobile-bottom-nav a {
-    color: var(--nav-inactive);
+    color: var(--mm-fg-muted);
     text-decoration: none;
     transition: color 0.15s ease;
 }
 
 .mobile-bottom-nav a.is-active {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 
 .mobile-bottom-nav a:hover {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 
 /* ================================================================
@@ -662,7 +626,7 @@ body.search-modal-open {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: var(--nav-inactive);
+    color: var(--mm-fg-muted);
     cursor: pointer;
     transition: color 0.15s ease, transform 0.15s ease;
 }
@@ -674,12 +638,12 @@ body.search-modal-open {
 }
 .mobile-bottom-nav a.is-active,
 .mobile-bottom-nav button.is-active {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
     transform: translateY(-1px);
 }
 .mobile-bottom-nav a.is-active svg,
 .mobile-bottom-nav button.is-active svg {
-    stroke: var(--primary-blue);
+    stroke: var(--mm-primary);
 }
 
 /* Conversation sidebar — mobile drawer behavior */

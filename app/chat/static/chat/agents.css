@@ -41,7 +41,7 @@
 .agent-detail-form input:focus,
 .agent-detail-form textarea:focus,
 .agent-detail-form select:focus {
-    border-color: var(--primary-blue);
+    border-color: var(--mm-primary);
     box-shadow: 0 0 0 2px rgba(108, 134, 192, 0.15);
 }
 
@@ -69,11 +69,11 @@
 
 .agent-detail-form-actions .btn-save {
     color: #fff;
-    background: var(--primary-blue);
+    background: var(--mm-primary);
 }
 
 .agent-detail-form-actions .btn-save:hover {
-    background: var(--primary-hover);
+    background: var(--mm-primary-hover);
 }
 
 .agent-detail-form-actions .btn-delete {

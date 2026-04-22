@@ -14,7 +14,7 @@
 
     <form class="flex items-center justify-between gap-4 flex-wrap mb-6" method="post">
         {% csrf_token %}
-        <div class="flex-1 w-full min-w-0 sm:min-w-[240px] sm:max-w-[420px] flex items-center gap-3 border border-[#e2e8f0] rounded-lg bg-white px-4 py-2.5">
+        <div class="flex-1 w-full min-w-0 sm:min-w-[240px] sm:max-w-[420px] flex items-center gap-3 border border-mm-border rounded-lg bg-white px-4 py-2.5">
             <span class="w-[18px] h-[18px] text-mm-light flex-shrink-0" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="w-[18px] h-[18px]">
                     <circle cx="11" cy="11" r="7" stroke-width="2"></circle>
@@ -72,7 +72,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {% for bullet in bullets %}
-        <div class="memory-card border border-[#e2e8f0] rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3" data-bullet-id="{{ bullet.id }}">
+        <div class="memory-card border border-mm-border rounded-xl p-5 bg-white hover:shadow-md transition-shadow flex flex-col gap-3" data-bullet-id="{{ bullet.id }}">
             <div class="flex items-start justify-between gap-3">
                 <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.memoryTypeLabel }}</span>
                 <div class="inline-flex items-center gap-1.5">

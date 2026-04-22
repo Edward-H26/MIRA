@@ -19,7 +19,7 @@
     line-height: 34px;
     font-weight: 800;
     margin: 0 0 20px;
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 .profile-avatar-row {
     display: flex;
@@ -32,7 +32,7 @@
     height: 80px;
     border-radius: 999px;
     overflow: hidden;
-    border: 2px solid var(--primary-blue);
+    border: 2px solid var(--mm-primary);
     background: #ffffff;
     display: flex;
     align-items: center;
@@ -41,7 +41,7 @@
     transition: border-color 0.15s;
 }
 .profile-avatar:hover {
-    border-color: var(--primary-hover);
+    border-color: var(--mm-primary-hover);
 }
 .profile-avatar img {
     width: 100%;
@@ -105,7 +105,7 @@
     line-height: 24px;
     font-weight: 700;
     margin: 0 0 16px;
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 .profile-grid {
     display: grid;
@@ -140,7 +140,7 @@
 }
 .profile-input:focus {
     border-color: transparent;
-    box-shadow: 0 0 0 2px var(--primary-blue);
+    box-shadow: 0 0 0 2px var(--mm-primary);
 }
 .profile-input-disabled {
     cursor: default;
@@ -149,7 +149,7 @@
     background: #f8fafc;
 }
 .profile-primary-button {
-    background: var(--primary-blue);
+    background: var(--mm-primary);
     color: #ffffff;
     border: 0;
     border-radius: 8px;
@@ -161,10 +161,10 @@
     transition: background-color 0.15s;
 }
 .profile-primary-button:hover {
-    background: var(--primary-hover);
+    background: var(--mm-primary-hover);
 }
 .profile-secondary-button {
-    background: var(--primary-blue);
+    background: var(--mm-primary);
     color: #ffffff;
     border: 0;
     border-radius: 8px;
@@ -181,7 +181,7 @@
     transition: background-color 0.15s;
 }
 .profile-secondary-button:hover {
-    background: var(--primary-hover);
+    background: var(--mm-primary-hover);
 }
 .profile-security {
     display: flex;

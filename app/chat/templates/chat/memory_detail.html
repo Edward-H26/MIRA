@@ -17,15 +17,15 @@
     <div class="mb-8">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[28px] tracking-[-0.5px] m-0 mb-4">Memory #{{ memory.id }}</h1>
         <div class="flex gap-5 flex-wrap">
-            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Access Clock:</span> {{ memory.access_clock }}</span>
-            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Created:</span> {{ memory.created_at }}</span>
-            <span class="font-inter text-[12px] text-[#64748b]"><span class="font-medium text-mm-text">Updated:</span> {{ memory.updated_at }}</span>
+            <span class="font-inter text-[12px] text-mm-muted-2"><span class="font-medium text-mm-text">Access Clock:</span> {{ memory.access_clock }}</span>
+            <span class="font-inter text-[12px] text-mm-muted-2"><span class="font-medium text-mm-text">Created:</span> {{ memory.created_at }}</span>
+            <span class="font-inter text-[12px] text-mm-muted-2"><span class="font-medium text-mm-text">Updated:</span> {{ memory.updated_at }}</span>
         </div>
     </div>
 
     <div class="flex flex-col gap-4">
         {% for bullet in memory.bullets %}
-        <div class="border border-[#e2e8f0] rounded-xl p-5 bg-white" data-bullet-id="{{ bullet.id }}">
+        <div class="border border-mm-border rounded-xl p-5 bg-white" data-bullet-id="{{ bullet.id }}">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex gap-2 items-center">
                     <span class="memory-pill-{{ bullet.memory_type }}">{{ bullet.memoryTypeLabel }}</span>
@@ -58,7 +58,7 @@
                 </div>
                 <span class="font-inter text-[13px] font-semibold text-mm-text" data-strength-label>{{ bullet.strength }}%</span>
             </div>
-            <div class="flex gap-5 flex-wrap font-inter text-[12px] text-[#64748b]">
+            <div class="flex gap-5 flex-wrap font-inter text-[12px] text-mm-muted-2">
                 <span><span class="font-medium text-mm-text">TTL:</span> {{ bullet.ttl_days }} days</span>
                 <span><span class="font-medium text-mm-text">Last accessed:</span> {{ bullet.last_accessed }}</span>
             </div>

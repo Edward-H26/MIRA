@@ -104,7 +104,7 @@
 }
 
 .message-content-markdown blockquote {
-    border-left: 3px solid var(--primary-blue);
+    border-left: 3px solid var(--mm-primary);
     padding: 8px 16px;
     margin: 12px 0;
     background: rgba(108, 134, 192, 0.04);
@@ -113,12 +113,12 @@
 }
 
 .message-content-markdown a {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
     text-decoration: underline;
 }
 
 .message-content-markdown a:hover {
-    color: var(--primary-hover);
+    color: var(--mm-primary-hover);
 }
 
 .message-content-markdown table {
@@ -189,5 +189,5 @@
     padding: 1px 4px;
     border-radius: 4px;
     font-weight: 600;
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }

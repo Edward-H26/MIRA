@@ -18,16 +18,19 @@ from . import outbox
 
 
 def create_session_with_outbox(user_id: str, title: str) -> dict:
-    with transaction.atomic():
-        sessionData = neo4j.create_session(str(user_id), title)
-        sessionId = str(sessionData.get("id", "")) if sessionData else ""
-        if sessionId:
-            outbox.record_applied_after_commit(
-                operation="session.create",
-                entity_type="Session",
-                entity_id=sessionId,
-                payload={"user_id": str(user_id), "title": title},
-            )
+    try:
+        with transaction.atomic():
+            sessionData = neo4j.create_session(str(user_id), title)
+            sessionId = str(sessionData.get("id", "")) if sessionData else ""
+            if sessionId:
+                outbox.record_applied_after_commit(
+                    operation="session.create",
+                    entity_type="Session",
+                    entity_id=sessionId,
+                    payload={"user_id": str(user_id), "title": title},
+                )
+    except neo4j.Neo4jUnavailable:
+        return {}
     return sessionData or {}
 
 

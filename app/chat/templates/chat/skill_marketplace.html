@@ -10,7 +10,7 @@
 <div class="page-container">
     <div class="mb-8">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Skill Marketplace</h1>
-        <p class="font-inter text-[#64748b] text-[16px] mt-1">Pre-built template skills to supercharge your agents</p>
+        <p class="font-inter text-mm-muted-2 text-[16px] mt-1">Pre-built template skills to supercharge your agents</p>
     </div>
 
     <form method="get" class="mb-8">
@@ -30,7 +30,7 @@
                     <option value="{{ cat.id }}" {% if activeCategory == cat.id %}selected{% endif %}>{{ cat.label }}</option>
                     {% endfor %}
                 </select>
-                <span class="font-inter text-[13px] text-[#64748b] whitespace-nowrap flex-shrink-0">{{ skills|length }} of {{ totalCount }} skills</span>
+                <span class="font-inter text-[13px] text-mm-muted-2 whitespace-nowrap flex-shrink-0">{{ skills|length }} of {{ totalCount }} skills</span>
             </div>
         </div>
         <button type="submit" class="hidden"></button>
@@ -38,18 +38,18 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for skill in skills %}
-        <a href="{% url 'chat:skill_marketplace_detail' skill_id=skill.id %}" class="border border-[#e2e8f0] rounded-2xl p-6 bg-white hover:shadow-lg transition-shadow block no-underline">
+        <a href="{% url 'chat:skill_marketplace_detail' skill_id=skill.id %}" class="border border-mm-border rounded-2xl p-6 bg-white hover:shadow-lg transition-shadow block no-underline">
             <div class="flex items-center justify-between mb-3">
-                <span class="font-inter font-bold text-[#0f172a] text-[16px]">{{ skill.name }}</span>
+                <span class="font-inter font-bold text-mm-text-2 text-[16px]">{{ skill.name }}</span>
             </div>
-            <p class="font-inter text-[#64748b] text-[14px] line-clamp-3 mb-4 leading-relaxed">{{ skill.description }}</p>
+            <p class="font-inter text-mm-muted-2 text-[14px] line-clamp-3 mb-4 leading-relaxed">{{ skill.description }}</p>
             <div class="flex items-center justify-between">
                 <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
                 <span class="text-mm-primary hover:text-mm-primary-hover font-semibold text-[13px]">View details &rarr;</span>
             </div>
         </a>
         {% empty %}
-        <div class="col-span-full text-center py-16 font-inter text-[14px] text-[#64748b]">No skills found matching your search.</div>
+        <div class="col-span-full text-center py-16 font-inter text-[14px] text-mm-muted-2">No skills found matching your search.</div>
         {% endfor %}
     </div>
 </div>

@@ -277,6 +277,13 @@ def _log_neo4j_error(cypher: str, params: dict | None, exc: Exception) -> None:
         pass
 
 
+class Neo4jUnavailable(Exception):
+    """Raised by write helpers when Neo4j is unreachable or a write fails.
+    Reads keep the silent-failure semantics so context processors degrade
+    gracefully; writes raise so callers can decide whether to surface a
+    user-visible retry instead of returning stale-looking empty results."""
+
+
 def _run_query(cypher: str, params: dict | None = None) -> list[dict]:
     driver = _get_driver()
     if driver is None:
@@ -293,6 +300,27 @@ def _run_query(cypher: str, params: dict | None = None) -> list[dict]:
 
 def _run_single(cypher: str, params: dict | None = None) -> dict | None:
     rows = _run_query(cypher, params)
+    if rows:
+        return rows[0]
+    return None
+
+
+def _run_write_query(cypher: str, params: dict | None = None) -> list[dict]:
+    driver = _get_driver()
+    if driver is None:
+        raise Neo4jUnavailable("Neo4j driver not initialized")
+    database = _get_database()
+    try:
+        with driver.session(database=database) as session:
+            result = session.run(cypher, params or {})
+            return [dict(record) for record in result]
+    except Exception as exc:
+        _log_neo4j_error(cypher, params, exc)
+        raise Neo4jUnavailable(str(exc)) from exc
+
+
+def _run_write_single(cypher: str, params: dict | None = None) -> dict | None:
+    rows = _run_write_query(cypher, params)
     if rows:
         return rows[0]
     return None
@@ -425,7 +453,7 @@ def create_session(
     title: str,
     agent_ids: list[str] | None = None,
 ) -> dict:
-    record = _run_single(
+    record = _run_write_single(
         """
         MERGE (u:User {id: $userId})
         ON CREATE SET u.createdAt = datetime()
@@ -441,7 +469,7 @@ def create_session(
         """,
         {"userId": str(user_id), "title": title},
     )
-    session_data = _node_to_dict(record.get("a") if record else None) if not record else _node_to_dict(record.get("s", {}))
+    session_data = _node_to_dict(record.get("s")) if record and "s" in record else {}
 
     if session_data and agent_ids:
         session_id = session_data.get("id", "")
@@ -512,21 +540,25 @@ def agent_name_exists(name: str) -> bool:
     return bool(record and record.get("a"))
 
 
-def user_can_access_session(user_id: str, session_id: str) -> bool:
+def user_can_access_session(user_id: str, session_id: str) -> bool | None:
     """Single-query ACL check used by real-time channel authorization. Returns
-    True iff the user has a :CREATED or :MEMBER_OF edge to the session. This
-    is the authoritative gate for Pusher channel subscription — every code
-    path that serves session data to a user MUST ultimately go through an
-    equivalent check."""
+    True iff the user has a :CREATED or :MEMBER_OF edge to the session, False
+    for a definitive no, and None when the Neo4j check failed transiently.
+    Callers MUST treat None as "retry later", not as "denied", so that a
+    transient database hiccup does not permanently unsubscribe Pusher
+    channels (which breaks real-time notifications until full page reload)."""
     if not user_id or not session_id:
         return False
-    record = _run_single(
-        """
-        MATCH (u:User {id: $userId})-[:CREATED|MEMBER_OF]->(s:Session {id: $sessionId})
-        RETURN s LIMIT 1
-        """,
-        {"userId": str(user_id), "sessionId": str(session_id)},
-    )
+    try:
+        record = _run_write_single(
+            """
+            MATCH (u:User {id: $userId})-[:CREATED|MEMBER_OF]->(s:Session {id: $sessionId})
+            RETURN s LIMIT 1
+            """,
+            {"userId": str(user_id), "sessionId": str(session_id)},
+        )
+    except Neo4jUnavailable:
+        return None
     return bool(record and record.get("s"))
 
 

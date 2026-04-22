@@ -10,12 +10,12 @@
 <div class="page-container">
     <div class="mb-6">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Activity Log</h1>
-        <p class="font-inter text-[#64748b] text-[16px] mt-1">Track all agent and system events</p>
+        <p class="font-inter text-mm-muted-2 text-[16px] mt-1">Track all agent and system events</p>
     </div>
 
     <div class="flex items-center justify-between mb-6">
         <form method="get" class="inline-flex">
-            <select name="event_type" class="font-inter text-[14px] text-mm-text border border-[#e2e8f0] rounded-lg px-4 py-2 bg-white outline-none cursor-pointer appearance-none pr-10 activity-filter-select" onchange="this.form.submit()">
+            <select name="event_type" class="font-inter text-[14px] text-mm-text border border-mm-border rounded-lg px-4 py-2 bg-white outline-none cursor-pointer appearance-none pr-10 activity-filter-select" onchange="this.form.submit()">
                 <option value="">All Events</option>
                 {% for et in eventTypes %}
                 <option value="{{ et }}" {% if activeEventType == et %}selected{% endif %}>{{ et }}</option>
@@ -24,8 +24,8 @@
         </form>
     </div>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-4">Timeline</h2>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white">
+        <h2 class="font-inter font-bold text-mm-text-2 text-[18px] mb-4">Timeline</h2>
         <div class="flex flex-col divide-y divide-[#e2e8f0]/70">
             {% for log in logs %}
             <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl hover:bg-white/50 transition-colors">
@@ -34,18 +34,18 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             {% if log.agentName %}
-                            <span class="font-inter font-semibold text-[#0f172a] text-[14px]">{{ log.agentName }}</span>
+                            <span class="font-inter font-semibold text-mm-text-2 text-[14px]">{{ log.agentName }}</span>
                             {% endif %}
                             <span class="font-inter font-medium text-[11px] sm:text-[12px] px-2 sm:px-2.5 py-0.5 rounded-full activity-badge-{{ log.eventType }}">{{ log.eventType }}</span>
                         </div>
-                        <p class="font-inter text-[#64748b] text-[13px] mt-0.5 sm:truncate">{{ log.description }}</p>
+                        <p class="font-inter text-mm-muted-2 text-[13px] mt-0.5 sm:truncate">{{ log.description }}</p>
                     </div>
                 </div>
-                <span class="font-inter text-[#94a3b8] text-[11px] sm:text-[12px] flex-shrink-0 whitespace-nowrap pl-[22px] sm:pl-0">{{ log.createdAt }}</span>
+                <span class="font-inter text-mm-light-2 text-[11px] sm:text-[12px] flex-shrink-0 whitespace-nowrap pl-[22px] sm:pl-0">{{ log.createdAt }}</span>
             </div>
             {% empty %}
             <div class="py-12 text-center">
-                <p class="font-inter text-[#94a3b8] text-[14px]">No activity recorded yet.</p>
+                <p class="font-inter text-mm-light-2 text-[14px]">No activity recorded yet.</p>
             </div>
             {% endfor %}
         </div>

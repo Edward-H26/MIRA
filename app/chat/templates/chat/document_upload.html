@@ -10,7 +10,7 @@
 <div class="page-container">
     <div class="mb-6">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px]">Scan Document</h1>
-        <p class="font-inter text-[#64748b] text-[16px] mt-1">Upload an image or PDF to extract text</p>
+        <p class="font-inter text-mm-muted-2 text-[16px] mt-1">Upload an image or PDF to extract text</p>
     </div>
 
     {% if error %}
@@ -20,22 +20,22 @@
     {% endif %}
 
     <div class="glass-surface rounded-2xl p-5 sm:p-8">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[18px] mb-5 sm:mb-6">Upload Document</h2>
+        <h2 class="font-inter font-bold text-mm-text-2 text-[18px] mb-5 sm:mb-6">Upload Document</h2>
 
         <form method="post" enctype="multipart/form-data" class="flex flex-col gap-5 sm:gap-6">
             {% csrf_token %}
 
             <label class="upload-dropzone border-2 border-dashed border-[#cbd5e1] rounded-2xl p-6 sm:p-12 text-center hover:border-mm-primary transition-colors cursor-pointer block" id="drop-area">
-                <div class="flex justify-center mb-4 text-[#64748b]">
+                <div class="flex justify-center mb-4 text-mm-muted-2">
                     <svg class="w-8 h-8 sm:w-10 sm:h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
                 </div>
-                <p class="font-inter font-semibold text-[#0f172a] text-[14px] hide-mobile">Drag and drop a file here, or tap to select</p>
-                <p class="font-inter font-semibold text-[#0f172a] text-[15px] show-mobile">Tap to choose a file</p>
-                <p class="font-inter text-[#94a3b8] text-[12px] sm:text-[13px] mt-2">PNG, JPEG, TIFF, BMP, WEBP, PDF (max 10 MB)</p>
+                <p class="font-inter font-semibold text-mm-text-2 text-[14px] hide-mobile">Drag and drop a file here, or tap to select</p>
+                <p class="font-inter font-semibold text-mm-text-2 text-[15px] show-mobile">Tap to choose a file</p>
+                <p class="font-inter text-mm-light-2 text-[12px] sm:text-[13px] mt-2">PNG, JPEG, TIFF, BMP, WEBP, PDF (max 10 MB)</p>
                 <span class="cta-mobile-chip show-mobile" role="button">
                     Choose file
                 </span>
@@ -49,16 +49,16 @@
                 {% endif %}
             </label>
 
-            <div id="file-preview" class="hidden border border-[#e2e8f0] rounded-lg p-3 flex items-center gap-3">
-                <svg class="text-[#64748b] flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div id="file-preview" class="hidden border border-mm-border rounded-lg p-3 flex items-center gap-3">
+                <svg class="text-mm-muted-2 flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
-                <span id="file-preview-name" class="font-inter text-[#0f172a] text-[13px] font-medium truncate flex-1"></span>
-                <span id="file-preview-size" class="font-inter text-[#94a3b8] text-[12px] flex-shrink-0"></span>
+                <span id="file-preview-name" class="font-inter text-mm-text-2 text-[13px] font-medium truncate flex-1"></span>
+                <span id="file-preview-size" class="font-inter text-mm-light-2 text-[12px] flex-shrink-0"></span>
             </div>
 
-            <p class="font-inter text-[#94a3b8] text-[13px] leading-relaxed">
+            <p class="font-inter text-mm-light-2 text-[13px] leading-relaxed">
                 Supported formats: PNG, JPEG, TIFF, BMP, WEBP, PDF. Maximum file size: 10 MB.
                 For images, use a clear, well-lit photo with legible text. For PDFs, text-based files work best.
             </p>

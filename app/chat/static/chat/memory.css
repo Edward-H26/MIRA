@@ -1,5 +1,5 @@
 .memory-filter.is-active {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
 }
 
 .memory-filter-menu {
@@ -40,7 +40,7 @@
 
 .memory-filter-item.is-selected {
     background: #f0f4f8;
-    color: var(--primary-blue);
+    color: var(--mm-primary);
     font-weight: 500;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .memory-sort-btn-style:hover {
-    border-color: var(--primary-blue);
+    border-color: var(--mm-primary);
 }
 
 .memory-sort-menu {
@@ -123,7 +123,7 @@
 
 .memory-sort-item.is-selected {
     background: #f0f4f8;
-    color: var(--primary-blue);
+    color: var(--mm-primary);
     font-weight: 500;
 }
 
@@ -161,7 +161,7 @@
 }
 
 .memory-detail-breadcrumb a {
-    color: var(--primary-blue);
+    color: var(--mm-primary);
     text-decoration: none;
 }
 
@@ -179,7 +179,7 @@
 
 .memory-strength-fill {
     height: 100%;
-    background: var(--primary-blue);
+    background: var(--mm-primary);
     border-radius: 999px;
     transition: width 0.3s;
 }

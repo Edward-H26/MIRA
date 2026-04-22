@@ -108,11 +108,11 @@
 
             <!-- Danger Zone -->
             <div class="border border-red-200 rounded-[16px] p-8 bg-red-50/60 backdrop-blur-md">
-                <h2 class="font-inter font-bold text-[#991b1b] text-[18px] mb-4">Danger Zone</h2>
+                <h2 class="font-inter font-bold text-mm-danger-fg text-[18px] mb-4">Danger Zone</h2>
                 <p class="font-inter text-mm-muted text-[14px] mb-5">Permanently delete this agent and all associated data. This action cannot be undone.</p>
                 <form method="post" action="{% url 'chat:agent_delete' agent_id=agent.id %}" id="delete-agent-form">
                     {% csrf_token %}
-                    <button type="button" class="bg-[#fee2e2] text-[#991b1b] hover:bg-[#fecaca] rounded-[8px] px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors" id="delete-agent-btn">Delete Agent</button>
+                    <button type="button" class="bg-mm-danger-bg text-mm-danger-fg hover:bg-[#fecaca] rounded-[8px] px-5 py-2.5 font-inter font-semibold text-[14px] transition-colors" id="delete-agent-btn">Delete Agent</button>
                 </form>
             </div>
         </div>

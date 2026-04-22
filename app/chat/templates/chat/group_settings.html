@@ -39,7 +39,7 @@
       <div class="flex flex-col gap-2">
         {% for m in members %}
         <div class="flex items-center gap-3 px-4 py-3 bg-white rounded-[10px] border border-slate-100">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[12px]">
+          <div class="w-8 h-8 rounded-full bg-mm-primary flex items-center justify-center text-white font-semibold text-[12px]">
             {{ m.displayName|default:m.username|default:"?"|slice:":1"|upper }}
           </div>
           <div class="flex-1">

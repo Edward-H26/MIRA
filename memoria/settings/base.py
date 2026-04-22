@@ -164,6 +164,7 @@ STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
+    ("design", BASE_DIR / "MemoriaDesignSystem"),
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

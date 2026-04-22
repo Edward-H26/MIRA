@@ -13,23 +13,23 @@
         Back to Marketplace
     </a>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
+    <div class="border border-mm-border rounded-2xl p-8 bg-white mb-6">
         <h1 class="font-manrope font-extrabold text-mm-primary text-[32px] tracking-[-1px] mb-3">{{ skill.name }}</h1>
         <div class="flex gap-2.5 items-center flex-wrap mb-4">
             <span class="bg-mm-primary/10 text-mm-primary rounded-md px-2.5 py-1 text-[12px] font-semibold">Skill</span>
-            <span class="bg-mm-card text-[#64748b] rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
+            <span class="bg-mm-card text-mm-muted-2 rounded-md px-2.5 py-1 text-[12px] font-semibold">{{ skill.category }}</span>
         </div>
-        <p class="font-inter text-[#64748b] text-[16px] leading-relaxed">{{ skill.description }}</p>
+        <p class="font-inter text-mm-muted-2 text-[16px] leading-relaxed">{{ skill.description }}</p>
     </div>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white mb-6">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">Install to My Agent</h2>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white mb-6">
+        <h2 class="font-inter font-bold text-mm-text-2 text-[16px] mb-4">Install to My Agent</h2>
         <form method="post" action="{% url 'chat:skill_install' skill_id=skill.id %}" class="flex gap-3 items-center flex-wrap" id="install-form">
             {% csrf_token %}
             {% if agents %}
             <input type="hidden" name="agent_id" value="{{ agents.0.id }}">
             <div class="flex items-center gap-3 flex-1 w-full sm:min-w-[200px] px-4 py-2.5 border border-mm-border rounded-xl bg-slate-50/50">
-                <div class="w-7 h-7 rounded-[8px] bg-gradient-to-br from-[#6C86C0] to-[#6C86C0] flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm">
+                <div class="w-7 h-7 rounded-[8px] bg-mm-primary flex items-center justify-center text-white font-semibold text-[11px] flex-shrink-0 shadow-sm">
                     {{ agents.0.name|slice:":1"|upper }}
                 </div>
                 <span class="font-inter font-medium text-[14px] text-mm-text">{{ agents.0.name }}</span>
@@ -43,9 +43,9 @@
         <div id="install-msg" class="font-inter text-[13px] mt-3 hidden"></div>
     </div>
 
-    <div class="border border-[#e2e8f0] rounded-2xl p-8 bg-white">
-        <h2 class="font-inter font-bold text-[#0f172a] text-[16px] mb-4">Skill Content</h2>
-        <div class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#374151] leading-relaxed whitespace-pre-wrap border border-[#e2e8f0]">{{ skill.content }}</div>
+    <div class="border border-mm-border rounded-2xl p-8 bg-white">
+        <h2 class="font-inter font-bold text-mm-text-2 text-[16px] mb-4">Skill Content</h2>
+        <div class="bg-[#f8fafc] rounded-xl p-4 font-mono text-[13px] text-[#374151] leading-relaxed whitespace-pre-wrap border border-mm-border">{{ skill.content }}</div>
     </div>
 </div>
 {% endblock %}

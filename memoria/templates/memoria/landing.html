@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Memoria | Landing</title>
+    <link rel="stylesheet" href="{% static 'design/colors_and_type.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'memoria/landing.css' %}">
     <link rel="stylesheet" href="{% static 'memoria/landing-overrides.css' %}?v={% now 'U' %}">
     <link rel="stylesheet" href="{% static 'memoria/landing-scroll.css' %}?v={% now 'U' %}">
@@ -13,12 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
-    <style>
-      :root {
-        --primary-blue: #6C86C0;
-        --primary-hover: #5A74AD;
-      }
-    </style>
   </head>
   <body>
     <div class="min-h-screen relative overflow-x-hidden">
@@ -42,11 +37,11 @@
           </a>
 
           {% if user.is_authenticated %}
-            <a href="{% url 'memoria:home' %}" class="bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
+            <a href="{% url 'memoria:home' %}" class="bg-mm-bg-subtle px-5 py-2 rounded-full text-mm-muted text-sm font-medium hover:bg-white transition-colors">
               Open app
             </a>
           {% else %}
-            <button type="button" id="open-login" class="landing-clickable bg-[#fdfdfd] px-5 py-2 rounded-full text-[#727272] text-sm font-medium hover:bg-white transition-colors">
+            <button type="button" id="open-login" class="landing-clickable bg-mm-bg-subtle px-5 py-2 rounded-full text-mm-muted text-sm font-medium hover:bg-white transition-colors">
               Sign in
             </button>
           {% endif %}
@@ -54,20 +49,20 @@
 
         <section id="hero" data-scroll="hero" class="px-5 py-12 md:py-20 lg:py-24 text-center max-w-4xl mx-auto">
           <div class="hero-inner space-y-6 md:space-y-8">
-            <h1 id="hero-heading" class="reveal-split font-semibold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#1b1b1b] tracking-tight">
+            <h1 id="hero-heading" class="reveal-split font-semibold text-4xl md:text-5xl lg:text-6xl leading-tight text-mm-text tracking-tight">
               A self-evolving agentic assistant that adapts as you work.
             </h1>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
               Move beyond one-off prompts.<br>
               This assistant learns how you work, maintains context across tasks, and helps you get consistent results with less repetition.
             </p>
             <div class="landing-cta-group">
               {% if user.is_authenticated %}
-                <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                   Go to your workspace
                 </a>
               {% else %}
-                <button type="button" id="open-register" class="landing-clickable bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+                <button type="button" id="open-register" class="landing-clickable bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                   Get started for free
                 </button>
               {% endif %}
@@ -76,17 +71,17 @@
         </section>
 
         <section id="pitch-intro" class="px-5 py-12 md:py-20 max-w-5xl mx-auto text-center">
-          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-mm-text tracking-tight leading-tight">
             Your team's AI agents, working together even when you're not.
           </h2>
           <span class="underline-sweep mx-auto mt-5"></span>
-          <p class="text-[#727272] text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
+          <p class="text-mm-muted text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
             Memoria gives every employee a personal AI agent that learns how they work and coordinates across departments, so your team keeps moving forward even when someone is out sick, in a meeting, or on vacation.
           </p>
         </section>
 
         <section id="hook" class="px-5 py-12 md:py-20 max-w-6xl mx-auto text-center">
-          <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight max-w-4xl mx-auto leading-tight">
+          <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight max-w-4xl mx-auto leading-tight">
             Ever had a hard deadline, but the one person you need is just not available?
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mt-12 md:mt-16">
@@ -134,10 +129,10 @@
 
         <section id="problem-stats" class="px-5 py-12 md:py-20 max-w-6xl mx-auto text-center">
           <div class="mb-10 md:mb-14">
-            <h2 class="reveal-split text-3xl md:text-4xl font-semibold text-[#1b1b1b] tracking-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl font-semibold text-mm-text tracking-tight">
               The hidden cost of lost context.
             </h2>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
               When context leaves with a person, your team absorbs the cost in time, rework, and missed deadlines.
             </p>
           </div>
@@ -167,11 +162,11 @@
         </section>
 
         <section id="solution" class="px-5 py-16 md:py-24 max-w-5xl mx-auto text-center">
-          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+          <h2 class="reveal-split text-3xl md:text-5xl lg:text-6xl font-semibold text-mm-text tracking-tight leading-tight">
             Stop setting up AI. Just work.
           </h2>
           <span class="underline-sweep mx-auto mt-5"></span>
-          <p class="text-[#727272] text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
+          <p class="text-mm-muted text-base md:text-lg lg:text-xl leading-relaxed max-w-3xl mx-auto mt-6">
             Your personal AI agents learn from your conversations and collaborate across teams to keep work moving automatically.
           </p>
         </section>
@@ -181,26 +176,26 @@
             <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Assistant Learning</h4>
+                  <h4 class="font-semibold text-sm text-mm-text">Assistant Learning</h4>
                 </div>
                 <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Help me draft an email to the team
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       I'll draft that for you. Should I use your usual friendly but professional tone?
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Yes, exactly!
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
                       <p class="mb-2">Here's your draft:</p>
                       <div class="bg-white rounded-lg p-3 text-xs border border-[#e5e5e5]">
                         <p class="mb-2">Hi team,</p>
@@ -210,16 +205,16 @@
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Perfect! Can you make it a bit more concise?
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Done! I've tightened it up while keeping your friendly tone.
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 text-xs text-[#6C86C0] bg-[#EAEEF7] rounded-lg px-3 py-2">
+                  <div class="flex items-center gap-2 text-xs text-mm-primary bg-[#EAEEF7] rounded-lg px-3 py-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                     </svg>
@@ -232,52 +227,52 @@
             <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3 flex items-center justify-between">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Memory Controls</h4>
-                      <button class="landing-clickable text-xs text-[#6C86C0] hover:underline" type="button">View all</button>
+                  <h4 class="font-semibold text-sm text-mm-text">Memory Controls</h4>
+                      <button class="landing-clickable text-xs text-mm-primary hover:underline" type="button">View all</button>
                 </div>
                 <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       What do you remember about my project?
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Here's what I know:
                     </div>
                   </div>
                   <div class="space-y-2 ml-4">
                     <div class="bg-[#EAEEF7] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Project: E-commerce redesign</span>
-                      <button class="landing-clickable text-[#6C86C0]" type="button">x</button>
+                      <button class="landing-clickable text-mm-primary" type="button">x</button>
                     </div>
                     <div class="bg-[#EAEEF7] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Tech stack: React + TypeScript</span>
-                      <button class="landing-clickable text-[#6C86C0]" type="button">x</button>
+                      <button class="landing-clickable text-mm-primary" type="button">x</button>
                     </div>
                     <div class="bg-[#EAEEF7] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Deadline: Q1 2026</span>
-                      <button class="landing-clickable text-[#6C86C0]" type="button">x</button>
+                      <button class="landing-clickable text-mm-primary" type="button">x</button>
                     </div>
                     <div class="bg-[#EAEEF7] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Target: Mobile-first approach</span>
-                      <button class="landing-clickable text-[#6C86C0]" type="button">x</button>
+                      <button class="landing-clickable text-mm-primary" type="button">x</button>
                     </div>
                     <div class="bg-[#EAEEF7] rounded-lg px-3 py-2 text-xs flex items-center justify-between">
                       <span>Team size: 5 developers</span>
-                      <button class="landing-clickable text-[#6C86C0]" type="button">x</button>
+                      <button class="landing-clickable text-mm-primary" type="button">x</button>
                     </div>
                   </div>
-                  <div class="text-xs text-[#727272] italic pl-4">
+                  <div class="text-xs text-mm-muted italic pl-4">
                     Tap any item to edit or remove
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Can you show me my design preferences?
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Sure! You prefer:
                     </div>
                   </div>
@@ -298,50 +293,50 @@
             <div class="feature-card flex items-center justify-center">
               <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md h-[450px] p-6 space-y-4 flex flex-col">
                 <div class="border-b pb-3">
-                  <h4 class="font-semibold text-sm text-[#1b1b1b]">Context Maintained</h4>
+                  <h4 class="font-semibold text-sm text-mm-text">Context Maintained</h4>
                 </div>
                 <div class="bubble-ticker space-y-3 text-sm flex-1 overflow-y-auto">
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Make it more concise
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Done! I've shortened the paragraph while keeping the key points.
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Now add a call to action
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Added a CTA at the end: "Ready to get started? Join us today."
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Make it urgent
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       Updated to: "Limited spots available - join us today!"
                     </div>
                   </div>
                   <div class="flex justify-end">
-                    <div class="bg-[#6C86C0] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-mm-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
                       Add discount
                     </div>
                   </div>
                   <div class="flex justify-start">
-                    <div class="bg-[#f5f5f5] text-[#1b1b1b] rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+                    <div class="bg-[#f5f5f5] text-mm-text rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
                       "Limited spots - join today and save 20%!"
                     </div>
                   </div>
-                  <div class="flex items-center gap-2 text-xs text-[#727272] bg-[#f9f9f9] rounded-lg px-3 py-2 border border-[#e5e5e5]">
+                  <div class="flex items-center gap-2 text-xs text-mm-muted bg-[#f9f9f9] rounded-lg px-3 py-2 border border-[#e5e5e5]">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
@@ -353,19 +348,19 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Learns how you work</h3>
-            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Shares context across teammates</h3>
-            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-[#1b1b1b] text-center w-fit mx-auto max-w-[280px]">Keeps you in the loop</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-mm-text text-center w-fit mx-auto max-w-[280px]">Learns how you work</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-mm-text text-center w-fit mx-auto max-w-[280px]">Shares context across teammates</h3>
+            <h3 class="reveal-split text-xl md:text-2xl font-semibold text-mm-text text-center w-fit mx-auto max-w-[280px]">Keeps you in the loop</h3>
           </div>
         </section>
 
         <section id="personal-agent" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
           <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
-            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight">
               Personal AI Agent
             </h2>
             <span class="underline-sweep mx-auto mt-4"></span>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed mt-5">
               No prompts. No setup. Your agent learns how you work and syncs your team around you 24/7.
             </p>
           </div>
@@ -424,11 +419,11 @@
 
         <section id="agent-to-agent" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
           <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
-            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight">
               Agent-to-Agent Collaboration
             </h2>
             <span class="underline-sweep mx-auto mt-4"></span>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed mt-5">
               Your agents coordinate and hand off tasks across teams with zero setup so work keeps moving even when people cannot.
             </p>
           </div>
@@ -496,11 +491,11 @@
 
         <section id="competition" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
           <div class="text-center mb-12 md:mb-16 max-w-3xl mx-auto">
-            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight">
               Where every other AI tool falls short.
             </h2>
             <span class="underline-sweep mx-auto mt-4"></span>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-5">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed mt-5">
               We studied every competitor in the space. None combine all three of the capabilities your team actually needs.
             </p>
           </div>
@@ -557,10 +552,10 @@
 
         <section id="target-customer" class="px-5 py-16 md:py-24 max-w-7xl mx-auto">
           <div class="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight leading-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight leading-tight">
               Built for teams that refuse to stop.
             </h2>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed mt-6">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed mt-6">
               Small and mid-size enterprises with cross-functional teams, where losing one person means months of rebuilding context and people need answers from other departments every single day.
             </p>
           </div>
@@ -608,11 +603,11 @@
 
         <section id="integrations-orbit" class="px-5 py-20 md:py-28 max-w-7xl mx-auto relative overflow-hidden">
           <div class="text-center mb-12 md:mb-16">
-            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-[#1b1b1b] tracking-tight">
+            <h2 class="reveal-split text-3xl md:text-4xl lg:text-5xl font-semibold text-mm-text tracking-tight">
               Plug into the tools you already use.
             </h2>
             <span class="underline-sweep mx-auto mt-4"></span>
-            <p class="text-[#727272] text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
+            <p class="text-mm-muted text-base md:text-lg leading-relaxed max-w-2xl mx-auto mt-5">
               Memoria connects through the public APIs your team already runs on, so your agent stays in the loop across chat, mail, calendars, and code.
             </p>
           </div>
@@ -663,11 +658,11 @@
         <section class="px-5 py-16 md:py-24 text-center">
           <div class="landing-cta-group">
             {% if user.is_authenticated %}
-              <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+              <a href="{% url 'memoria:home' %}" class="bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                 Go to your workspace
               </a>
             {% else %}
-              <button type="button" id="open-register-bottom" class="landing-clickable bg-[#282828] text-[#fdfdfd] px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
+              <button type="button" id="open-register-bottom" class="landing-clickable bg-[#282828] text-mm-bg-subtle px-7 py-3.5 rounded-full text-sm font-medium hover:bg-[#1a1a1a] transition-colors">
                 Get started for free
               </button>
             {% endif %}
