@@ -32,7 +32,19 @@ def _save_google_avatar(profile, picture_url):
     if not response.content:
         return
     filename = _build_avatar_filename(picture_url)
-    profile.profile_img.save(filename, ContentFile(response.content), save=True)
+    try:
+        profile.profile_img.save(filename, ContentFile(response.content), save=True)
+    except (OSError, IOError, ValueError) as exc:
+        try:
+            from memoria.event_log import log_event
+            log_event(
+                "google_avatar_save_failed",
+                profile_pk=str(profile.pk),
+                error_type=exc.__class__.__name__,
+                error=str(exc)[:200],
+            )
+        except Exception:
+            pass
 
 
 def _capitalize_first(value):
@@ -97,16 +109,28 @@ def _sync_google_user_names(user, extra_data):
 def ensure_default_agent_on_profile_save(sender, instance, created, **kwargs):
     if not created:
         return
-    from app.chat.models.agent import Agent
-    if not Agent.objects.filter(user=instance).exists():
-        ownerUser = instance.user
-        displayName = getattr(instance, "display_name", "") or ownerUser.get_full_name() or ownerUser.username
-        Agent.objects.create(
-            user=instance,
-            name=f"{displayName}'s Agent",
-            temperature=0.7,
-            max_tokens=1024,
-        )
+    try:
+        from app.chat.models.agent import Agent
+        if not Agent.objects.filter(user=instance).exists():
+            ownerUser = instance.user
+            displayName = getattr(instance, "display_name", "") or ownerUser.get_full_name() or ownerUser.username
+            Agent.objects.create(
+                user=instance,
+                name=f"{displayName}'s Agent",
+                temperature=0.7,
+                max_tokens=1024,
+            )
+    except Exception as exc:
+        try:
+            from memoria.event_log import log_event
+            log_event(
+                "default_agent_create_failed",
+                profile_pk=str(instance.pk),
+                error_type=exc.__class__.__name__,
+                error=str(exc)[:200],
+            )
+        except Exception:
+            pass
 
 
 @receiver(user_signed_up)
